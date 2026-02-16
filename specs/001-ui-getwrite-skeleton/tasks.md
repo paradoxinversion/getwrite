@@ -2,7 +2,7 @@
 
 Phase 1: Setup
 
-- [ ] T001 [P] Initialize Next.js + TypeScript app in `frontend/` using Next.js 16.1.6 and TypeScript 5.9.3 (`frontend/`)
+- [x] T001 [P] Initialize Next.js + TypeScript app in `frontend/` using Next.js 16.1.6 and TypeScript 5.9.3 (`frontend/`)
 - [ ] T002 [P] Add TailwindCSS 4.1 and create `frontend/styles/tailwind.config.js` and base styles (`frontend/styles/tailwind.config.js`)
 - [ ] T003 [P] Install TinyMCE and add a placeholder editor wrapper component at `frontend/components/TinyMCEEditor.tsx` (`frontend/components/TinyMCEEditor.tsx`)
 - [ ] T004 [P] Install Storybook and create initial Storybook config; add `stories/` and `storybook/main.js` (`stories/`, `.storybook/`)
