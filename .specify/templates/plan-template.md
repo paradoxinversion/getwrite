@@ -27,9 +27,24 @@
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
+## Deployment Checklist (web apps)
+
+Use this checklist for any feature that will be deployed as part of a hosted/web rollout. For
+MVP work that remains single-user/local, many of these items are OPTIONAL; include them when
+moving beyond MVP.
+
+- Target environments: list required environments (e.g., `dev`, `staging`, `prod`) and their
+  purpose.
+- Migration plan: outline DB/schema changes, data migration steps, and rollback strategy.
+- Feature flag strategy: how to progressively enable/disable feature in production.
+- Infra changes: list required infra (load balancers, caches, CDNs) and update steps.
+- Smoke tests: automated smoke checks that verify basic runtime behavior post-deploy.
+- Rollback plan: explicit steps and criteria to roll back a release.
+- Monitoring & Alerts: key health checks and alerting thresholds to add for this feature.
+
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 [Gates determined based on constitution file]
 
@@ -48,6 +63,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
   for this feature. Delete unused options and expand the chosen structure with
@@ -98,7 +114,7 @@ directories captured above]
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
