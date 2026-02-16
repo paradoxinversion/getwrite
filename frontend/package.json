@@ -13,13 +13,14 @@
     },
     "dependencies": {
         "next": "16.1.6",
-        "react": "18.2.0",
-        "react-dom": "18.2.0"
+        "react": "19.2.4",
+        "react-dom": "19.2.4"
     },
     "devDependencies": {
+        "@types/node": "25.2.3",
+        "@types/react": "19.2.14",
         "typescript": "5.9.3",
-        "@types/react": "18.2.21",
-        "@types/node": "20.5.1",
-        "vitest": "1.0.0"
-    }
+        "vitest": "4.0.18"
+    },
+    "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }
