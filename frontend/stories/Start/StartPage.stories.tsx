@@ -1,6 +1,8 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import StartPage from "../../../frontend/components/Start/StartPage";
+import StartPage, {
+    StartPageProps,
+} from "../../../frontend/components/Start/StartPage";
 import { sampleProjects } from "../../../frontend/lib/placeholders";
 
 const meta: Meta<typeof StartPage> = {
@@ -18,5 +20,5 @@ export const Default: Story = {
         onCreate: (name: string) => console.log("create", name),
         onOpen: (id: string) => console.log("open", id),
     },
-    render: (args) => <StartPage {...args} />,
+    render: (args: StartPageProps) => <StartPage {...args} />,
 };

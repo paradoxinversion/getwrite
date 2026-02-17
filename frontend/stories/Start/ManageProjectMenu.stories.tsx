@@ -1,6 +1,8 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import ManageProjectMenu from "../../../frontend/components/Start/ManageProjectMenu";
+import ManageProjectMenu, {
+    ManageProjectMenuProps,
+} from "../../../frontend/components/Start/ManageProjectMenu";
 
 const meta: Meta<typeof ManageProjectMenu> = {
     title: "Start/ManageProjectMenu",
@@ -15,9 +17,9 @@ export const Default: Story = {
     args: {
         projectId: "proj_1",
         projectName: "Sample Project",
-        onRename: (id, name) => console.log("rename", id, name),
-        onDelete: (id) => console.log("delete", id),
-        onPackage: (id) => console.log("package", id),
+        onRename: (id: string, name: string) => console.log("rename", id, name),
+        onDelete: (id: string) => console.log("delete", id),
+        onPackage: (id: string) => console.log("package", id),
     },
-    render: (args) => <ManageProjectMenu {...args} />,
+    render: (args: ManageProjectMenuProps) => <ManageProjectMenu {...args} />,
 };

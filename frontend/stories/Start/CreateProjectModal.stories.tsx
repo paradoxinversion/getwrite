@@ -1,6 +1,9 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import CreateProjectModal from "../../../frontend/components/Start/CreateProjectModal";
+import CreateProjectModal, {
+    CreateProjectModalProps,
+    CreateProjectPayload,
+} from "../../../frontend/components/Start/CreateProjectModal";
 
 const meta: Meta<typeof CreateProjectModal> = {
     title: "Start/CreateProjectModal",
@@ -17,7 +20,8 @@ export const Open: Story = {
         defaultName: "My Project",
         defaultType: "novel",
         onClose: () => console.log("close"),
-        onCreate: (payload) => console.log("create", payload),
+        onCreate: (payload: CreateProjectPayload) =>
+            console.log("create", payload),
     },
-    render: (args) => <CreateProjectModal {...args} />,
+    render: (args: CreateProjectModalProps) => <CreateProjectModal {...args} />,
 };
