@@ -1,0 +1,133 @@
+import React, { useEffect, useRef, useState } from "react";
+import type { ResourceType } from "../../lib/types";
+
+export interface CreateProjectPayload {
+    name: string;
+    projectType: "novel" | "short" | "collection";
+}
+
+export interface CreateProjectModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onCreate: (payload: CreateProjectPayload) => void;
+    defaultName?: string;
+    defaultType?: CreateProjectPayload["projectType"];
+}
+
+export default function CreateProjectModal({
+    isOpen,
+    onClose,
+    onCreate,
+    defaultName = "",
+    defaultType = "novel",
+}: CreateProjectModalProps): JSX.Element | null {
+    const [name, setName] = useState<string>(defaultName);
+    const [projectType, setProjectType] =
+        useState<CreateProjectPayload["projectType"]>(defaultType);
+    const [error, setError] = useState<string | null>(null);
+    const nameRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName(defaultName);
+            setProjectType(defaultType);
+            setError(null);
+            // focus the name input when opening
+            setTimeout(() => nameRef.current?.focus(), 50);
+        }
+    }, [isOpen, defaultName, defaultType]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!name.trim()) {
+            setError("Please enter a project name.");
+            nameRef.current?.focus();
+            return;
+        }
+
+        const payload: CreateProjectPayload = {
+            name: name.trim(),
+            projectType,
+        };
+        onCreate(payload);
+        onClose();
+    };
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-project-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+            <div
+                className="fixed inset-0 bg-black/40"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
+            <form
+                onSubmit={handleSubmit}
+                className="relative bg-white rounded-lg shadow-lg w-full max-w-md z-10 p-6"
+                onKeyDown={(ev) => {
+                    if (ev.key === "Escape") onClose();
+                }}
+            >
+                <h2 id="create-project-title" className="text-lg font-medium">
+                    Create Project
+                </h2>
+
+                <label className="block mt-4">
+                    <div className="text-sm text-slate-700">Name</div>
+                    <input
+                        ref={nameRef}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="mt-1 block w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                        aria-required
+                    />
+                </label>
+
+                <label className="block mt-4">
+                    <div className="text-sm text-slate-700">Project Type</div>
+                    <select
+                        value={projectType}
+                        onChange={(e) =>
+                            setProjectType(
+                                e.target
+                                    .value as CreateProjectPayload["projectType"],
+                            )
+                        }
+                        className="mt-1 block w-full border rounded px-3 py-2"
+                    >
+                        <option value="novel">Novel</option>
+                        <option value="short">Short Story</option>
+                        <option value="collection">Collection</option>
+                    </select>
+                </label>
+
+                {error ? (
+                    <div className="text-sm text-red-600 mt-3">{error}</div>
+                ) : null}
+
+                <div className="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-3 py-1 rounded border"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="px-3 py-1 rounded bg-brand-500 text-white"
+                    >
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
