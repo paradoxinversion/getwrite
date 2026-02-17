@@ -28,7 +28,7 @@ Phase 4: [US2] Resource Tree & Navigation (Priority: P1)
 
 - [x] T016 [US2] Implement `ResourceTree` component (expand/collapse, selection) at `frontend/components/Tree/ResourceTree.tsx` (`frontend/components/Tree/ResourceTree.tsx`)
 - [x] T017 [US2] Implement drag-and-drop placeholder reorder UI (visual only) at `frontend/components/Tree/ResourceDragLayer.tsx` or integrate DnD within `ResourceTree.tsx` (`frontend/components/Tree/`)
-- [ ] T018 [US2] Implement right-click context menu UI on resources (Create/Copy/Duplicate/Delete/Export) at `frontend/components/Tree/ResourceContextMenu.tsx` (`frontend/components/Tree/ResourceContextMenu.tsx`)
+- [x] T018 [US2] Implement right-click context menu UI on resources (Create/Copy/Duplicate/Delete/Export) at `frontend/components/Tree/ResourceContextMenu.tsx` (`frontend/components/Tree/ResourceContextMenu.tsx`)
 - [ ] T019 [US2] Add Storybook stories and component tests for ResourceTree and context menu at `stories/Tree/*.stories.tsx` and `frontend/tests/tree.test.tsx` (`stories/Tree/`, `frontend/tests/tree.test.tsx`)
 
 Phase 5: [US3] Work Area Views (Priority: P1)
