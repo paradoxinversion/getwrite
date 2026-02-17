@@ -8,7 +8,8 @@
         "start": "next start",
         "typecheck": "tsc --noEmit",
         "lint": "next lint",
-        "storybook": "storybook",
+        "storybook": "storybook dev -p 6006",
+        "build-storybook": "storybook build",
         "test": "vitest"
     },
     "dependencies": {
@@ -19,11 +20,14 @@
         "tinymce": "8.3.2"
     },
     "devDependencies": {
+        "@storybook/addon-a11y": "^10.2.8",
+        "@storybook/nextjs-vite": "^10.2.8",
         "@tailwindcss/postcss": "^4.1.18",
         "@types/node": "25.2.3",
         "@types/react": "19.2.14",
         "autoprefixer": "10.4.14",
         "postcss": "8.5.6",
+        "storybook": "^10.2.8",
         "tailwindcss": "4.1.0",
         "typescript": "5.9.3",
         "vitest": "4.0.18"
