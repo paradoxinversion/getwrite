@@ -20,9 +20,8 @@ Phase 2: Foundational (blocking prerequisites)
 Phase 3: [US1] Start & Project Management (Priority: P1)
 
 - [x] T012 [US1] Implement `StartPage` UI shell and project list view at `frontend/components/Start/StartPage.tsx` using placeholder projects (`frontend/components/Start/StartPage.tsx`)
-- [ ] T013 [US1] Implement `CreateProjectModal` UI with name/type inputs and submit callback (placeholder) at `frontend/components/Start/CreateProjectModal.tsx` (`frontend/components/Start/CreateProjectModal.tsx`)
 - [x] T013 [US1] Implement `CreateProjectModal` UI with name/type inputs and submit callback (placeholder) at `frontend/components/Start/CreateProjectModal.tsx` (`frontend/components/Start/CreateProjectModal.tsx`)
-- [ ] T014 [US1] Implement `ManageProjectMenu` with Rename/Delete/Package actions and confirmation modal at `frontend/components/Start/ManageProjectMenu.tsx` (`frontend/components/Start/ManageProjectMenu.tsx`)
+- [x] T014 [US1] Implement `ManageProjectMenu` with Rename/Delete/Package actions and confirmation modal at `frontend/components/Start/ManageProjectMenu.tsx` (`frontend/components/Start/ManageProjectMenu.tsx`)
 - [ ] T015 [US1] Add Storybook stories and tests for StartPage and modals at `stories/Start/*.stories.tsx` and `frontend/tests/start.test.tsx` (`stories/Start/`, `frontend/tests/start.test.tsx`)
 
 Phase 4: [US2] Resource Tree & Navigation (Priority: P1)
