@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 html,
 body,
@@ -20,3 +18,5 @@ body {
         "Helvetica Neue",
         Arial;
 }
+
+/* Tailwind base layer is used; tokens and custom utilities will be added to `styles/` when T007 runs */
