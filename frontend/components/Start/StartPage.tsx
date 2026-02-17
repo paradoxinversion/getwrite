@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Project } from "../../lib/types";
-import { sampleProjects } from "../../lib/placeholders";
+import { sampleProjects, createProject } from "../../lib/placeholders";
+import CreateProjectModal, {
+    type CreateProjectPayload,
+} from "./CreateProjectModal";
 
 export interface StartPageProps {
     projects?: Project[];
@@ -13,25 +16,39 @@ export default function StartPage({
     onCreate,
     onOpen,
 }: StartPageProps): JSX.Element {
-    const handleCreate = (): void => {
-        if (onCreate) onCreate("New Project");
-        // placeholder behaviour: could open a modal in future
-    };
+    const [localProjects, setLocalProjects] = useState<Project[]>(projects);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
     const handleOpen = (id: string): void => {
         if (onOpen) onOpen(id);
-        // placeholder: no routing implemented in this milestone
+    };
+
+    const handleModalCreate = (payload: CreateProjectPayload): void => {
+        const newProject: Project = createProject(payload.name);
+        setLocalProjects((prev) => [newProject, ...prev]);
+        if (onCreate) onCreate(payload.name);
+        setIsModalOpen(false);
+    };
+
+    const handleCreateClick = (): void => {
+        setIsModalOpen(true);
     };
 
     return (
         <section aria-labelledby="start-projects" className="p-6">
+            <CreateProjectModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onCreate={handleModalCreate}
+            />
+
             <div className="flex items-center justify-between">
                 <h1 id="start-projects" className="text-2xl font-semibold">
                     Projects
                 </h1>
                 <button
                     type="button"
-                    onClick={handleCreate}
+                    onClick={handleCreateClick}
                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500 text-white rounded hover:opacity-95"
                 >
                     New Project
@@ -39,7 +56,7 @@ export default function StartPage({
             </div>
 
             <div className="mt-6 grid gap-4">
-                {projects.map((p) => (
+                {localProjects.map((p) => (
                     <article
                         key={p.id}
                         className="rounded bg-white p-4 shadow-card border flex items-start justify-between"
