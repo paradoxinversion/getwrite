@@ -1,17 +1,8 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-
-const AppShell: React.FC = () => (
-    <div className="h-[600px] flex bg-slate-50 border rounded">
-        <aside className="w-64 bg-white p-4 border-r">
-            Resource Tree (placeholder)
-        </aside>
-        <main className="flex-1 p-6">Work Area (placeholder)</main>
-        <aside className="w-80 bg-white p-4 border-l">
-            Metadata Sidebar (placeholder)
-        </aside>
-    </div>
-);
+import AppShell from "../components/Layout/AppShell";
+import { sampleProjects } from "../lib/placeholders";
+import type { Project } from "../lib/types";
 
 const meta: Meta<typeof AppShell> = {
     title: "AppShell",
@@ -20,4 +11,31 @@ const meta: Meta<typeof AppShell> = {
 
 export default meta;
 
-export const Default: StoryObj<typeof AppShell> = {};
+type Story = StoryObj<typeof AppShell>;
+
+export const Default: Story = {
+    render: () => {
+        const projects: Project[] = sampleProjects(3);
+
+        return (
+            <AppShell>
+                <div>
+                    <h2 className="text-xl font-semibold">Projects</h2>
+                    <div className="mt-4 space-y-3">
+                        {projects.map((p) => (
+                            <div
+                                key={p.id}
+                                className="border rounded p-3 bg-slate-50"
+                            >
+                                <div className="font-medium">{p.name}</div>
+                                <div className="text-xs text-slate-600 mt-1">
+                                    {p.description}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </AppShell>
+        );
+    },
+};

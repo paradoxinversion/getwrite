@@ -14,7 +14,7 @@ Phase 2: Foundational (blocking prerequisites)
 - [x] T007 [P] Add Tailwind design tokens and base theme file `frontend/styles/tokens.css` (`frontend/styles/tokens.css`)
 - [x] T008 [P] Add global layout and app shell including left Resource Tree area, Work Area, and right Metadata sidebar shell at `frontend/components/Layout/AppShell.tsx` (`frontend/components/Layout/AppShell.tsx`)
 - [x] T009 Create placeholder data generator and types at `frontend/lib/placeholders.ts` and `frontend/lib/types.ts` (`frontend/lib/placeholders.ts`, `frontend/lib/types.ts`)
-- [ ] T010 [P] Create Storybook entrypoint stories for AppShell at `stories/AppShell.stories.tsx` (`stories/AppShell.stories.tsx`)
+- [x] T010 [P] Create Storybook entrypoint stories for AppShell at `stories/AppShell.stories.tsx` (`stories/AppShell.stories.tsx`)
 - [ ] T011 [P] Add Tailwind utilities and global CSS import in `frontend/app/layout.tsx` or `frontend/pages/_app.tsx` depending on Next structure (`frontend/app/layout.tsx`)
 
 Phase 3: [US1] Start & Project Management (Priority: P1)
