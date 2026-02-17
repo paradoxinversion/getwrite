@@ -34,6 +34,7 @@ Phase 4: [US2] Resource Tree & Navigation (Priority: P1)
 Phase 5: [US3] Work Area Views (Priority: P1)
 
 - [ ] T020 [US3] Implement view switcher control that toggles Edit/Organizer/Data/Diff/Timeline at `frontend/components/WorkArea/ViewSwitcher.tsx` (`frontend/components/WorkArea/ViewSwitcher.tsx`)
+- [x] T020 [US3] Implement view switcher control that toggles Edit/Organizer/Data/Diff/Timeline at `frontend/components/WorkArea/ViewSwitcher.tsx` (`frontend/components/WorkArea/ViewSwitcher.tsx`)
 - [ ] T021 [US3] Implement `EditView` with TinyMCE placeholder content and footer stats UI at `frontend/components/WorkArea/EditView.tsx` (`frontend/components/WorkArea/EditView.tsx`)
 - [ ] T022 [US3] Implement `OrganizerView` rendering resource cards and body toggle at `frontend/components/WorkArea/OrganizerView.tsx` (`frontend/components/WorkArea/OrganizerView.tsx`)
 - [ ] T023 [US3] Implement `DataView` showing Overall Stats and Resources lists at `frontend/components/WorkArea/DataView.tsx` (`frontend/components/WorkArea/DataView.tsx`)
