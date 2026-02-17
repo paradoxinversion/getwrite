@@ -1,6 +1,6 @@
 # Quickstart — UI dev environment (UI-only)
 
-This quickstart bootstraps the UI developer environment for the `001-ui-getwrite-skeleton` feature. It assumes Node.js >=18 and npm or pnpm installed.
+This quickstart bootstraps the UI developer environment for the `001-ui-getwrite-skeleton` feature. It assumes Node.js >=18 and `pnpm` (recommended) or `npm` installed.
 
 Stack (decided during planning):
 
@@ -10,30 +10,30 @@ Stack (decided during planning):
 - TinyMCE editor (integrated as a component)
 - Testing: Testing Library + Vitest
 
-Recommended local steps (example using npm):
+Recommended local steps (using `pnpm`):
 
 1. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
-2. Start the dev server:
+2. Start the Next.js dev server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 3. Start Storybook for component development:
 
 ```bash
-npm run storybook
+pnpm storybook
 ```
 
 4. Run unit + component tests (Vitest + Testing Library):
 
 ```bash
-npm run test
+pnpm test -- --run
 ```
 
 Notes:

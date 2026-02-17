@@ -7,7 +7,7 @@ Phase 1: Setup
 - [x] T003 [P] Install TinyMCE and add a placeholder editor wrapper component at `frontend/components/TinyMCEEditor.tsx` (`frontend/components/TinyMCEEditor.tsx`)
 - [x] T004 [P] Install Storybook and create initial Storybook config; add `stories/` and `storybook/main.js` (`stories/`, `.storybook/`)
 - [x] T005 [P] Install Testing Library + Vitest and add basic test setup at `frontend/tests/setup.ts` (`frontend/tests/setup.ts`)
-- [ ] T006 Create project-level README and developer quickstart at `specs/001-ui-getwrite-skeleton/quickstart.md` (`specs/001-ui-getwrite-skeleton/quickstart.md`)
+- [x] T006 Create project-level README and developer quickstart at `specs/001-ui-getwrite-skeleton/quickstart.md` (`specs/001-ui-getwrite-skeleton/quickstart.md`)
 
 Phase 2: Foundational (blocking prerequisites)
 
