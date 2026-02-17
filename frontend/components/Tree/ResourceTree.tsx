@@ -10,6 +10,7 @@ export interface ResourceTreeProps {
     onReorder?: (ids: string[]) => void;
 }
 
+/** Internal tree node used to build parent/child relationships for rendering. */
 type TreeNode = {
     resource: Resource;
     children: TreeNode[];
@@ -78,6 +79,21 @@ function ChevronDown({ className = "w-3 h-3" }: { className?: string }) {
     );
 }
 
+/**
+ * Render a minimal resource tree with:
+ * - hierarchical grouping by `parentId`
+ * - deterministic ordering (alphabetical or `localOrder` when reorderable)
+ * - expand/collapse behavior stored in local state
+ * - selection via `onSelect(id)`
+ *
+ * Important: this component is UI-only and does not mutate external data. When
+ * `reorderable` is true it maintains a `localOrder` array and calls `onReorder`
+ * with the new id order (visual-only; caller should persist if needed).
+ *
+ * Accessibility notes:
+ * - `role="tree"`/`role="group"` used; expand toggles have `aria-label` (Expand/Collapse).
+ * - Keyboard navigation is currently minimal; add arrow-key support in T030.
+ */
 export default function ResourceTree({
     resources,
     selectedId,
@@ -121,28 +137,38 @@ export default function ResourceTree({
 
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+    /** Toggle expanded state for a node id (local UI state). */
     const toggle = (id: string) => {
         setExpanded((s) => ({ ...s, [id]: !s[id] }));
     };
 
     // Drag state
+    // Drag state: stores the id of the currently dragged node.
     const dragIdRef = React.useRef<string | null>(null);
 
+    /**
+     * Set drag source id and configure DataTransfer. May noop in jsdom.
+     */
     const handleDragStart = (e: React.DragEvent, id: string) => {
         dragIdRef.current = id;
         e.dataTransfer.effectAllowed = "move";
         try {
             e.dataTransfer.setData("text/plain", id);
         } catch (_err) {
-            // ignore in environments that don't support it
+            // ignore in environments that don't support it (tests)
         }
     };
 
+    /** Prevent default to allow drop; sets dropEffect to 'move'. */
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
     };
 
+    /**
+     * Compute new `localOrder` by moving source id to target position,
+     * updates local state and invokes `onReorder`. Ignores invalid moves.
+     */
     const handleDrop = (e: React.DragEvent, targetId: string) => {
         e.preventDefault();
         const sourceId =
@@ -159,6 +185,7 @@ export default function ResourceTree({
         dragIdRef.current = null;
     };
 
+    /** Render a single TreeNode recursively. `depth` controls left padding. */
     const renderNode = (node: TreeNode, depth = 0) => {
         const hasChildren = node.children.length > 0;
         const isExpanded = !!expanded[node.resource.id];

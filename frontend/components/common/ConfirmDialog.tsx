@@ -10,6 +10,9 @@ export interface ConfirmDialogProps {
     onCancel: () => void;
 }
 
+/**
+ * Generic confirm dialog props; `onConfirm` and `onCancel` are required.
+ */
 export default function ConfirmDialog({
     isOpen,
     title,

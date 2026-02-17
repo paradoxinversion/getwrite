@@ -11,6 +11,7 @@ export interface StartPageProps {
     onOpen?: (projectId: string) => void;
 }
 
+/** Optional `projects` prop for server-driven lists; callbacks `onCreate` and `onOpen` used by parent wiring. */
 export default function StartPage({
     projects = sampleProjects(3),
     onCreate,

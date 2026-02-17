@@ -14,6 +14,14 @@ export interface CreateProjectModalProps {
     defaultType?: CreateProjectPayload["projectType"];
 }
 
+/**
+ * Controlled modal that:
+ * - validates non-empty name,
+ * - focuses the name input on open,
+ * - emits `onCreate(payload)` and closes on success.
+ *
+ * Note: uses `setTimeout` to focus reliably; replace with a focus-trap for T030 if needed.
+ */
 export default function CreateProjectModal({
     isOpen,
     onClose,

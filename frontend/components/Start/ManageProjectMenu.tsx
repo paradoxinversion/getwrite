@@ -9,6 +9,9 @@ export interface ManageProjectMenuProps {
     onPackage?: (projectId: string) => void;
 }
 
+/**
+ * Callbacks: `onRename`, `onDelete`, and `onPackage`. These are UI signals; actual effects are the caller's responsibility.
+ */
 export default function ManageProjectMenu({
     projectId,
     projectName = "",
@@ -61,6 +64,9 @@ export default function ManageProjectMenu({
         setConfirmPackageOpen(false);
         setOpen(false);
     };
+
+    // Implementation notes: `menuRef` ensures outside-click detection. Rename only
+    // fires `onRename` when value is non-empty.
 
     return (
         <div className="relative inline-block" ref={menuRef}>

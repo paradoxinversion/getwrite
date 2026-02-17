@@ -1,15 +1,22 @@
 import type { Project, Resource, ResourceType, Metadata } from "./types";
 
+/** Create a short, random id with an optional prefix for placeholder data. */
 function genId(prefix = "id"): string {
     return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Return the current time as an ISO string for createdAt/updatedAt fields. */
 function nowIso(): string {
     return new Date().toISOString();
 }
 
 /**
- * Create a placeholder Resource with sensible defaults.
+ * Create a placeholder `Resource` object for UI development.
+ * @param title Human readable title shown in lists.
+ * @param type ResourceType controlling icon/behavior.
+ * @param projectId Optional project id — generated if omitted.
+ * @param parentId Optional parent resource id for nested trees.
+ * @returns A fully-formed `Resource` suitable for rendering in the tree and work area.
  */
 export function createResource(
     title: string,
@@ -44,7 +51,10 @@ export function createResource(
 }
 
 /**
- * Create a lightweight placeholder Project with a few resources.
+ * Create a lightweight placeholder `Project` containing a few sample `Resource`s.
+ * Used to populate lists in StartPage and Storybook.
+ * @param name Friendly name for the project.
+ * @returns `Project` with createdAt/updatedAt and `resources` array.
  */
 export function createProject(name = "Untitled Project"): Project {
     const id = genId("proj");
@@ -67,7 +77,8 @@ export function createProject(name = "Untitled Project"): Project {
 }
 
 /**
- * Return a list of sample projects for populating mock lists.
+ * Produce an array of placeholder `Project`s for list views.
+ * @param count Number of sample projects to produce.
  */
 export function sampleProjects(count = 2): Project[] {
     const out: Project[] = [];
@@ -78,7 +89,8 @@ export function sampleProjects(count = 2): Project[] {
 }
 
 /**
- * Find a project by id from an array of projects.
+ * Utility to locate a project by id from an in-memory array.
+ * Returns `undefined` when not found; UI callers should handle that case.
  */
 export function findProjectById(
     projects: Project[],

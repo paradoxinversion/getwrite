@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 
+/** Allowed context menu actions exposed to callers; UI-only signals. */
 export type ResourceContextAction =
     | "create"
     | "copy"
@@ -7,6 +8,10 @@ export type ResourceContextAction =
     | "delete"
     | "export";
 
+/**
+ * Props controlling visibility, position (`x`,`y`), and callbacks.
+ * `onAction` is invoked with the selected `ResourceContextAction`.
+ */
 export interface ResourceContextMenuProps {
     open: boolean;
     x?: number;
@@ -18,6 +23,14 @@ export interface ResourceContextMenuProps {
     className?: string;
 }
 
+/**
+ * Positionable context menu for a resource with five placeholder actions.
+ * - Renders at fixed `left: x, top: y` when `open` is true.
+ * - Adds a document `mousedown` listener to close on outside click (cleaned up on unmount).
+ * - Calls `onAction(action, resourceId)` then `onClose`.
+ *
+ * Accessibility notes: `role="menu"` and `role="menuitem"` are used; callers should ensure keyboard focus is managed (future T030).
+ */
 export default function ResourceContextMenu({
     open,
     x = 0,

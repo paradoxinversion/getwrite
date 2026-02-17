@@ -1,5 +1,13 @@
 import React from "react";
 
+/**
+ * Simple three-column shell used in the app and Storybook:
+ * - Left: Projects/Resource tree placeholder
+ * - Center: Work area for views and editor
+ * - Right: Metadata sidebar placeholder
+ *
+ * Designed for visual layout only; integrate `ResourceTree` and `MetadataSidebar` in later tasks.
+ */
 export default function AppShell({ children }: { children?: React.ReactNode }) {
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">

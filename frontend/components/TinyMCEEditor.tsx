@@ -9,6 +9,14 @@ export interface TinyMCEEditorProps {
     readonly?: boolean;
 }
 
+/**
+ * Thin wrapper around TinyMCE for placeholder editing in the UI.
+ * - forwards `value` and calls `onChange(content)` on editor changes
+ * - configures a small plugin/toolset suitable for placeholder editing
+ * - disables branding and uses autoresize plugin
+ *
+ * Note: `apiKey` is forwarded to TinyMCE if provided.
+ */
 export default function TinyMCEEditor({
     value = "",
     onChange,

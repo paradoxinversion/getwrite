@@ -1,6 +1,7 @@
 import React from "react";
 import AppShell from "../components/Layout/AppShell";
 
+/** App entry page rendering `AppShell` with a small placeholder intro used by Next dev server. */
 export default function Home() {
     return (
         <AppShell>
