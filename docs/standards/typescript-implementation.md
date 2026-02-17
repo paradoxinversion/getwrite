@@ -88,4 +88,9 @@ If a type cannot be expressed cleanly, ask for clarification.
 
 ---
 
+## 9. Code Document Discipline
+
+- Include thorough function comments
+- Include thorough variable comments
+
 End of TypeScript Implementation Standard.

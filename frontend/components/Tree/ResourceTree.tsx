@@ -86,6 +86,14 @@ export default function ResourceTree({
     reorderable = false,
     onReorder,
 }: ResourceTreeProps) {
+    const [localOrder, setLocalOrder] = useState<string[]>(() =>
+        resources.map((r) => r.id),
+    );
+
+    React.useEffect(() => {
+        setLocalOrder(resources.map((r) => r.id));
+    }, [resources]);
+
     const nodes = useMemo(() => {
         const map = new Map<string, TreeNode>();
         resources.forEach((r) => map.set(r.id, { resource: r, children: [] }));
@@ -110,14 +118,6 @@ export default function ResourceTree({
         sortRec(roots);
         return roots;
     }, [resources, localOrder, reorderable]);
-
-    const [localOrder, setLocalOrder] = useState<string[]>(() =>
-        resources.map((r) => r.id),
-    );
-
-    React.useEffect(() => {
-        setLocalOrder(resources.map((r) => r.id));
-    }, [resources]);
 
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
