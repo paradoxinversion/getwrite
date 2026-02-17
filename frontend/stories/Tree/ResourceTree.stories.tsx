@@ -26,3 +26,11 @@ export const Default: Story = {
         onSelect: (id: string) => console.log("selected", id),
     },
 };
+
+export const Reorderable: Story = {
+    args: {
+        resources,
+        reorderable: true,
+        onReorder: (ids: string[]) => console.log("reordered", ids),
+    },
+};
