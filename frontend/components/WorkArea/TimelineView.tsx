@@ -27,7 +27,6 @@ function groupByDate(resources: Resource[]) {
 
 export default function TimelineView({
     project,
-    projects,
     className = "",
 }: TimelineViewProps) {
     const effectiveProject = React.useMemo(
