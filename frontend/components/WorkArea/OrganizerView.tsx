@@ -1,5 +1,6 @@
 import React from "react";
 import type { Resource } from "../../lib/types";
+import OrganizerCard from "./OrganizerCard";
 
 export interface OrganizerViewProps {
     /** Resources to display as cards */
@@ -48,39 +49,11 @@ export default function OrganizerView({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {resources.map((r) => (
-                    <article
+                    <OrganizerCard
                         key={r.id}
-                        className="border rounded-md p-4 bg-white shadow-sm"
-                        aria-labelledby={`res-${r.id}-title`}
-                    >
-                        <header className="flex items-center justify-between mb-2">
-                            <div>
-                                <h3
-                                    id={`res-${r.id}-title`}
-                                    className="text-sm font-medium"
-                                >
-                                    {r.title}
-                                </h3>
-                                <div className="text-xs text-slate-500">
-                                    {r.type}
-                                </div>
-                            </div>
-                            <div className="text-xs text-slate-600">
-                                {new Date(r.updatedAt).toLocaleDateString()}
-                            </div>
-                        </header>
-
-                        {showBody && (
-                            <div className="text-sm text-slate-700 mb-3">
-                                {r.content}
-                            </div>
-                        )}
-
-                        <footer className="text-xs text-slate-500 flex items-center justify-between">
-                            <div>Words: {r.metadata?.wordCount ?? 0}</div>
-                            <div>Status: {r.metadata?.status ?? "unknown"}</div>
-                        </footer>
-                    </article>
+                        resource={r}
+                        showBody={showBody}
+                    />
                 ))}
             </div>
         </div>
