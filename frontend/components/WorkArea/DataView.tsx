@@ -3,9 +3,11 @@ import type { Project, Resource } from "../../lib/types";
 import { createProject } from "../../lib/placeholders";
 
 export interface DataViewProps {
-    /** The single project to display statistics for */
+    /** Optional list of projects to show aggregate statistics for */
+    projects?: Project[];
+    /** The single project to display statistics for (used when `projects` is not provided) */
     project?: Project;
-    /** Optional override flat list of resources to render (uses project.resources by default) */
+    /** Optional override flat list of resources to render (uses project(s).resources by default) */
     resources?: Resource[];
     className?: string;
 }
@@ -24,16 +26,21 @@ export default function DataView({
         () => project ?? createProject("Sample Project"),
         [project],
     );
-    const flatResources = React.useMemo(
-        () => resources ?? effectiveProject.resources,
-        [resources, effectiveProject],
-    );
+
+    const flatResources = React.useMemo(() => {
+        if (resources) return resources;
+        if (projects && projects.length > 0)
+            return projects.flatMap((p) => p.resources);
+        return effectiveProject.resources;
+    }, [resources, projects, effectiveProject]);
 
     const totalResources = flatResources.length;
     const totalWords = flatResources.reduce(
         (acc, r) => acc + (r.metadata?.wordCount ?? 0),
         0,
     );
+
+    const projectsCount = projects ? projects.length : project ? 1 : 1;
 
     return (
         <div className={`p-4 ${className}`}>
@@ -42,6 +49,10 @@ export default function DataView({
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="p-3 bg-white rounded-md border text-sm">
+                    <div className="text-slate-500">Projects</div>
+                    <div className="text-xl font-medium">{projectsCount}</div>
+                </div>
                 <div className="p-3 bg-white rounded-md border text-sm">
                     <div className="text-slate-500">Resources</div>
                     <div className="text-xl font-medium">{totalResources}</div>
