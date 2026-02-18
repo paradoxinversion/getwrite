@@ -42,6 +42,38 @@ export default function CreateProjectModal({
             setError(null);
             // focus the name input when opening
             setTimeout(() => nameRef.current?.focus(), 50);
+            // basic focus trap: keep focus inside the form while modal is open
+            const handleKeyDown = (ev: KeyboardEvent) => {
+                if (ev.key === "Escape") {
+                    onClose();
+                    return;
+                }
+                if (ev.key === "Tab") {
+                    const root = nameRef.current?.closest("form");
+                    if (!root) return;
+                    const focusable = Array.from(
+                        root.querySelectorAll<HTMLElement>(
+                            "a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex='-1'])",
+                        ),
+                    ).filter(Boolean);
+                    if (focusable.length === 0) return;
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (ev.shiftKey) {
+                        if (document.activeElement === first) {
+                            last.focus();
+                            ev.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === last) {
+                            first.focus();
+                            ev.preventDefault();
+                        }
+                    }
+                }
+            };
+            document.addEventListener("keydown", handleKeyDown);
+            return () => document.removeEventListener("keydown", handleKeyDown);
         }
     }, [isOpen, defaultName, defaultType]);
 

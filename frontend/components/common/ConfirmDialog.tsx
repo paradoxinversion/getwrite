@@ -28,6 +28,37 @@ export default function ConfirmDialog({
         if (isOpen) {
             // focus confirm button for quick keyboard action
             setTimeout(() => confirmRef.current?.focus(), 50);
+            const handleKeyDown = (ev: KeyboardEvent) => {
+                if (ev.key === "Escape") {
+                    onCancel();
+                    return;
+                }
+                if (ev.key === "Tab") {
+                    const root = confirmRef.current?.closest('[role="dialog"]');
+                    if (!root) return;
+                    const focusable = Array.from(
+                        root.querySelectorAll<HTMLElement>(
+                            "a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex='-1'])",
+                        ),
+                    ).filter(Boolean);
+                    if (focusable.length === 0) return;
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (ev.shiftKey) {
+                        if (document.activeElement === first) {
+                            last.focus();
+                            ev.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === last) {
+                            first.focus();
+                            ev.preventDefault();
+                        }
+                    }
+                }
+            };
+            document.addEventListener("keydown", handleKeyDown);
+            return () => document.removeEventListener("keydown", handleKeyDown);
         }
     }, [isOpen]);
 

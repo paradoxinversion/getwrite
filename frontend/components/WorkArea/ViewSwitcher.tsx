@@ -49,7 +49,55 @@ export default function ViewSwitcher({
                         role="tab"
                         aria-selected={active}
                         aria-pressed={active}
+                        data-view={opt.key}
                         onClick={() => onChange(opt.key)}
+                        onKeyDown={(e) => {
+                            const container =
+                                (e.currentTarget
+                                    .parentElement as HTMLElement) || null;
+                            const tabs = container
+                                ? (Array.from(
+                                      container.querySelectorAll(
+                                          '[role="tab"]',
+                                      ),
+                                  ) as HTMLElement[])
+                                : [];
+                            const idx = tabs.indexOf(
+                                e.currentTarget as HTMLElement,
+                            );
+                            if (e.key === "ArrowRight") {
+                                const next = tabs[(idx + 1) % tabs.length];
+                                next?.focus();
+                                onChange(
+                                    (next?.dataset.view as ViewName) ?? view,
+                                );
+                                e.preventDefault();
+                            } else if (e.key === "ArrowLeft") {
+                                const prev =
+                                    tabs[(idx - 1 + tabs.length) % tabs.length];
+                                prev?.focus();
+                                onChange(
+                                    (prev?.dataset.view as ViewName) ?? view,
+                                );
+                                e.preventDefault();
+                            } else if (e.key === "Home") {
+                                tabs[0]?.focus();
+                                onChange(
+                                    (tabs[0]?.dataset.view as ViewName) ?? view,
+                                );
+                                e.preventDefault();
+                            } else if (e.key === "End") {
+                                tabs[tabs.length - 1]?.focus();
+                                onChange(
+                                    (tabs[tabs.length - 1]?.dataset
+                                        .view as ViewName) ?? view,
+                                );
+                                e.preventDefault();
+                            } else if (e.key === "Enter" || e.key === " ") {
+                                onChange(opt.key);
+                                e.preventDefault();
+                            }
+                        }}
                         className={`px-3 py-1 rounded-md text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400
               ${active ? "bg-indigo-600 text-white border-indigo-700" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
                     >

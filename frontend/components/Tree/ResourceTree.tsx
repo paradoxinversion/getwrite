@@ -229,18 +229,65 @@ export default function ResourceTree({
                     )}
                     <button
                         type="button"
+                        role="treeitem"
+                        aria-expanded={hasChildren ? isExpanded : undefined}
                         aria-label={
                             hasChildren
                                 ? isExpanded
                                     ? "Collapse"
                                     : "Expand"
-                                : ""
+                                : undefined
                         }
+                        tabIndex={isSelected ? 0 : -1}
                         onClick={() =>
                             hasChildren
                                 ? toggle(node.resource.id)
                                 : onSelect?.(node.resource.id)
                         }
+                        onKeyDown={(e) => {
+                            const nav = e.currentTarget.closest("nav");
+                            const items = nav
+                                ? (Array.from(
+                                      nav.querySelectorAll('[role="treeitem"]'),
+                                  ) as HTMLElement[])
+                                : [];
+                            const idx = items.indexOf(
+                                e.currentTarget as HTMLElement,
+                            );
+                            if (e.key === "ArrowDown") {
+                                const next =
+                                    items[idx + 1] ?? items[items.length - 1];
+                                next?.focus();
+                                e.preventDefault();
+                            } else if (e.key === "ArrowUp") {
+                                const prev = items[idx - 1] ?? items[0];
+                                prev?.focus();
+                                e.preventDefault();
+                            } else if (e.key === "ArrowRight") {
+                                if (hasChildren && !isExpanded) {
+                                    toggle(node.resource.id);
+                                } else if (hasChildren && isExpanded) {
+                                    // focus first child
+                                    const next = items[idx + 1];
+                                    next?.focus();
+                                }
+                                e.preventDefault();
+                            } else if (e.key === "ArrowLeft") {
+                                if (hasChildren && isExpanded) {
+                                    toggle(node.resource.id);
+                                } else {
+                                    // try to focus parent (best-effort)
+                                    // fall back to previous item
+                                    const prev = items[idx - 1];
+                                    prev?.focus();
+                                }
+                                e.preventDefault();
+                            } else if (e.key === "Enter" || e.key === " ") {
+                                if (hasChildren) toggle(node.resource.id);
+                                else onSelect?.(node.resource.id);
+                                e.preventDefault();
+                            }
+                        }}
                         className="flex items-center gap-2 text-sm text-muted-700 dark:text-muted-300"
                     >
                         <span className="flex items-center w-4 h-4">
