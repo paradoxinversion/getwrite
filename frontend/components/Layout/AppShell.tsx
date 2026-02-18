@@ -11,26 +11,26 @@ import React from "react";
 export default function AppShell({ children }: { children?: React.ReactNode }) {
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">
-            <aside className="w-72 bg-white border-r p-4">
+            <aside className="hidden sm:block sm:w-64 md:w-72 bg-white border-r p-4">
                 <div className="text-sm font-medium text-slate-700 mb-4">
                     Projects
                 </div>
                 <div className="space-y-2">
-                    <div className="px-3 py-2 rounded hover:bg-slate-100">
+                    <div className="px-3 py-2 rounded-md hover:bg-slate-100">
                         Project A
                     </div>
-                    <div className="px-3 py-2 rounded hover:bg-slate-100">
+                    <div className="px-3 py-2 rounded-md hover:bg-slate-100">
                         Project B
                     </div>
-                    <div className="px-3 py-2 rounded hover:bg-slate-100">
+                    <div className="px-3 py-2 rounded-md hover:bg-slate-100">
                         Project C
                     </div>
                 </div>
             </aside>
 
-            <main className="flex-1 p-6">
-                <div className="max-w-6xl mx-auto">
-                    <div className="bg-white rounded shadow-sm p-6">
+            <main className="flex-1 p-4 md:p-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="bg-white rounded-xl shadow-sm p-6">
                         {children ?? (
                             <div>
                                 <h2 className="text-2xl font-semibold">
@@ -44,8 +44,7 @@ export default function AppShell({ children }: { children?: React.ReactNode }) {
                     </div>
                 </div>
             </main>
-
-            <aside className="w-80 bg-white border-l p-4">
+            <aside className="hidden lg:block lg:w-80 bg-white border-l p-4">
                 <div className="text-sm font-medium text-slate-700 mb-4">
                     Metadata
                 </div>

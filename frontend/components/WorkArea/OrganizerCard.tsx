@@ -19,32 +19,34 @@ export default function OrganizerCard({
             className="border rounded-md p-4 bg-white shadow-card"
             aria-labelledby={`res-${resource.id}-title`}
         >
-            <header className="flex items-center justify-between mb-2">
-                <div>
+            <header className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1">
                     <h3
                         id={`res-${resource.id}-title`}
                         className="text-sm font-medium"
                     >
                         {resource.title}
                     </h3>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-500 mt-1">
                         {resource.type}
                     </div>
                 </div>
-                <div className="text-xs text-slate-600">
+                <div className="text-xs text-slate-600 whitespace-nowrap">
                     {new Date(resource.updatedAt).toLocaleDateString()}
                 </div>
             </header>
 
             {showBody && (
-                <div className="text-sm text-slate-700 mb-3 truncate-2">
+                <div className="text-sm text-slate-700 mb-3">
                     {resource.content}
                 </div>
             )}
 
-            <footer className="text-xs text-slate-500 flex items-center justify-between">
+            <footer className="text-xs text-slate-500 flex items-center justify-between gap-4">
                 <div>Words: {resource.metadata?.wordCount ?? 0}</div>
-                <div>Status: {resource.metadata?.status ?? "unknown"}</div>
+                <div className="ml-auto">
+                    Status: {resource.metadata?.status ?? "unknown"}
+                </div>
             </footer>
         </article>
     );

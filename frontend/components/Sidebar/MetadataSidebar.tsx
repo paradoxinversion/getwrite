@@ -62,7 +62,10 @@ export default function MetadataSidebar({
             className={`p-4 bg-slate-50 border-l ${className}`}
             aria-label="metadata-sidebar"
         >
-            <div className="mb-4">
+            <div className="mb-6">
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    Notes
+                </h4>
                 <NotesInput
                     ariaLabel="notes"
                     value={notes}
@@ -73,7 +76,10 @@ export default function MetadataSidebar({
                 />
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    Status
+                </h4>
                 <StatusSelector
                     ariaLabel="status"
                     value={status}
@@ -84,7 +90,10 @@ export default function MetadataSidebar({
                 />
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    Characters
+                </h4>
                 <MultiSelectList
                     label="Characters"
                     items={sampleCharacters}
@@ -96,7 +105,10 @@ export default function MetadataSidebar({
                 />
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    Locations
+                </h4>
                 <MultiSelectList
                     label="Locations"
                     items={sampleLocations}
@@ -108,7 +120,10 @@ export default function MetadataSidebar({
                 />
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    Items
+                </h4>
                 <MultiSelectList
                     label="Items"
                     items={sampleItems}
@@ -121,6 +136,9 @@ export default function MetadataSidebar({
             </div>
 
             <div>
+                <h4 className="text-xs font-semibold text-slate-600 mb-2">
+                    POV
+                </h4>
                 <POVAutocomplete
                     options={sampleCharacters}
                     value={pov ?? ""}
