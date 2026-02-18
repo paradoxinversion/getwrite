@@ -43,9 +43,9 @@ Phase 5: [US3] Work Area Views (Priority: P1)
 
 Phase 6: [US4] Metadata Sidebar & Edit Interactions (Priority: P2)
 
-- [ ] T027 [US4] Implement `MetadataSidebar` layout and panels at `frontend/components/Sidebar/MetadataSidebar.tsx` (`frontend/components/Sidebar/MetadataSidebar.tsx`)
-- [ ] T028 [US4] Implement controls: Notes input, Status selector, Characters/Locations/Items multi-select, POV autocomplete (placeholder) at `frontend/components/Sidebar/controls/*` (`frontend/components/Sidebar/controls/`)
-- [ ] T029 [US4] Add Storybook stories and tests for MetadataSidebar and controls at `stories/Sidebar/*.stories.tsx` and `frontend/tests/sidebar.test.tsx` (`stories/Sidebar/`, `frontend/tests/sidebar.test.tsx`)
+- [x] T027 [US4] Implement `MetadataSidebar` layout and panels at `frontend/components/Sidebar/MetadataSidebar.tsx` (`frontend/components/Sidebar/MetadataSidebar.tsx`)
+- [x] T028 [US4] Implement controls: Notes input, Status selector, Characters/Locations/Items multi-select, POV autocomplete (placeholder) at `frontend/components/Sidebar/controls/*` (`frontend/components/Sidebar/controls/`)
+- [x] T029 [US4] Add Storybook stories and tests for MetadataSidebar and controls at `stories/Sidebar/*.stories.tsx` and `frontend/tests/sidebar.test.tsx` (`stories/Sidebar/`, `frontend/tests/sidebar.test.tsx`)
 
 Phase 7: Polish, Accessibility, and Cross-Cutting Concerns
 
