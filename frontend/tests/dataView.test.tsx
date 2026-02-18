@@ -11,10 +11,14 @@ describe("DataView", () => {
 
         // Explicit stat checks
         const getStatValue = (label: string) => {
-            const labelEl = screen.getByText(label, { exact: false });
-            const parent = labelEl.parentElement;
-            if (!parent) return null;
-            const valueEl = parent.querySelector(".text-xl");
+            const matches = screen.getAllByText(label, { exact: false });
+            const statLabel = matches.find((el) => {
+                const parent = el.parentElement;
+                return Boolean(parent && parent.querySelector(".text-xl"));
+            });
+            if (!statLabel) return null;
+            const parent = statLabel.parentElement as HTMLElement | null;
+            const valueEl = parent?.querySelector(".text-xl");
             return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
         };
 
@@ -38,10 +42,14 @@ it("shows project/resource counts and lists resources for a single project", () 
 
     // Explicit stat checks for single project
     const getStatValue = (label: string) => {
-        const labelEl = screen.getByText(label, { exact: false });
-        const parent = labelEl.parentElement;
-        if (!parent) return null;
-        const valueEl = parent.querySelector(".text-xl");
+        const matches = screen.getAllByText(label, { exact: false });
+        const statLabel = matches.find((el) => {
+            const parent = el.parentElement;
+            return Boolean(parent && parent.querySelector(".text-xl"));
+        });
+        if (!statLabel) return null;
+        const parent = statLabel.parentElement as HTMLElement | null;
+        const valueEl = parent?.querySelector(".text-xl");
         return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
     };
 

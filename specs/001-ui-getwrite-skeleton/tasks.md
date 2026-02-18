@@ -37,7 +37,7 @@ Phase 5: [US3] Work Area Views (Priority: P1)
 - [x] T021 [US3] Implement `EditView` with TinyMCE placeholder content and footer stats UI at `frontend/components/WorkArea/EditView.tsx` (`frontend/components/WorkArea/EditView.tsx`)
 - [x] T022 [US3] Implement `OrganizerView` rendering resource cards and body toggle at `frontend/components/WorkArea/OrganizerView.tsx` (`frontend/components/WorkArea/OrganizerView.tsx`)
 - [x] T023 [US3] Implement `DataView` showing Overall Stats and Resources lists at `frontend/components/WorkArea/DataView.tsx` (`frontend/components/WorkArea/DataView.tsx`)
-- [ ] T024 [US3] Implement `DiffView` with two read-only panes and revision list UI at `frontend/components/WorkArea/DiffView.tsx` (`frontend/components/WorkArea/DiffView.tsx`)
+- [x] T024 [US3] Implement `DiffView` with two read-only panes and revision list UI at `frontend/components/WorkArea/DiffView.tsx` (`frontend/components/WorkArea/DiffView.tsx`)
 - [ ] T025 [US3] Implement `TimelineView` rendering items by timeframe and undated section at `frontend/components/WorkArea/TimelineView.tsx` (`frontend/components/WorkArea/TimelineView.tsx`)
 - [ ] T026 [US3] Add Storybook stories and tests for each Work Area view at `stories/WorkArea/*.stories.tsx` and `frontend/tests/workarea/*.test.tsx` (`stories/WorkArea/`, `frontend/tests/workarea/`)
 
