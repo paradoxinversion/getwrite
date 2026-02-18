@@ -1,6 +1,8 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import ViewSwitcher from "../../components/WorkArea/ViewSwitcher";
+import ViewSwitcher, {
+    ViewSwitcherProps,
+} from "../../components/WorkArea/ViewSwitcher";
 
 const meta: Meta<typeof ViewSwitcher> = {
     title: "WorkArea/ViewSwitcher",
@@ -13,7 +15,7 @@ type Story = StoryObj<typeof ViewSwitcher>;
 export const Default: Story = {
     args: {
         view: "edit",
-        onChange: (v) => console.log("view changed", v),
+        onChange: (v: ViewSwitcherProps) => console.log("view changed", v),
     },
 };
 
