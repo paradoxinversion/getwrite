@@ -34,6 +34,7 @@ export default function MultiSelectList({
                     <label key={it} className="flex items-center gap-2 text-sm">
                         <input
                             type="checkbox"
+                            aria-label={it}
                             checked={sel.includes(it)}
                             onChange={() => toggle(it)}
                         />

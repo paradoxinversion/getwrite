@@ -5,6 +5,7 @@ export interface NotesInputProps {
     placeholder?: string;
     onChange?: (value: string) => void;
     className?: string;
+    ariaLabel?: string;
 }
 
 export default function NotesInput({
@@ -12,6 +13,7 @@ export default function NotesInput({
     placeholder = "Notes...",
     onChange,
     className = "",
+    ariaLabel = "notes-input",
 }: NotesInputProps) {
     const [text, setText] = React.useState(value);
 
@@ -21,7 +23,7 @@ export default function NotesInput({
         <div className={className}>
             <label className="text-sm font-medium">Notes</label>
             <textarea
-                aria-label="notes-input"
+                aria-label={ariaLabel}
                 className="w-full mt-2 p-2 border rounded resize-y min-h-[80px] text-sm"
                 placeholder={placeholder}
                 value={text}

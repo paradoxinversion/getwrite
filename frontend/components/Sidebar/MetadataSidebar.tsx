@@ -1,10 +1,18 @@
 import React from "react";
 import type { Resource } from "../../lib/types";
+import NotesInput from "./controls/NotesInput";
+import StatusSelector from "./controls/StatusSelector";
+import MultiSelectList from "./controls/MultiSelectList";
+import POVAutocomplete from "./controls/POVAutocomplete";
 
 export interface MetadataSidebarProps {
     resource?: Resource;
     onChangeNotes?: (text: string) => void;
     onChangeStatus?: (status: string) => void;
+    onChangeCharacters?: (chars: string[]) => void;
+    onChangeLocations?: (locs: string[]) => void;
+    onChangeItems?: (items: string[]) => void;
+    onChangePOV?: (pov: string) => void;
     className?: string;
 }
 
@@ -12,17 +20,42 @@ export default function MetadataSidebar({
     resource,
     onChangeNotes,
     onChangeStatus,
+    onChangeCharacters,
+    onChangeLocations,
+    onChangeItems,
+    onChangePOV,
     className = "",
 }: MetadataSidebarProps): JSX.Element {
     const [notes, setNotes] = React.useState(resource?.metadata?.notes ?? "");
     const [status, setStatus] = React.useState(
-        resource?.metadata?.status ?? "draft",
+        (resource?.metadata?.status as string) ?? "draft",
+    );
+    const [characters, setCharacters] = React.useState<string[]>(
+        resource?.metadata?.characters ?? [],
+    );
+    const [locations, setLocations] = React.useState<string[]>(
+        resource?.metadata?.locations ?? [],
+    );
+    const [items, setItems] = React.useState<string[]>(
+        resource?.metadata?.items ?? [],
+    );
+    const [pov, setPOV] = React.useState<string | null>(
+        resource?.metadata?.pov ?? null,
     );
 
     React.useEffect(() => {
         setNotes(resource?.metadata?.notes ?? "");
-        setStatus(resource?.metadata?.status ?? "draft");
+        setStatus((resource?.metadata?.status as string) ?? "draft");
+        setCharacters(resource?.metadata?.characters ?? []);
+        setLocations(resource?.metadata?.locations ?? []);
+        setItems(resource?.metadata?.items ?? []);
+        setPOV(resource?.metadata?.pov ?? null);
     }, [resource]);
+
+    // Fallback sample lists when metadata arrays are empty
+    const sampleCharacters = characters.length ? characters : ["Alice", "Bob"];
+    const sampleLocations = locations.length ? locations : ["Town", "Forest"];
+    const sampleItems = items.length ? items : ["Key", "Map"];
 
     return (
         <aside
@@ -30,54 +63,72 @@ export default function MetadataSidebar({
             aria-label="metadata-sidebar"
         >
             <div className="mb-4">
-                <h3 className="text-sm font-semibold">Notes</h3>
-                <textarea
-                    aria-label="notes"
-                    className="w-full mt-2 p-2 border rounded resize-y min-h-[96px] text-sm"
+                <NotesInput
+                    ariaLabel="notes"
                     value={notes}
-                    onChange={(e) => {
-                        setNotes(e.target.value);
-                        onChangeNotes && onChangeNotes(e.target.value);
+                    onChange={(v) => {
+                        setNotes(v);
+                        onChangeNotes && onChangeNotes(v);
                     }}
                 />
             </div>
 
             <div className="mb-4">
-                <h3 className="text-sm font-semibold">Status</h3>
-                <select
-                    aria-label="status"
-                    className="w-full mt-2 p-2 border rounded text-sm"
+                <StatusSelector
+                    ariaLabel="status"
                     value={status}
-                    onChange={(e) => {
-                        setStatus(e.target.value);
-                        onChangeStatus && onChangeStatus(e.target.value);
+                    onChange={(s) => {
+                        setStatus(s);
+                        onChangeStatus && onChangeStatus(s);
                     }}
-                >
-                    <option value="draft">Draft</option>
-                    <option value="review">In review</option>
-                    <option value="published">Published</option>
-                </select>
+                />
             </div>
 
             <div className="mb-4">
-                <h3 className="text-sm font-semibold">Characters</h3>
-                <div className="mt-2 text-sm text-slate-600">
-                    (placeholder list)
-                </div>
+                <MultiSelectList
+                    label="Characters"
+                    items={sampleCharacters}
+                    selected={characters}
+                    onChange={(next) => {
+                        setCharacters(next);
+                        onChangeCharacters && onChangeCharacters(next);
+                    }}
+                />
             </div>
 
             <div className="mb-4">
-                <h3 className="text-sm font-semibold">Locations</h3>
-                <div className="mt-2 text-sm text-slate-600">
-                    (placeholder list)
-                </div>
+                <MultiSelectList
+                    label="Locations"
+                    items={sampleLocations}
+                    selected={locations}
+                    onChange={(next) => {
+                        setLocations(next);
+                        onChangeLocations && onChangeLocations(next);
+                    }}
+                />
+            </div>
+
+            <div className="mb-4">
+                <MultiSelectList
+                    label="Items"
+                    items={sampleItems}
+                    selected={items}
+                    onChange={(next) => {
+                        setItems(next);
+                        onChangeItems && onChangeItems(next);
+                    }}
+                />
             </div>
 
             <div>
-                <h3 className="text-sm font-semibold">Items</h3>
-                <div className="mt-2 text-sm text-slate-600">
-                    (placeholder list)
-                </div>
+                <POVAutocomplete
+                    options={sampleCharacters}
+                    value={pov ?? ""}
+                    onChange={(v) => {
+                        setPOV(v);
+                        onChangePOV && onChangePOV(v);
+                    }}
+                />
             </div>
         </aside>
     );
