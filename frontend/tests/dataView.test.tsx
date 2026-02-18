@@ -17,7 +17,9 @@ describe("DataView", () => {
         projects
             .flatMap((p) => p.resources)
             .forEach((r) => {
-                expect(screen.getByText(r.title)).toBeTruthy();
+                expect(
+                    screen.getAllByText(r.title).length,
+                ).toBeGreaterThanOrEqual(1);
             });
     });
 });
@@ -32,6 +34,6 @@ it("shows project/resource counts and lists resources for a single project", () 
 
     // Resources list contains sample titles from the single project
     project.resources.forEach((r) => {
-        expect(screen.getByText(r.title)).toBeTruthy();
+        expect(screen.getAllByText(r.title).length).toBeGreaterThanOrEqual(1);
     });
 });

@@ -18,6 +18,7 @@ export interface DataViewProps {
  * the component remains usable in isolation.
  */
 export default function DataView({
+    projects,
     project,
     resources,
     className = "",
