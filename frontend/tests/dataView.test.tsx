@@ -9,11 +9,19 @@ describe("DataView", () => {
         const projects = sampleProjects(2);
         render(<DataView projects={projects} />);
 
-        // Projects count
-        expect(screen.getByText(/Projects/i)).toBeTruthy();
-        expect(screen.getByText("2")).toBeTruthy();
+        // Explicit stat checks
+        const getStatValue = (label: string) => {
+            const labelEl = screen.getByText(label, { exact: false });
+            const parent = labelEl.parentElement;
+            if (!parent) return null;
+            const valueEl = parent.querySelector(".text-xl");
+            return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
+        };
 
-        // Resources list contains sample titles
+        expect(getStatValue("Projects")).toBe("2");
+        expect(getStatValue("Resources")).toBe("6");
+
+        // Resources list contains sample titles (appear at least once)
         projects
             .flatMap((p) => p.resources)
             .forEach((r) => {
@@ -28,9 +36,17 @@ it("shows project/resource counts and lists resources for a single project", () 
     const project = projects[0];
     render(<DataView project={project} />);
 
-    // Projects count should be 1
-    expect(screen.getByText(/Projects/i)).toBeTruthy();
-    expect(screen.getByText("1")).toBeTruthy();
+    // Explicit stat checks for single project
+    const getStatValue = (label: string) => {
+        const labelEl = screen.getByText(label, { exact: false });
+        const parent = labelEl.parentElement;
+        if (!parent) return null;
+        const valueEl = parent.querySelector(".text-xl");
+        return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
+    };
+
+    expect(getStatValue("Projects")).toBe("1");
+    expect(getStatValue("Resources")).toBe("3");
 
     // Resources list contains sample titles from the single project
     project.resources.forEach((r) => {
