@@ -1,0 +1,10 @@
+node_modules
+.git
+Dockerfile*
+*.log
+.env*
+coverage
+dist
+build
+frontend/node_modules
+\.vscode

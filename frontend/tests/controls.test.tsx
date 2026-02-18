@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import NotesInput from "../components/Sidebar/controls/NotesInput";
 import StatusSelector from "../components/Sidebar/controls/StatusSelector";
 import MultiSelectList from "../components/Sidebar/controls/MultiSelectList";
@@ -23,14 +24,26 @@ describe("Sidebar Controls", () => {
         expect(onChange).toHaveBeenCalledWith("review");
     });
 
-    it.skip("MultiSelectList toggles selection", () => {
-        const onChange = vi.fn();
+    it.skip("MultiSelectList toggles selection (userEvent + waitFor)", async () => {
+        const onChangeMock = vi.fn();
+        const onChange = (v: string[]) => onChangeMock(v);
+
         render(<MultiSelectList items={["A", "B"]} onChange={onChange} />);
+        const user = userEvent.setup();
         const checkboxes = screen.getAllByRole(
             "checkbox",
         ) as HTMLInputElement[];
-        fireEvent.click(checkboxes[0]);
-        expect(onChange).toHaveBeenCalled();
+        expect(checkboxes).toHaveLength(2);
+
+        await user.click(checkboxes[0]);
+
+        await waitFor(
+            () => {
+                expect(checkboxes[0]).toBeChecked();
+                expect(onChangeMock).toHaveBeenCalled();
+            },
+            { timeout: 20000 },
+        );
     });
 
     it("POVAutocomplete calls onChange", () => {
