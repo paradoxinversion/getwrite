@@ -28,6 +28,10 @@ export default function ManageProjectMenu({
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        // Use mousedown so the listener runs before React's click handlers and
+        // before any re-render that might replace menu nodes. This prevents a
+        // click inside the menu (that toggles editing) from being considered an
+        // outside click after a synchronous DOM update.
         function onDocClick(e: MouseEvent) {
             if (
                 menuRef.current &&
@@ -37,8 +41,8 @@ export default function ManageProjectMenu({
             }
         }
 
-        document.addEventListener("click", onDocClick);
-        return () => document.removeEventListener("click", onDocClick);
+        document.addEventListener("mousedown", onDocClick);
+        return () => document.removeEventListener("mousedown", onDocClick);
     }, []);
 
     useEffect(() => {
