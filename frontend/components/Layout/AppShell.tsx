@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from "react";
 import type { Resource, ViewName } from "../../lib/types";
 import ResourceTree from "../Tree/ResourceTree";
 import ConfirmDialog from "../common/ConfirmDialog";
+import CreateResourceModal from "../Tree/CreateResourceModal";
+import ExportPreviewModal from "../common/ExportPreviewModal";
 import type { ResourceContextAction } from "../Tree/ResourceContextMenu";
 import ViewSwitcher from "../WorkArea/ViewSwitcher";
 import EditView from "../WorkArea/EditView";
@@ -118,14 +120,72 @@ export default function AppShell({
         resourceId?: string,
         resourceTitle?: string,
     ) => {
-        // For destructive actions show a confirmation dialog; otherwise forward immediately.
+        // For destructive actions show a confirmation dialog.
         if (action === "delete") {
             setContextAction({ open: true, action, resourceId, resourceTitle });
             return;
         }
 
-        // forward non-destructive UI actions to parent
+        // For create/copy/duplicate/show modals locally and confirm before forwarding
+        if (action === "create") {
+            setCreateModal({
+                open: true,
+                parentId: resourceId,
+                initialTitle: "",
+            });
+            return;
+        }
+
+        if (action === "copy" || action === "duplicate") {
+            setCreateModal({
+                open: true,
+                parentId: resourceId,
+                initialTitle: `${resourceTitle ?? "Resource"} (copy)`,
+            });
+            return;
+        }
+
+        if (action === "export") {
+            setExportModal({
+                open: true,
+                resourceId,
+                resourceTitle,
+                preview: "Export preview (placeholder)",
+            });
+            return;
+        }
+
+        // Fallback forward
         onResourceAction?.(action, resourceId);
+    };
+
+    const [createModal, setCreateModal] = useState<{
+        open: boolean;
+        parentId?: string;
+        initialTitle?: string;
+    }>({ open: false });
+    const [exportModal, setExportModal] = useState<{
+        open: boolean;
+        resourceId?: string;
+        resourceTitle?: string;
+        preview?: string;
+    }>({ open: false });
+
+    const handleCreateConfirmed = (
+        payload: {
+            title: string;
+            type: import("../../lib/types").ResourceType;
+        },
+        parentId?: string,
+    ) => {
+        // forward to page-level handler to mutate project resources
+        onResourceAction?.("create", parentId);
+        setCreateModal({ open: false });
+    };
+
+    const handleExportConfirmed = (resourceId?: string) => {
+        onResourceAction?.("export", resourceId);
+        setExportModal({ open: false });
     };
 
     return (
@@ -179,6 +239,26 @@ export default function AppShell({
                     setContextAction({ open: false });
                 }}
                 onCancel={() => setContextAction({ open: false })}
+            />
+
+            <CreateResourceModal
+                isOpen={createModal.open}
+                initialTitle={createModal.initialTitle}
+                parentId={createModal.parentId}
+                onClose={() => setCreateModal({ open: false })}
+                onCreate={(payload, parentId) =>
+                    handleCreateConfirmed(payload, parentId)
+                }
+            />
+
+            <ExportPreviewModal
+                isOpen={exportModal.open}
+                resourceTitle={exportModal.resourceTitle}
+                preview={exportModal.preview}
+                onClose={() => setExportModal({ open: false })}
+                onConfirmExport={() =>
+                    handleExportConfirmed(exportModal.resourceId)
+                }
             />
 
             {/* Left resize handle */}
