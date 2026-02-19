@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { Resource, ViewName } from "../../lib/types";
 import ResourceTree from "../Tree/ResourceTree";
+import ConfirmDialog from "../common/ConfirmDialog";
+import type { ResourceContextAction } from "../Tree/ResourceContextMenu";
 import ViewSwitcher from "../WorkArea/ViewSwitcher";
 import EditView from "../WorkArea/EditView";
 import DiffView from "../WorkArea/DiffView";
@@ -45,6 +47,10 @@ export default function AppShell({
     onChangeLocations?: (locs: string[], resourceId: string) => void;
     onChangeItems?: (items: string[], resourceId: string) => void;
     onChangePOV?: (pov: string | null, resourceId: string) => void;
+    onResourceAction?: (
+        action: ResourceContextAction,
+        resourceId?: string,
+    ) => void;
 }): JSX.Element {
     const [view, setView] = useState<ViewName>("edit");
     const [leftWidth, setLeftWidth] = useState<number>(280);
@@ -100,6 +106,28 @@ export default function AppShell({
             ? resources.find((r) => r.id === selectedResourceId)
             : undefined;
 
+    const [contextAction, setContextAction] = useState<{
+        open: boolean;
+        action?: ResourceContextAction;
+        resourceId?: string;
+        resourceTitle?: string;
+    }>({ open: false });
+
+    const handleResourceAction = (
+        action: ResourceContextAction,
+        resourceId?: string,
+        resourceTitle?: string,
+    ) => {
+        // For destructive actions show a confirmation dialog; otherwise forward immediately.
+        if (action === "delete") {
+            setContextAction({ open: true, action, resourceId, resourceTitle });
+            return;
+        }
+
+        // forward non-destructive UI actions to parent
+        onResourceAction?.(action, resourceId);
+    };
+
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">
             {showSidebars ? (
@@ -113,6 +141,7 @@ export default function AppShell({
                                 resources={resources}
                                 selectedId={selectedResourceId ?? undefined}
                                 onSelect={onResourceSelect}
+                                onResourceAction={handleResourceAction}
                             />
                         ) : (
                             <div className="space-y-2">
@@ -130,6 +159,27 @@ export default function AppShell({
                     </div>
                 </aside>
             ) : null}
+
+            <ConfirmDialog
+                isOpen={contextAction.open && contextAction.action === "delete"}
+                title={
+                    contextAction.resourceTitle
+                        ? `Delete ${contextAction.resourceTitle}`
+                        : "Delete resource"
+                }
+                description={
+                    "This will remove the resource from the project UI (placeholder). Proceed?"
+                }
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={() => {
+                    if (contextAction.resourceId) {
+                        onResourceAction?.("delete", contextAction.resourceId);
+                    }
+                    setContextAction({ open: false });
+                }}
+                onCancel={() => setContextAction({ open: false })}
+            />
 
             {/* Left resize handle */}
             {showSidebars ? (

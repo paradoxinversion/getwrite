@@ -6,6 +6,7 @@ import {
     sampleProjects,
     createProject,
     findProjectById,
+    createResource,
 } from "../lib/placeholders";
 import type { Project, Resource } from "../lib/types";
 
@@ -111,11 +112,132 @@ export default function Home(): JSX.Element {
         }));
     };
 
+    const handleResourceAction = (
+        action: "create" | "copy" | "duplicate" | "delete" | "export",
+        resourceId?: string,
+    ) => {
+        if (!selectedProject) return;
+
+        if (action === "create") {
+            const title = "New Resource";
+            const res = createResource(
+                title,
+                "document",
+                selectedProject.id,
+                resourceId,
+            );
+            // insert at end
+            setProjects((prev) =>
+                prev.map((p) =>
+                    p.id === selectedProject.id
+                        ? {
+                              ...p,
+                              resources: [...p.resources, res],
+                              updatedAt: new Date().toISOString(),
+                          }
+                        : p,
+                ),
+            );
+            setSelectedProject((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          resources: [...prev.resources, res],
+                          updatedAt: new Date().toISOString(),
+                      }
+                    : prev,
+            );
+            setSelectedResourceId(res.id);
+            return;
+        }
+
+        if (action === "copy" || action === "duplicate") {
+            if (!resourceId) return;
+            const src = selectedProject.resources.find(
+                (r) => r.id === resourceId,
+            );
+            if (!src) return;
+            const newTitle = `${src.title} (copy)`;
+            const copy = createResource(
+                newTitle,
+                src.type,
+                selectedProject.id,
+                src.parentId,
+            );
+            copy.content = src.content;
+            copy.metadata = { ...src.metadata };
+            setProjects((prev) =>
+                prev.map((p) =>
+                    p.id === selectedProject.id
+                        ? {
+                              ...p,
+                              resources: [...p.resources, copy],
+                              updatedAt: new Date().toISOString(),
+                          }
+                        : p,
+                ),
+            );
+            setSelectedProject((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          resources: [...prev.resources, copy],
+                          updatedAt: new Date().toISOString(),
+                      }
+                    : prev,
+            );
+            setSelectedResourceId(copy.id);
+            return;
+        }
+
+        if (action === "delete") {
+            if (!resourceId) return;
+            setProjects((prev) =>
+                prev.map((p) =>
+                    p.id === selectedProject.id
+                        ? {
+                              ...p,
+                              resources: p.resources.filter(
+                                  (r) => r.id !== resourceId,
+                              ),
+                              updatedAt: new Date().toISOString(),
+                          }
+                        : p,
+                ),
+            );
+            setSelectedProject((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          resources: prev.resources.filter(
+                              (r) => r.id !== resourceId,
+                          ),
+                          updatedAt: new Date().toISOString(),
+                      }
+                    : prev,
+            );
+            if (selectedResourceId === resourceId) setSelectedResourceId(null);
+            return;
+        }
+
+        if (action === "export") {
+            if (!resourceId) return;
+            const r = selectedProject.resources.find(
+                (x) => x.id === resourceId,
+            );
+            window.alert(
+                `Export preview (placeholder) for: ${r?.title ?? resourceId}`,
+            );
+            return;
+        }
+    };
+
     return (
         <AppShell
             showSidebars={Boolean(selectedProject)}
             resources={selectedProject?.resources}
             onResourceSelect={handleResourceSelect}
+            onResourceAction={handleResourceAction}
             selectedResourceId={selectedResourceId}
             onChangeNotes={handleChangeNotes}
             onChangeStatus={handleChangeStatus}
