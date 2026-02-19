@@ -9,8 +9,10 @@ Decisions (resolved during planning):
 - Decision: Styling — TailwindCSS 4.1
   Rationale: User-specified; utility-first system speeds UI prototyping and enforces consistent spacing/typography tokens.
 
-- Decision: Editor — TinyMCE
-  Rationale: User-specified; full-featured rich text editor with established integrations.
+- Decision: Editor — TipTap v3
+  Rationale: Replace TinyMCE with TipTap v3 (headless, modern ProseMirror-based editor) for
+  better integration with React/Next.js, improved SSR handling, and simpler bundling and
+  customization for the UI-focused skeleton.
 
 - Decision: Component dev + docs — Storybook
   Rationale: User-specified; isolates components for visual QA and designer sign-off.
