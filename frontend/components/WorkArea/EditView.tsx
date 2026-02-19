@@ -1,5 +1,5 @@
 import React from "react";
-import TinyMCEEditor from "../TinyMCEEditor";
+import TipTapEditor from "../TipTapEditor";
 
 export interface EditViewProps {
     /** Initial editor content (HTML or plain text) */
@@ -44,11 +44,11 @@ export default function EditView({
     return (
         <div className="flex flex-col h-full">
             <div className="flex-1 overflow-auto p-4">
-                <TinyMCEEditor
+                <TipTapEditor
                     id="editview-editor"
-                    apiKey={apiKey}
                     value={content}
                     onChange={handleChange}
+                    readonly={false}
                 />
             </div>
 
