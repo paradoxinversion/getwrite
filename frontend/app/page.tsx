@@ -24,6 +24,7 @@ export default function Home() {
     const handleCreate = (name: string) => {
         const p = createProject(name);
         setProjects((prev) => [p, ...prev]);
+        setSelectedProject(p);
     };
 
     const handleOpen = (id: string) => {
@@ -42,11 +43,23 @@ export default function Home() {
             onResourceSelect={handleResourceSelect}
             selectedResourceId={selectedResourceId}
         >
-            <StartPage
-                projects={projects}
-                onCreate={handleCreate}
-                onOpen={handleOpen}
-            />
+            {!selectedProject ? (
+                <StartPage
+                    projects={projects}
+                    onCreate={handleCreate}
+                    onOpen={handleOpen}
+                />
+            ) : (
+                <section className="p-6">
+                    <h1 className="text-2xl font-semibold">
+                        {selectedProject.name}
+                    </h1>
+                    <p className="mt-4 text-slate-600">
+                        Open a resource from the left-hand contents list, or
+                        create a new resource to get started.
+                    </p>
+                </section>
+            )}
         </AppShell>
     );
 }
