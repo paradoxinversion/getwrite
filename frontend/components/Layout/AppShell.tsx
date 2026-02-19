@@ -86,10 +86,7 @@ export default function AppShell({
                     className="hidden sm:block bg-white border-r p-4"
                     style={{ width: leftWidth }}
                 >
-                    <div className="text-sm font-medium text-slate-700 mb-4">
-                        Contents
-                    </div>
-                    <div className="mt-2">
+                    <div className="mt-0">
                         {resources ? (
                             <ResourceTree
                                 resources={resources}

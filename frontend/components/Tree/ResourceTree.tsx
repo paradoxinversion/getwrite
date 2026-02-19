@@ -233,7 +233,7 @@ export default function ResourceTree({
             >
                 <div
                     className={`flex items-center gap-2 px-2 py-1 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700 ${isSelected ? "bg-surface-300 dark:bg-surface-800" : ""}`}
-                    style={{ paddingLeft: `${depth * 12 + 8}px` }}
+                    style={{ paddingLeft: `${depth * 10 + 4}px` }}
                     onContextMenu={(e) => {
                         e.preventDefault();
                         // open context menu at mouse position for this resource
