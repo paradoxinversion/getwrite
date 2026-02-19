@@ -8,6 +8,8 @@ export interface ViewSwitcherProps {
     onChange: (view: ViewName) => void;
     /** Optional className to allow styling from parent */
     className?: string;
+    /** Views which should be rendered disabled */
+    disabledViews?: ViewName[];
 }
 
 const VIEW_OPTIONS: { key: ViewName; label: string }[] = [
@@ -33,6 +35,7 @@ export default function ViewSwitcher({
     view,
     onChange,
     className = "",
+    disabledViews = [],
 }: ViewSwitcherProps): JSX.Element {
     return (
         <div
@@ -42,6 +45,7 @@ export default function ViewSwitcher({
         >
             {VIEW_OPTIONS.map((opt) => {
                 const active = opt.key === view;
+                const disabled = disabledViews.includes(opt.key);
                 return (
                     <button
                         key={opt.key}
@@ -49,8 +53,10 @@ export default function ViewSwitcher({
                         role="tab"
                         aria-selected={active}
                         aria-pressed={active}
+                        aria-disabled={disabled}
+                        disabled={disabled}
                         data-view={opt.key}
-                        onClick={() => onChange(opt.key)}
+                        onClick={() => !disabled && onChange(opt.key)}
                         onKeyDown={(e) => {
                             const container =
                                 (e.currentTarget
@@ -94,12 +100,12 @@ export default function ViewSwitcher({
                                 );
                                 e.preventDefault();
                             } else if (e.key === "Enter" || e.key === " ") {
-                                onChange(opt.key);
+                                if (!disabled) onChange(opt.key);
                                 e.preventDefault();
                             }
                         }}
                         className={`px-3 py-1 rounded-md text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400
-              ${active ? "bg-indigo-600 text-white border-indigo-700" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+              ${active ? "bg-indigo-600 text-white border-indigo-700" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                         {opt.label}
                     </button>
