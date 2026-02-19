@@ -11,6 +11,8 @@ const meta: Meta<typeof SearchBar> = {
     component: SearchBar,
     argTypes: {
         onSelect: { action: "select" },
+        resources: { control: "object" },
+        placeholder: { control: "text" },
     },
 };
 
