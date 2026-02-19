@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
+import RenameProjectModal from "./RenameProjectModal";
 
 export interface ManageProjectMenuProps {
     projectId: string;
@@ -22,6 +23,7 @@ export default function ManageProjectMenu({
     const [open, setOpen] = useState<boolean>(false);
     const [editing, setEditing] = useState<boolean>(false);
     const [name, setName] = useState<string>(projectName);
+    const [renameOpen, setRenameOpen] = useState<boolean>(false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
     const [confirmPackageOpen, setConfirmPackageOpen] =
         useState<boolean>(false);
@@ -91,59 +93,34 @@ export default function ManageProjectMenu({
                     className="absolute right-0 mt-2 w-56 bg-white border rounded shadow-md z-20"
                 >
                     <div className="p-2">
-                        {editing ? (
-                            <div className="flex gap-2">
-                                <input
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="flex-1 border rounded px-2 py-1"
-                                    aria-label="Rename project"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleRenameSave}
-                                    className="px-2 py-1 bg-brand-500 text-white rounded"
-                                >
-                                    Save
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setEditing(false)}
-                                    className="px-2 py-1 border rounded"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    onClick={() => setEditing(true)}
-                                    className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded"
-                                >
-                                    Rename
-                                </button>
+                        <>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => setRenameOpen(true)}
+                                className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded"
+                            >
+                                Rename
+                            </button>
 
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    onClick={() => setConfirmDeleteOpen(true)}
-                                    className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded text-red-600"
-                                >
-                                    Delete
-                                </button>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => setConfirmDeleteOpen(true)}
+                                className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded text-red-600"
+                            >
+                                Delete
+                            </button>
 
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    onClick={() => setConfirmPackageOpen(true)}
-                                    className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded"
-                                >
-                                    Package
-                                </button>
-                            </>
-                        )}
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => setConfirmPackageOpen(true)}
+                                className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded"
+                            >
+                                Package
+                            </button>
+                        </>
                     </div>
                 </div>
             ) : null}
@@ -166,6 +143,18 @@ export default function ManageProjectMenu({
                 cancelLabel="Cancel"
                 onConfirm={handlePackageConfirm}
                 onCancel={() => setConfirmPackageOpen(false)}
+            />
+
+            <RenameProjectModal
+                isOpen={renameOpen}
+                initialName={name}
+                onClose={() => setRenameOpen(false)}
+                onConfirm={(newName) => {
+                    if (onRename) onRename(projectId, newName);
+                    setName(newName);
+                    setRenameOpen(false);
+                    setOpen(false);
+                }}
             />
         </div>
     );
