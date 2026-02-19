@@ -14,6 +14,7 @@ import OrganizerView from "../WorkArea/OrganizerView";
 import DataView from "../WorkArea/DataView";
 import TimelineView from "../WorkArea/TimelineView";
 import MetadataSidebar from "../Sidebar/MetadataSidebar";
+import SearchBar from "./SearchBar";
 
 /**
  * Simple three-column shell used in the app and Storybook:
@@ -329,7 +330,7 @@ export default function AppShell({
 
             <main className="flex-1 p-4 md:p-6">
                 {resources ? (
-                    <div className="w-full mb-4">
+                    <div className="w-full mb-4 flex items-center justify-between gap-4">
                         <ViewSwitcher
                             view={view}
                             onChange={setView}
@@ -337,6 +338,12 @@ export default function AppShell({
                                 selectedResourceId ? [] : ["edit", "diff"]
                             }
                         />
+                        <div style={{ width: 320 }}>
+                            <SearchBar
+                                resources={resources}
+                                onSelect={(id) => onResourceSelect?.(id)}
+                            />
+                        </div>
                     </div>
                 ) : null}
                 <div className="max-w-7xl mx-auto">
