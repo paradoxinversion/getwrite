@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from "react";
 import type { Resource } from "../../lib/types";
+import ResourceContextMenu, {
+    type ResourceContextAction,
+} from "./ResourceContextMenu";
 
 export interface ResourceTreeProps {
     resources: Resource[];
@@ -8,6 +11,11 @@ export interface ResourceTreeProps {
     className?: string;
     reorderable?: boolean;
     onReorder?: (ids: string[]) => void;
+    /** Optional callback when a context-menu action is taken for a resource */
+    onResourceAction?: (
+        action: ResourceContextAction,
+        resourceId?: string,
+    ) => void;
 }
 
 /** Internal tree node used to build parent/child relationships for rendering. */
@@ -105,6 +113,13 @@ export default function ResourceTree({
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resources.map((r) => r.id),
     );
+    const [contextMenu, setContextMenu] = useState<{
+        open: boolean;
+        x: number;
+        y: number;
+        resourceId?: string;
+        resourceTitle?: string;
+    }>({ open: false, x: 0, y: 0 });
 
     React.useEffect(() => {
         setLocalOrder(resources.map((r) => r.id));
@@ -202,6 +217,19 @@ export default function ResourceTree({
                 <div
                     className={`flex items-center gap-2 px-2 py-1 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700 ${isSelected ? "bg-surface-300 dark:bg-surface-800" : ""}`}
                     style={{ paddingLeft: `${depth * 12 + 8}px` }}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        // open context menu at mouse position for this resource
+                        const rectX = e.clientX;
+                        const rectY = e.clientY;
+                        setContextMenu({
+                            open: true,
+                            x: rectX,
+                            y: rectY,
+                            resourceId: node.resource.id,
+                            resourceTitle: node.resource.title,
+                        });
+                    }}
                 >
                     {reorderable ? (
                         <button
@@ -333,6 +361,18 @@ export default function ResourceTree({
             <ul className="space-y-1" role="tree">
                 {nodes.map((n) => renderNode(n, 0))}
             </ul>
+
+            <ResourceContextMenu
+                open={contextMenu.open}
+                x={contextMenu.x}
+                y={contextMenu.y}
+                resourceId={contextMenu.resourceId}
+                resourceTitle={contextMenu.resourceTitle}
+                onClose={() => setContextMenu((s) => ({ ...s, open: false }))}
+                onAction={(action, resourceId) => {
+                    onResourceAction?.(action, resourceId);
+                }}
+            />
         </nav>
     );
 }
