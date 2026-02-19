@@ -99,15 +99,19 @@ export default function StartPage({
                                         prev.filter((proj) => proj.id !== id),
                                     );
                                 }}
-                                onPackage={(id) => {
-                                    // UI-only placeholder action
+                                onPackage={(id, selectedIds) => {
+                                    // UI-only placeholder action — show selected ids if provided
                                     const proj = localProjects.find(
                                         (x) => x.id === id,
                                     );
+                                    const selText = selectedIds
+                                        ? `\nSelected: ${selectedIds.join(", ")}`
+                                        : "";
                                     window.alert(
-                                        `Package placeholder for ${proj?.name ?? id}`,
+                                        `Package placeholder for ${proj?.name ?? id}${selText}`,
                                     );
                                 }}
+                                resources={p.resources}
                             />
 
                             <button

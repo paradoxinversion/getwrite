@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
 import RenameProjectModal from "./RenameProjectModal";
+import CompilePreviewModal from "../common/CompilePreviewModal";
+import type { Resource } from "../../lib/types";
 
 export interface ManageProjectMenuProps {
     projectId: string;
     projectName?: string;
     onRename?: (projectId: string, newName: string) => void;
     onDelete?: (projectId: string) => void;
-    onPackage?: (projectId: string) => void;
+    /** Called when the project packaging flow completes. Receives projectId and optional selected resource ids. */
+    onPackage?: (projectId: string, selectedIds?: string[]) => void;
+    resources?: Resource[];
 }
 
 /**
@@ -19,6 +23,7 @@ export default function ManageProjectMenu({
     onRename,
     onDelete,
     onPackage,
+    resources = [],
 }: ManageProjectMenuProps): JSX.Element {
     const [open, setOpen] = useState<boolean>(false);
     const [editing, setEditing] = useState<boolean>(false);
@@ -27,6 +32,7 @@ export default function ManageProjectMenu({
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
     const [confirmPackageOpen, setConfirmPackageOpen] =
         useState<boolean>(false);
+    const [compileOpen, setCompileOpen] = useState<boolean>(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -66,8 +72,15 @@ export default function ManageProjectMenu({
     };
 
     const handlePackageConfirm = (): void => {
+        // Legacy confirm path: call package without selected ids
         if (onPackage) onPackage(projectId);
         setConfirmPackageOpen(false);
+        setOpen(false);
+    };
+
+    const handleConfirmCompile = (selectedIds: string[]) => {
+        if (onPackage) onPackage(projectId, selectedIds);
+        setCompileOpen(false);
         setOpen(false);
     };
 
@@ -115,7 +128,7 @@ export default function ManageProjectMenu({
                             <button
                                 type="button"
                                 role="menuitem"
-                                onClick={() => setConfirmPackageOpen(true)}
+                                onClick={() => setCompileOpen(true)}
                                 className="w-full text-left px-2 py-2 text-sm hover:bg-slate-50 rounded"
                             >
                                 Package
@@ -143,6 +156,14 @@ export default function ManageProjectMenu({
                 cancelLabel="Cancel"
                 onConfirm={handlePackageConfirm}
                 onCancel={() => setConfirmPackageOpen(false)}
+            />
+
+            <CompilePreviewModal
+                isOpen={compileOpen}
+                projectId={projectId}
+                resources={resources}
+                onClose={() => setCompileOpen(false)}
+                onConfirmCompile={handleConfirmCompile}
             />
 
             <RenameProjectModal
