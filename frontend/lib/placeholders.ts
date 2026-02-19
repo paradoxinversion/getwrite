@@ -69,13 +69,25 @@ export function createResource(
 export function createProject(name = "Untitled Project", id?: string): Project {
     const pid = id ?? genId("proj");
     const createdAt = nowIso();
+    // Build a small, realistic project tree:
+    // - root folder named after the project
+    //   - Workspace (folder)
+    //     - Chapter 1 (folder)
+    //       - Scene A (scene)
+    //   - Notes (note)
+    const root = createResource(name, "folder", pid, undefined, 1);
+    const workspace = createResource("Workspace", "folder", pid, root.id, 2);
+    const chapter1 = createResource(
+        "Chapter 1",
+        "folder",
+        pid,
+        workspace.id,
+        3,
+    );
+    const sceneA = createResource("Scene A", "scene", pid, chapter1.id, 4);
+    const notes = createResource("Notes", "note", pid, root.id, 5);
 
-    const resources: Resource[] = [
-        createResource("Chapter 1", "document", pid, undefined, 1),
-        createResource("Scene A", "scene", pid, undefined, 2),
-        createResource("Notes", "note", pid, undefined, 3),
-    ];
-
+    const resources: Resource[] = [root, workspace, chapter1, sceneA, notes];
     return {
         id: pid,
         name,
