@@ -8,6 +8,7 @@ import DiffView from "../WorkArea/DiffView";
 import OrganizerView from "../WorkArea/OrganizerView";
 import DataView from "../WorkArea/DataView";
 import TimelineView from "../WorkArea/TimelineView";
+import MetadataSidebar from "../Sidebar/MetadataSidebar";
 
 /**
  * Simple three-column shell used in the app and Storybook:
@@ -23,13 +24,28 @@ export default function AppShell({
     resources,
     onResourceSelect,
     selectedResourceId,
+    onChangeNotes,
+    onChangeStatus,
+    onChangeCharacters,
+    onChangeLocations,
+    onChangeItems,
+    onChangePOV,
 }: {
     children?: React.ReactNode;
     showSidebars?: boolean;
     resources?: Resource[];
     onResourceSelect?: (id: string) => void;
     selectedResourceId?: string | null;
-}) {
+    onChangeNotes?: (text: string, resourceId: string) => void;
+    onChangeStatus?: (
+        status: "draft" | "in-review" | "published",
+        resourceId: string,
+    ) => void;
+    onChangeCharacters?: (chars: string[], resourceId: string) => void;
+    onChangeLocations?: (locs: string[], resourceId: string) => void;
+    onChangeItems?: (items: string[], resourceId: string) => void;
+    onChangePOV?: (pov: string | null, resourceId: string) => void;
+}): JSX.Element {
     const [view, setView] = useState<ViewName>("edit");
     const [leftWidth, setLeftWidth] = useState<number>(280);
     const [rightWidth, setRightWidth] = useState<number>(320);
@@ -79,6 +95,11 @@ export default function AppShell({
             document.body.style.cursor = "";
         };
     }, []);
+    const selectedResource =
+        selectedResourceId && resources
+            ? resources.find((r) => r.id === selectedResourceId)
+            : undefined;
+
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">
             {showSidebars ? (
@@ -246,12 +267,33 @@ export default function AppShell({
                         className="hidden lg:block bg-white border-l p-4"
                         style={{ width: rightWidth }}
                     >
-                        <div className="text-sm font-medium text-slate-700 mb-4">
-                            Metadata
-                        </div>
-                        <div className="text-sm text-slate-600">
-                            Select a resource to view metadata.
-                        </div>
+                        <MetadataSidebar
+                            resource={selectedResource}
+                            onChangeNotes={(text) =>
+                                selectedResource &&
+                                onChangeNotes?.(text, selectedResource.id)
+                            }
+                            onChangeStatus={(status) =>
+                                selectedResource &&
+                                onChangeStatus?.(status, selectedResource.id)
+                            }
+                            onChangeCharacters={(chars) =>
+                                selectedResource &&
+                                onChangeCharacters?.(chars, selectedResource.id)
+                            }
+                            onChangeLocations={(locs) =>
+                                selectedResource &&
+                                onChangeLocations?.(locs, selectedResource.id)
+                            }
+                            onChangeItems={(items) =>
+                                selectedResource &&
+                                onChangeItems?.(items, selectedResource.id)
+                            }
+                            onChangePOV={(pov) =>
+                                selectedResource &&
+                                onChangePOV?.(pov, selectedResource.id)
+                            }
+                        />
                     </aside>
                 </>
             ) : null}
