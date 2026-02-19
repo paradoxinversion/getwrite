@@ -124,7 +124,6 @@ export default function ResourceTree({
     React.useEffect(() => {
         setLocalOrder(resources.map((r) => r.id));
     }, [resources]);
-
     const nodes = useMemo(() => {
         const map = new Map<string, TreeNode>();
         resources.forEach((r) => map.set(r.id, { resource: r, children: [] }));
@@ -355,12 +354,26 @@ export default function ResourceTree({
 
     return (
         <nav
-            className={`w-full text-sm ${className}`}
+            className={`w-full text-sm flex flex-col h-screen ${className}`}
             aria-label="Resource tree"
         >
-            <ul className="space-y-1" role="tree">
+            <ul className="space-y-1 overflow-auto flex-1" role="tree">
                 {nodes.map((n) => renderNode(n, 0))}
             </ul>
+            {/* Footer: show currently selected resource for debugging */}
+            {(() => {
+                const selectedResource = selectedId
+                    ? resources.find((r) => r.id === selectedId)
+                    : undefined;
+                return (
+                    <div className="mt-auto border-t pt-1 px-2 text-xs text-muted-700 dark:text-muted-300">
+                        Selected:{" "}
+                        <span className="font-medium">
+                            {selectedResource ? selectedResource.title : "None"}
+                        </span>
+                    </div>
+                );
+            })()}
 
             <ResourceContextMenu
                 open={contextMenu.open}
