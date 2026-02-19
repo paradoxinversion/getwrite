@@ -22,8 +22,10 @@ describe("DataView", () => {
             return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
         };
 
-        expect(getStatValue("Projects")).toBe("2");
-        expect(getStatValue("Resources")).toBe("6");
+        expect(getStatValue("Projects")).toBe(String(projects.length));
+        expect(getStatValue("Resources")).toBe(
+            String(projects.flatMap((p) => p.resources).length),
+        );
 
         // Resources list contains sample titles (appear at least once)
         projects
@@ -53,8 +55,8 @@ it("shows project/resource counts and lists resources for a single project", () 
         return valueEl ? (valueEl.textContent?.trim() ?? null) : null;
     };
 
-    expect(getStatValue("Projects")).toBe("1");
-    expect(getStatValue("Resources")).toBe("3");
+    expect(getStatValue("Projects")).toBe(String(projects.length));
+    expect(getStatValue("Resources")).toBe(String(project.resources.length));
 
     // Resources list contains sample titles from the single project
     project.resources.forEach((r) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
-import type { ResourceType } from "../../lib/types";
+import type { ResourceType, Resource } from "../../lib/types";
 
 export interface CreateResourcePayload {
     title: string;
@@ -12,6 +12,8 @@ export interface CreateResourceModalProps {
     initialTitle?: string;
     initialType?: ResourceType;
     parentId?: string;
+    /** Available parent folders to place the new resource under (optional) */
+    parents?: Resource[];
     onClose?: () => void;
     onCreate?: (payload: CreateResourcePayload, parentId?: string) => void;
 }
@@ -24,16 +26,21 @@ export default function CreateResourceModal({
     initialTitle = "",
     initialType = "document",
     parentId,
+    parents = [],
     onClose,
     onCreate,
 }: CreateResourceModalProps): JSX.Element | null {
     const [title, setTitle] = useState<string>(initialTitle);
     const [type, setType] = useState<ResourceType>(initialType);
+    const [selectedParent, setSelectedParent] = useState<string | undefined>(
+        parentId,
+    );
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         setTitle(initialTitle);
         setType(initialType);
+        setSelectedParent(parentId);
     }, [initialTitle, initialType, isOpen]);
 
     useEffect(() => {
@@ -43,7 +50,7 @@ export default function CreateResourceModal({
     const handleCreate = () => {
         const trimmed = title.trim();
         if (!trimmed) return;
-        onCreate?.({ title: trimmed, type }, parentId);
+        onCreate?.({ title: trimmed, type }, selectedParent);
         onClose?.();
     };
 
@@ -87,6 +94,31 @@ export default function CreateResourceModal({
                         <option value="scene">Scene</option>
                         <option value="note">Note</option>
                         <option value="folder">Folder</option>
+                    </select>
+
+                    <label className="text-sm font-medium mt-3 block">
+                        Parent folder
+                    </label>
+                    <select
+                        value={selectedParent ?? ""}
+                        onChange={(e) =>
+                            setSelectedParent(
+                                e.target.value === ""
+                                    ? undefined
+                                    : e.target.value,
+                            )
+                        }
+                        className="w-full border rounded px-2 py-1 mt-1"
+                        aria-label="resource-parent"
+                    >
+                        <option value="">(root)</option>
+                        {parents
+                            .filter((p) => p.type === "folder")
+                            .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.title}
+                                </option>
+                            ))}
                     </select>
                 </div>
 

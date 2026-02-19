@@ -23,9 +23,10 @@ describe("ResourceTree", () => {
         const folderNode = screen.getByText("Folder A");
         expect(folderNode).toBeTruthy();
 
-        // click the expand button (chevron) which has aria-label "Expand"
-        const expandBtn = screen.getByLabelText("Expand");
-        fireEvent.click(expandBtn);
+        // click the folder's button to toggle expand for this specific node
+        const folderBtn = folderNode.closest("button");
+        expect(folderBtn).toBeTruthy();
+        fireEvent.click(folderBtn as HTMLElement);
 
         // after toggling expand, the child item should be visible
         const childNode = screen.getByText("Child Item");

@@ -5,6 +5,7 @@ import ResourceTree from "../Tree/ResourceTree";
 import ConfirmDialog from "../common/ConfirmDialog";
 import CreateResourceModal from "../Tree/CreateResourceModal";
 import ExportPreviewModal from "../common/ExportPreviewModal";
+import CompilePreviewModal from "../common/CompilePreviewModal";
 import type { ResourceContextAction } from "../Tree/ResourceContextMenu";
 import ViewSwitcher from "../WorkArea/ViewSwitcher";
 import EditView from "../WorkArea/EditView";
@@ -170,6 +171,11 @@ export default function AppShell({
         resourceTitle?: string;
         preview?: string;
     }>({ open: false });
+    const [compileModal, setCompileModal] = useState<{
+        open: boolean;
+        resourceId?: string;
+        preview?: string;
+    }>({ open: false });
 
     const handleCreateConfirmed = (
         payload: {
@@ -249,6 +255,7 @@ export default function AppShell({
                 onCreate={(payload, parentId) =>
                     handleCreateConfirmed(payload, parentId)
                 }
+                parents={resources ?? []}
             />
 
             <ExportPreviewModal
@@ -259,6 +266,44 @@ export default function AppShell({
                 onConfirmExport={() =>
                     handleExportConfirmed(exportModal.resourceId)
                 }
+                onShowCompile={() => {
+                    // generate a simple compiled preview from resources
+                    const r = exportModal.resourceId
+                        ? resources?.find(
+                              (x) => x.id === exportModal.resourceId,
+                          )
+                        : undefined;
+                    const preview = r
+                        ? `Compiled package for ${r.title}\n\n` +
+                          JSON.stringify(r, null, 2)
+                        : `Compiled project bundle\n\n` +
+                          JSON.stringify(resources ?? [], null, 2);
+                    setCompileModal({
+                        open: true,
+                        resourceId: exportModal.resourceId,
+                        preview,
+                    });
+                }}
+            />
+
+            <CompilePreviewModal
+                isOpen={compileModal.open}
+                resource={
+                    compileModal.resourceId
+                        ? resources?.find(
+                              (r) => r.id === compileModal.resourceId,
+                          )
+                        : undefined
+                }
+                resources={resources}
+                preview={compileModal.preview}
+                onClose={() => setCompileModal({ open: false })}
+                onConfirm={() => {
+                    // forward as export confirm action for now
+                    if (compileModal.resourceId)
+                        onResourceAction?.("export", compileModal.resourceId);
+                    setCompileModal({ open: false });
+                }}
             />
 
             {/* Left resize handle */}

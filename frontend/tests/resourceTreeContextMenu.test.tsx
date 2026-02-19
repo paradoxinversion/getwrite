@@ -39,6 +39,12 @@ describe("ResourceTree context menu", () => {
             />,
         );
 
+        // Expand the root so child nodes are rendered, then right-click the resource title to open the context menu
+        const rootNode = screen.getByText("Root");
+        const rootBtn = rootNode.closest("button");
+        expect(rootBtn).toBeTruthy();
+        fireEvent.click(rootBtn as HTMLElement);
+
         // Right-click the resource title to open the context menu
         fireEvent.contextMenu(screen.getByText("Scene A"));
 
