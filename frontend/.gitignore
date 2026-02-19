@@ -1,0 +1,19 @@
+# Playwright artifacts
+playwright-report/
+.playwright/
+
+# Playwright traces and reports
+*.trace
+playwright-report.zip
+
+# Local test outputs
+test-results/
+
+# Storybook build outputs (already ignored at repo root but keep local)
+storybook-static/
+
+# Node & editor
+node_modules/
+.DS_Store
+.vscode/
+.idea/
