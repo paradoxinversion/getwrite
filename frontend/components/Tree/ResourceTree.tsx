@@ -219,6 +219,16 @@ export default function ResourceTree({
     };
 
     /** Render a single TreeNode recursively. `depth` controls left padding. */
+    const getFirstVisibleId = (nodesList: TreeNode[]): string | undefined => {
+        if (!nodesList || nodesList.length === 0) return undefined;
+        const first = nodesList[0];
+        if (!first) return undefined;
+        if (first.resource) return first.resource.id;
+        return undefined;
+    };
+
+    const firstVisibleId = getFirstVisibleId(nodes);
+
     const renderNode = (node: TreeNode, depth = 0) => {
         const hasChildren = node.children.length > 0;
         const isExpanded = !!expanded[node.resource.id];
@@ -284,7 +294,13 @@ export default function ResourceTree({
                                     : "Expand"
                                 : undefined
                         }
-                        tabIndex={isSelected ? 0 : -1}
+                        aria-selected={isSelected}
+                        tabIndex={
+                            isSelected ||
+                            (!selectedId && node.resource.id === firstVisibleId)
+                                ? 0
+                                : -1
+                        }
                         onClick={() =>
                             hasChildren
                                 ? toggle(node.resource.id)
@@ -304,6 +320,22 @@ export default function ResourceTree({
                                 const next =
                                     items[idx + 1] ?? items[items.length - 1];
                                 next?.focus();
+                                e.preventDefault();
+                            } else if (
+                                e.key === "ContextMenu" ||
+                                (e.shiftKey && e.key === "F10")
+                            ) {
+                                // Open the context menu for this node via keyboard
+                                const rect = (
+                                    e.currentTarget as HTMLElement
+                                ).getBoundingClientRect();
+                                setContextMenu({
+                                    open: true,
+                                    x: Math.round(rect.left + 8),
+                                    y: Math.round(rect.top + 24),
+                                    resourceId: node.resource.id,
+                                    resourceTitle: node.resource.title,
+                                });
                                 e.preventDefault();
                             } else if (e.key === "ArrowUp") {
                                 const prev = items[idx - 1] ?? items[0];

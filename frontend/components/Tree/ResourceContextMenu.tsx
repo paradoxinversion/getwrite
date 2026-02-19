@@ -41,6 +41,8 @@ export default function ResourceContextMenu({
     onAction,
     className = "",
 }: ResourceContextMenuProps) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
         const root = containerRef.current;
         function onDocumentClick(e: MouseEvent) {
@@ -59,14 +61,42 @@ export default function ResourceContextMenu({
         return undefined;
     }, [open, onClose]);
 
-    const containerRef = useRef<HTMLDivElement | null>(null);
-
-    if (!open) return null;
-
     const handle = (action: ResourceContextAction) => {
         onAction?.(action, resourceId);
         onClose?.();
     };
+
+    // Focus management: focus the first menu item when opened and allow
+    // arrow-key navigation + Escape to close.
+    useEffect(() => {
+        if (!open) return;
+        const root = containerRef.current;
+        if (!root) return;
+        const items = Array.from(
+            root.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+        );
+        items[0]?.focus();
+
+        function onKey(e: KeyboardEvent) {
+            const active = document.activeElement as HTMLElement | null;
+            const idx = items.indexOf(active as HTMLElement);
+            if (e.key === "ArrowDown") {
+                const next = items[idx + 1] ?? items[0];
+                next?.focus();
+                e.preventDefault();
+            } else if (e.key === "ArrowUp") {
+                const prev = items[idx - 1] ?? items[items.length - 1];
+                prev?.focus();
+                e.preventDefault();
+            } else if (e.key === "Escape") {
+                onClose?.();
+                e.preventDefault();
+            }
+        }
+
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [open, onClose]);
 
     return (
         <div
