@@ -1,6 +1,7 @@
-import React from "react";
-import type { Resource } from "../../lib/types";
+import React, { useState } from "react";
+import type { Resource, ViewName } from "../../lib/types";
 import ResourceTree from "../Tree/ResourceTree";
+import ViewSwitcher from "../WorkArea/ViewSwitcher";
 
 /**
  * Simple three-column shell used in the app and Storybook:
@@ -23,6 +24,7 @@ export default function AppShell({
     onResourceSelect?: (id: string) => void;
     selectedResourceId?: string | null;
 }) {
+    const [view, setView] = useState<ViewName>("edit");
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">
             {showSidebars ? (
@@ -55,6 +57,9 @@ export default function AppShell({
             ) : null}
 
             <main className="flex-1 p-4 md:p-6">
+                <div className="w-full mb-4">
+                    <ViewSwitcher view={view} onChange={setView} />
+                </div>
                 <div className="max-w-7xl mx-auto">
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         {children ?? (
