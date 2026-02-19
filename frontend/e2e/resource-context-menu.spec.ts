@@ -42,12 +42,10 @@ test("keyboard navigation and activation fires action and closes", async ({
     await page.keyboard.press("ArrowDown"); // to Duplicate
     await page.keyboard.press("ArrowDown"); // to Delete
 
-    // Activate with Enter and wait for a console event
-    const waitConsole = page.waitForEvent("console");
+    // Activate with Enter and assert the story probe shows the action
     await page.keyboard.press("Enter");
-    const consoleMsg = await waitConsole;
-    expect(consoleMsg.text().toLowerCase()).toContain("action");
-    expect(consoleMsg.text().toLowerCase()).toContain("delete");
+    const lastAction = page.locator('[data-testid="last-action"]');
+    await expect(lastAction).toHaveText(/delete/i);
 
     // menu should close after activation
     await expect(menu).toHaveCount(0);
@@ -61,11 +59,9 @@ test("clicking Delete button triggers action and closes (mouse)", async ({
     await expect(menu).toBeVisible();
 
     const deleteBtn = page.getByRole("menuitem", { name: "Delete" });
-    const waitConsole = page.waitForEvent("console");
     await deleteBtn.click();
-    const consoleMsg = await waitConsole;
-    expect(consoleMsg.text().toLowerCase()).toContain("action");
-    expect(consoleMsg.text().toLowerCase()).toContain("delete");
+    const lastAction = page.locator('[data-testid="last-action"]');
+    await expect(lastAction).toHaveText(/delete/i);
 
     await expect(menu).toHaveCount(0);
 });

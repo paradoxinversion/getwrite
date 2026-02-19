@@ -42,6 +42,9 @@ export const Interactive: Story = {
     render: (args) => {
         const Wrapper = () => {
             const [open, setOpen] = React.useState(true);
+            const [lastAction, setLastAction] = React.useState<string | null>(
+                null,
+            );
             return (
                 <div>
                     <div data-testid="outside" style={{ padding: 40 }}>
@@ -51,7 +54,18 @@ export const Interactive: Story = {
                         {...args}
                         open={open}
                         onClose={() => setOpen(false)}
+                        onAction={(action: any) =>
+                            setLastAction(String(action))
+                        }
                     />
+                    {/* test probe: expose last action to story DOM only */}
+                    <div
+                        data-testid="last-action"
+                        aria-hidden
+                        style={{ display: "none" }}
+                    >
+                        {lastAction}
+                    </div>
                 </div>
             );
         };
