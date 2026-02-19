@@ -23,8 +23,18 @@ export function createResource(
     type: ResourceType = "document",
     projectId?: string,
     parentId?: string,
+    resourceIndex?: number,
 ): Resource {
-    const id = genId("res");
+    let id: string;
+    if (projectId && typeof resourceIndex === "number") {
+        const slug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+        id = `${projectId}_res_${resourceIndex}_${slug}`;
+    } else {
+        id = genId("res");
+    }
     const pid = projectId ?? genId("proj");
     const createdAt = nowIso();
     const metadata: Metadata = {
@@ -56,18 +66,18 @@ export function createResource(
  * @param name Friendly name for the project.
  * @returns `Project` with createdAt/updatedAt and `resources` array.
  */
-export function createProject(name = "Untitled Project"): Project {
-    const id = genId("proj");
+export function createProject(name = "Untitled Project", id?: string): Project {
+    const pid = id ?? genId("proj");
     const createdAt = nowIso();
 
     const resources: Resource[] = [
-        createResource("Chapter 1", "document", id),
-        createResource("Scene A", "scene", id),
-        createResource("Notes", "note", id),
+        createResource("Chapter 1", "document", pid, undefined, 1),
+        createResource("Scene A", "scene", pid, undefined, 2),
+        createResource("Notes", "note", pid, undefined, 3),
     ];
 
     return {
-        id,
+        id: pid,
         name,
         description: "Placeholder project created for UI development",
         createdAt,
@@ -83,7 +93,7 @@ export function createProject(name = "Untitled Project"): Project {
 export function sampleProjects(count = 2): Project[] {
     const out: Project[] = [];
     for (let i = 1; i <= count; i += 1) {
-        out.push(createProject(`Sample Project ${i}`));
+        out.push(createProject(`Sample Project ${i}`, `proj_${i}`));
     }
     return out;
 }
