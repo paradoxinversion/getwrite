@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { Resource } from "../../lib/types";
 import ResourceContextMenu, {
     type ResourceContextAction,
@@ -121,9 +121,10 @@ export default function ResourceTree({
         resourceTitle?: string;
     }>({ open: false, x: 0, y: 0 });
 
-    React.useEffect(() => {
+    useEffect(() => {
         setLocalOrder(resources.map((r) => r.id));
     }, [resources]);
+
     const nodes = useMemo(() => {
         const map = new Map<string, TreeNode>();
         resources.forEach((r) => map.set(r.id, { resource: r, children: [] }));
@@ -157,12 +158,9 @@ export default function ResourceTree({
     };
 
     // Drag state
-    // Drag state: stores the id of the currently dragged node.
-    const dragIdRef = React.useRef<string | null>(null);
+    const dragIdRef = useRef<string | null>(null);
 
-    /**
-     * Set drag source id and configure DataTransfer. May noop in jsdom.
-     */
+    /** Set drag source id and configure DataTransfer. May noop in jsdom. */
     const handleDragStart = (e: React.DragEvent, id: string) => {
         dragIdRef.current = id;
         e.dataTransfer.effectAllowed = "move";
@@ -172,6 +170,26 @@ export default function ResourceTree({
             // ignore in environments that don't support it (tests)
         }
     };
+
+    // Reference to the nav element so we can position a fixed footer aligned
+    // to the tree's horizontal position and width without changing layout height.
+    const navRef = useRef<HTMLElement | null>(null);
+    const [footerRect, setFooterRect] = useState({ left: 0, width: 0 });
+
+    useEffect(() => {
+        function updateRect() {
+            const el = navRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            setFooterRect({
+                left: Math.round(r.left),
+                width: Math.round(r.width),
+            });
+        }
+        updateRect();
+        window.addEventListener("resize", updateRect);
+        return () => window.removeEventListener("resize", updateRect);
+    }, []);
 
     /** Prevent default to allow drop; sets dropEffect to 'move'. */
     const handleDragOver = (e: React.DragEvent) => {
@@ -353,39 +371,56 @@ export default function ResourceTree({
     };
 
     return (
-        <nav
-            className={`w-full text-sm flex flex-col h-screen ${className}`}
-            aria-label="Resource tree"
-        >
-            <ul className="space-y-1 overflow-auto flex-1" role="tree">
-                {nodes.map((n) => renderNode(n, 0))}
-            </ul>
-            {/* Footer: show currently selected resource for debugging */}
+        <>
+            <nav
+                ref={navRef}
+                className={`w-full text-sm flex flex-col ${className}`}
+                aria-label="Resource tree"
+            >
+                <ul className="space-y-1 overflow-auto flex-1" role="tree">
+                    {nodes.map((n) => renderNode(n, 0))}
+                </ul>
+
+                <ResourceContextMenu
+                    open={contextMenu.open}
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    resourceId={contextMenu.resourceId}
+                    resourceTitle={contextMenu.resourceTitle}
+                    onClose={() =>
+                        setContextMenu((s) => ({ ...s, open: false }))
+                    }
+                    onAction={(action, resourceId) => {
+                        onResourceAction?.(action, resourceId);
+                    }}
+                />
+            </nav>
+
+            {/* Fixed footer aligned to tree nav rect so it sits at the bottom of the viewport */}
             {(() => {
                 const selectedResource = selectedId
                     ? resources.find((r) => r.id === selectedId)
                     : undefined;
+                const style: React.CSSProperties = {
+                    position: "fixed",
+                    bottom: 0,
+                    left: footerRect.left,
+                    width: footerRect.width,
+                    zIndex: 40,
+                };
                 return (
-                    <div className="mt-auto border-t pt-1 px-2 text-xs text-muted-700 dark:text-muted-300">
-                        Selected:{" "}
-                        <span className="font-medium">
-                            {selectedResource ? selectedResource.title : "None"}
-                        </span>
+                    <div style={style} className="pointer-events-auto">
+                        <div className="border-t bg-background/80 backdrop-blur-sm px-3 py-1 text-xs text-muted-700 dark:text-muted-300">
+                            Selected:{" "}
+                            <span className="font-medium">
+                                {selectedResource
+                                    ? selectedResource.title
+                                    : "None"}
+                            </span>
+                        </div>
                     </div>
                 );
             })()}
-
-            <ResourceContextMenu
-                open={contextMenu.open}
-                x={contextMenu.x}
-                y={contextMenu.y}
-                resourceId={contextMenu.resourceId}
-                resourceTitle={contextMenu.resourceTitle}
-                onClose={() => setContextMenu((s) => ({ ...s, open: false }))}
-                onAction={(action, resourceId) => {
-                    onResourceAction?.(action, resourceId);
-                }}
-            />
-        </nav>
+        </>
     );
 }
