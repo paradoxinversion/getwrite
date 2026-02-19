@@ -54,9 +54,14 @@ export default function ResourceContextMenu({
         }
 
         if (open) {
-            document.addEventListener("mousedown", onDocumentClick);
+            // attach in capture phase to ensure we observe clicks before other handlers
+            document.addEventListener("mousedown", onDocumentClick, {
+                capture: true,
+            });
             return () =>
-                document.removeEventListener("mousedown", onDocumentClick);
+                document.removeEventListener("mousedown", onDocumentClick, {
+                    capture: true,
+                } as EventListenerOptions);
         }
         return undefined;
     }, [open, onClose]);
@@ -97,6 +102,8 @@ export default function ResourceContextMenu({
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
     }, [open, onClose]);
+
+    if (!open) return null;
 
     return (
         <div

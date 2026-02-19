@@ -10,7 +10,8 @@
         "lint": "next lint",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
-        "test": "vitest"
+        "test": "vitest",
+        "test-storybook": "vitest --config=vitest.storybook.config.ts"
     },
     "dependencies": {
         "@tiptap/react": "^3.0.0",
@@ -21,20 +22,24 @@
     },
     "devDependencies": {
         "@storybook/addon-a11y": "^10.2.8",
+        "@storybook/addon-vitest": "^10.2.10",
         "@storybook/nextjs-vite": "^10.2.8",
         "@tailwindcss/postcss": "^4.1.18",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
         "@types/node": "25.2.3",
         "@types/react": "19.2.14",
         "autoprefixer": "10.4.14",
+        "jsdom": "^28.1.0",
         "postcss": "8.5.6",
         "storybook": "^10.2.8",
         "tailwindcss": "4.1.0",
         "typescript": "5.9.3",
         "vitest": "4.0.18",
-        "@testing-library/react": "^16.3.2",
-        "@testing-library/jest-dom": "^6.9.1",
-        "@testing-library/user-event": "^14.6.1",
-        "jsdom": "^28.1.0"
+        "playwright": "^1.58.2",
+        "@vitest/browser-playwright": "4.0.18",
+        "@vitest/coverage-v8": "4.0.18"
     },
     "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }
