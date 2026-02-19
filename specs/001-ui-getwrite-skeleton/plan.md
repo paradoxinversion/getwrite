@@ -7,12 +7,12 @@
 
 ## Summary
 
-This feature delivers a polished, production-quality UI skeleton for GetWrite using placeholder data only. It implements the Start page and Create Interface, the Resource Tree, Work Area views (Edit, Organizer, Data, Diff, Timeline), and the Metadata sidebar. Components are built in isolation in Storybook, styled with TailwindCSS, and tested with Testing Library + Vitest. TinyMCE is integrated as the primary editor component (placeholder-only). No persistence or backend integrations are implemented in this milestone.
+This feature delivers a polished, production-quality UI skeleton for GetWrite using placeholder data only. It implements the Start page and Create Interface, the Resource Tree, Work Area views (Edit, Organizer, Data, Diff, Timeline), and the Metadata sidebar. Components are built in isolation in Storybook, styled with TailwindCSS, and tested with Testing Library + Vitest. TipTap is integrated as the primary editor component (placeholder-only). No persistence or backend integrations are implemented in this milestone.
 
 ## Technical Context
 
 **Language/Version**: Next.js 16.1.6 with TypeScript 5.9.3
-**Primary Dependencies**: React (via Next.js), TailwindCSS 4.1, TinyMCE (editor), Storybook, Testing Library, Vitest
+**Primary Dependencies**: React (via Next.js), TailwindCSS 4.1, TipTap (editor), Storybook, Testing Library, Vitest
 **Storage**: N/A for this UI-only milestone (in-memory placeholder models only)
 **Testing**: Component tests with Testing Library; unit/integration tests with Vitest; Storybook for visual/interaction QA
 **Target Platform**: Web (desktop-first; responsive to tablet widths >= 768px)

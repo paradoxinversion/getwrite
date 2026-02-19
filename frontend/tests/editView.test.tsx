@@ -2,8 +2,8 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Mock the TinyMCEEditor to avoid loading the real Editor in jsdom.
-vi.mock("../components/TinyMCEEditor", () => {
+// Mock the TipTapEditor to avoid loading the real Editor in jsdom.
+vi.mock("../components/TipTapEditor", () => {
     return {
         __esModule: true,
         default: ({
@@ -14,7 +14,7 @@ vi.mock("../components/TinyMCEEditor", () => {
             onChange?: (v: string) => void;
         }) => (
             <textarea
-                data-testid="tinymce-mock"
+                data-testid="tiptap-mock"
                 value={value}
                 onChange={(e) => onChange && onChange(e.target.value)}
             />
@@ -31,7 +31,7 @@ describe("EditView", () => {
         // words: 4
         expect(screen.getByText(/Words:/)).toHaveTextContent("Words: 4");
 
-        const ta = screen.getByTestId("tinymce-mock") as HTMLTextAreaElement;
+        const ta = screen.getByTestId("tiptap-mock") as HTMLTextAreaElement;
         fireEvent.change(ta, { target: { value: "one two three" } });
 
         expect(screen.getByText(/Words:/)).toHaveTextContent("Words: 3");

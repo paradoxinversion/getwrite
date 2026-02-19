@@ -4,7 +4,7 @@ Phase 1: Setup
 
 - [x] T001 [P] Initialize Next.js + TypeScript app in `frontend/` using Next.js 16.1.6 and TypeScript 5.9.3 (`frontend/`)
 - [x] T002 [P] Add TailwindCSS 4.1 and create `frontend/styles/tailwind.config.js` and base styles (`frontend/styles/tailwind.config.js`)
-- [x] T003 [P] Install TinyMCE and add a placeholder editor wrapper component at `frontend/components/TinyMCEEditor.tsx` (`frontend/components/TinyMCEEditor.tsx`)
+- [x] T003 [P] Install TipTap and add a placeholder editor wrapper component at `frontend/components/TipTapEditor.tsx` (`frontend/components/TipTapEditor.tsx`)
 - [x] T004 [P] Install Storybook and create initial Storybook config; add `stories/` and `storybook/main.js` (`stories/`, `.storybook/`)
 - [x] T005 [P] Install Testing Library + Vitest and add basic test setup at `frontend/tests/setup.ts` (`frontend/tests/setup.ts`)
 - [x] T006 Create project-level README and developer quickstart at `specs/001-ui-getwrite-skeleton/quickstart.md` (`specs/001-ui-getwrite-skeleton/quickstart.md`)
@@ -34,7 +34,7 @@ Phase 4: [US2] Resource Tree & Navigation (Priority: P1)
 Phase 5: [US3] Work Area Views (Priority: P1)
 
 - [x] T020 [US3] Implement view switcher control that toggles Edit/Organizer/Data/Diff/Timeline at `frontend/components/WorkArea/ViewSwitcher.tsx` (`frontend/components/WorkArea/ViewSwitcher.tsx`)
-- [x] T021 [US3] Implement `EditView` with TinyMCE placeholder content and footer stats UI at `frontend/components/WorkArea/EditView.tsx` (`frontend/components/WorkArea/EditView.tsx`)
+- [x] T021 [US3] Implement `EditView` with TipTap placeholder content and footer stats UI at `frontend/components/WorkArea/EditView.tsx` (`frontend/components/WorkArea/EditView.tsx`)
 - [x] T022 [US3] Implement `OrganizerView` rendering resource cards and body toggle at `frontend/components/WorkArea/OrganizerView.tsx` (`frontend/components/WorkArea/OrganizerView.tsx`)
 - [x] T023 [US3] Implement `DataView` showing Overall Stats and Resources lists at `frontend/components/WorkArea/DataView.tsx` (`frontend/components/WorkArea/DataView.tsx`)
 - [x] T024 [US3] Implement `DiffView` with two read-only panes and revision list UI at `frontend/components/WorkArea/DiffView.tsx` (`frontend/components/WorkArea/DiffView.tsx`)
@@ -67,7 +67,7 @@ Dependencies
 
 Parallel execution examples
 
-- While T008 (AppShell) is in progress, designers can work on Storybook tokens (T007) and TinyMCE wrapper (T003) in parallel — mark these as [P].
+- While T008 (AppShell) is in progress, designers can work on Storybook tokens (T007) and TipTap wrapper (T003) in parallel — mark these as [P].
 - Multiple component authors can implement separate Work Area views (T021-T025) concurrently since they operate on different files — mark these as [P].
 
 Implementation strategy

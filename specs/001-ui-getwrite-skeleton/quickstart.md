@@ -7,7 +7,7 @@ Stack (decided during planning):
 - Next.js 16.1.6 + TypeScript 5.9.3
 - TailwindCSS 4.1
 - Storybook for component dev
-- TinyMCE editor (integrated as a component)
+- TipTap editor (integrated as a component)
 - Testing: Testing Library + Vitest
 
 Recommended local steps (using `pnpm`):

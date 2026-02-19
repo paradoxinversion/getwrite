@@ -4,14 +4,12 @@ import TipTapEditor from "../TipTapEditor";
 export interface EditViewProps {
     /** Initial editor content (HTML or plain text) */
     initialContent?: string;
-    /** Optional API key forwarded to TinyMCE */
-    apiKey?: string;
     /** Called when content changes */
     onChange?: (content: string) => void;
 }
 
 /**
- * `EditView` provides a simple editing surface using `TinyMCEEditor` and a
+ * `EditView` provides a simple editing surface using `TipTapEditor` and a
  * footer that displays lightweight stats such as word count and a last-saved
  * timestamp (placeholder only).
  *
