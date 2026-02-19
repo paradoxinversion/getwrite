@@ -135,15 +135,17 @@ export default function AppShell({
             ) : null}
 
             <main className="flex-1 p-4 md:p-6">
-                <div className="w-full mb-4">
-                    <ViewSwitcher
-                        view={view}
-                        onChange={setView}
-                        disabledViews={
-                            selectedResourceId ? [] : ["edit", "diff"]
-                        }
-                    />
-                </div>
+                {resources ? (
+                    <div className="w-full mb-4">
+                        <ViewSwitcher
+                            view={view}
+                            onChange={setView}
+                            disabledViews={
+                                selectedResourceId ? [] : ["edit", "diff"]
+                            }
+                        />
+                    </div>
+                ) : null}
                 <div className="max-w-7xl mx-auto">
                     <div className="bg-white rounded-xl shadow-sm p-6 min-h-[400px]">
                         {/* If a resource is selected, render the chosen view; otherwise render children (StartPage or prompt) */}
