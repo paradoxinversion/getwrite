@@ -4,6 +4,7 @@ import { sampleProjects, createProject } from "../../lib/placeholders";
 import CreateProjectModal, {
     type CreateProjectPayload,
 } from "./CreateProjectModal";
+import ManageProjectMenu from "./ManageProjectMenu";
 
 export interface StartPageProps {
     projects?: Project[];
@@ -81,6 +82,34 @@ export default function StartPage({
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <ManageProjectMenu
+                                projectId={p.id}
+                                projectName={p.name}
+                                onRename={(id, newName) => {
+                                    setLocalProjects((prev) =>
+                                        prev.map((proj) =>
+                                            proj.id === id
+                                                ? { ...proj, name: newName }
+                                                : proj,
+                                        ),
+                                    );
+                                }}
+                                onDelete={(id) => {
+                                    setLocalProjects((prev) =>
+                                        prev.filter((proj) => proj.id !== id),
+                                    );
+                                }}
+                                onPackage={(id) => {
+                                    // UI-only placeholder action
+                                    const proj = localProjects.find(
+                                        (x) => x.id === id,
+                                    );
+                                    window.alert(
+                                        `Package placeholder for ${proj?.name ?? id}`,
+                                    );
+                                }}
+                            />
+
                             <button
                                 type="button"
                                 onClick={() => handleOpen(p.id)}
