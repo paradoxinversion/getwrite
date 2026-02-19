@@ -11,7 +11,8 @@
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
         "test": "vitest",
-        "test-storybook": "vitest --config=vitest.storybook.config.ts"
+        "test-storybook": "vitest --config=vitest.storybook.config.ts",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "@tiptap/react": "^3.0.0",
