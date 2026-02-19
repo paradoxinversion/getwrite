@@ -30,13 +30,7 @@ test("resource context menu closes on Escape key", async ({ page }) => {
 test("keyboard navigation and activation fires action and closes", async ({
     page,
 }) => {
-    const messages: string[] = [];
-    page.on("console", (msg) => {
-        // capture console messages emitted by the story's onAction handler
-        try {
-            messages.push(msg.text());
-        } catch {}
-    });
+    // listen for the next console event after activation
 
     await page.goto("/iframe.html?id=tree-resourcecontextmenu--interactive");
     const menu = page.locator('[role="menu"]');
@@ -48,26 +42,41 @@ test("keyboard navigation and activation fires action and closes", async ({
     await page.keyboard.press("ArrowDown"); // to Duplicate
     await page.keyboard.press("ArrowDown"); // to Delete
 
-    // Activate with Enter
+    // Activate with Enter and wait for a console event
+    const waitConsole = page.waitForEvent("console");
     await page.keyboard.press("Enter");
-
-    // Wait for console message that contains 'action' and 'delete'
-    await page
-        .waitForFunction(() => {
-            // @ts-ignore
-            return (
-                window.__playwright_console_messages &&
-                window.__playwright_console_messages.length > 0
-            );
-        })
-        .catch(() => {});
-
-    // alternatively assert that an expected console text was captured
-    const hasAction = messages.some(
-        (m) => /action/.test(m) && /delete/i.test(m),
-    );
-    expect(hasAction).toBeTruthy();
+    const consoleMsg = await waitConsole;
+    expect(consoleMsg.text().toLowerCase()).toContain("action");
+    expect(consoleMsg.text().toLowerCase()).toContain("delete");
 
     // menu should close after activation
     await expect(menu).toHaveCount(0);
+});
+
+test("clicking Delete button triggers action and closes (mouse)", async ({
+    page,
+}) => {
+    await page.goto("/iframe.html?id=tree-resourcecontextmenu--interactive");
+    const menu = page.locator('[role="menu"]');
+    await expect(menu).toBeVisible();
+
+    const deleteBtn = page.getByRole("menuitem", { name: "Delete" });
+    const waitConsole = page.waitForEvent("console");
+    await deleteBtn.click();
+    const consoleMsg = await waitConsole;
+    expect(consoleMsg.text().toLowerCase()).toContain("action");
+    expect(consoleMsg.text().toLowerCase()).toContain("delete");
+
+    await expect(menu).toHaveCount(0);
+});
+
+test("menu position reflects x/y args", async ({ page }) => {
+    await page.goto("/iframe.html?id=tree-resourcecontextmenu--interactive");
+    const menu = page.locator('[role="menu"]');
+    await expect(menu).toBeVisible();
+
+    const left = await menu.evaluate((el) => (el as HTMLElement).style.left);
+    const top = await menu.evaluate((el) => (el as HTMLElement).style.top);
+    expect(left).toMatch(/\d+px/);
+    expect(top).toMatch(/\d+px/);
 });
