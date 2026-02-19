@@ -45,11 +45,16 @@ describe("SearchBar", () => {
         ) as HTMLInputElement;
         fireEvent.change(input, { target: { value: "a" } });
 
-        // Alpha and Gamma contain 'a' (case-insensitive)
-        expect(screen.getByText("Alpha")).toBeInTheDocument();
-        expect(screen.getByText("Gamma")).toBeInTheDocument();
+        // Alpha and Gamma contain 'a' (case-insensitive). Because matches are
+        // highlighted and split across spans, query by accessible name instead.
+        expect(
+            screen.getByRole("button", { name: /Alpha/i }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: /Gamma/i }),
+        ).toBeInTheDocument();
 
-        fireEvent.click(screen.getByText("Alpha"));
+        fireEvent.click(screen.getByRole("button", { name: /Alpha/i }));
         expect(onSelect).toHaveBeenCalledWith("r1");
     });
 });
