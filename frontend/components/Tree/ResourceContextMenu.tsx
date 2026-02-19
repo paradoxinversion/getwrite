@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 /** Allowed context menu actions exposed to callers; UI-only signals. */
 export type ResourceContextAction =
@@ -42,8 +42,12 @@ export default function ResourceContextMenu({
     className = "",
 }: ResourceContextMenuProps) {
     useEffect(() => {
+        const root = containerRef.current;
         function onDocumentClick(e: MouseEvent) {
-            // close on outside click
+            // only close when clicking outside the menu
+            if (!root) return;
+            const target = e.target as Node | null;
+            if (target && root.contains(target)) return;
             onClose?.();
         }
 
@@ -54,6 +58,8 @@ export default function ResourceContextMenu({
         }
         return undefined;
     }, [open, onClose]);
+
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     if (!open) return null;
 
@@ -68,6 +74,7 @@ export default function ResourceContextMenu({
             aria-label={
                 resourceTitle ? `${resourceTitle} options` : "Resource options"
             }
+            ref={containerRef}
             className={`absolute z-50 min-w-[160px] rounded-md bg-white dark:bg-surface-800 shadow-md ring-1 ring-black/5 ${className}`}
             style={{ left: x, top: y }}
         >

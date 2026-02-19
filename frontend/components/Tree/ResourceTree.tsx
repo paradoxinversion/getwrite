@@ -109,6 +109,7 @@ export default function ResourceTree({
     className = "",
     reorderable = false,
     onReorder,
+    onResourceAction,
 }: ResourceTreeProps) {
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resources.map((r) => r.id),
