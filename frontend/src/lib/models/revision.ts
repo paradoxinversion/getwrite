@@ -56,29 +56,58 @@ export async function writeRevision(
     content: string | Buffer,
     options?: { author?: string; isCanonical?: boolean },
 ): Promise<Revision> {
-    const dir = revisionDir(projectRoot, resourceId, versionNumber);
-    await fs.mkdir(dir, { recursive: true });
+    const finalDir = revisionDir(projectRoot, resourceId, versionNumber);
+    const base = revisionsBaseDir(projectRoot, resourceId);
 
-    const filename = "content.bin";
-    const filePath = path.join(dir, filename);
-    await fs.writeFile(filePath, content);
+    // Ensure final dir does not already exist to avoid clobbering.
+    try {
+        const stat = await fs.stat(finalDir).catch(() => null);
+        if (stat)
+            throw new Error(`revision directory already exists: ${finalDir}`);
+    } catch (err) {
+        // propagate
+        throw err;
+    }
 
-    const now = new Date().toISOString();
-    const rev: Revision = {
-        id: generateUUID(),
-        resourceId,
-        versionNumber,
-        createdAt: now,
-        savedAt: now,
-        author: options?.author,
-        filePath,
-        isCanonical: !!options?.isCanonical,
-    };
+    // Create a temp directory next to the revisions base and write files there,
+    // then atomically rename the temp dir to the final v-<version> directory.
+    const tmpDir = path.join(base, `.tmp-${generateUUID()}`);
+    try {
+        await fs.mkdir(tmpDir, { recursive: true });
 
-    const metaPath = path.join(dir, "metadata.json");
-    await fs.writeFile(metaPath, JSON.stringify(rev, null, 2), "utf8");
+        const filename = "content.bin";
+        const finalFilePath = path.join(finalDir, filename);
+        const tmpFilePath = path.join(tmpDir, filename);
+        await fs.writeFile(tmpFilePath, content);
 
-    return rev;
+        const now = new Date().toISOString();
+        const rev: Revision = {
+            id: generateUUID(),
+            resourceId,
+            versionNumber,
+            createdAt: now,
+            savedAt: now,
+            author: options?.author,
+            filePath: finalFilePath,
+            isCanonical: !!options?.isCanonical,
+        };
+
+        const metaPath = path.join(tmpDir, "metadata.json");
+        await fs.writeFile(metaPath, JSON.stringify(rev, null, 2), "utf8");
+
+        // Atomic move into place. If finalDir exists, this will throw.
+        await fs.rename(tmpDir, finalDir);
+
+        return rev;
+    } catch (err) {
+        // Best-effort cleanup of tmpDir on error.
+        try {
+            await fs.rm(tmpDir, { recursive: true, force: true });
+        } catch (_) {
+            // ignore cleanup errors
+        }
+        throw err;
+    }
 }
 
 /** List all revisions for a resource by reading revisions/<resourceId>/v-<version>/metadata.json. */
