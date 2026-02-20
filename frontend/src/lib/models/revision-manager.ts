@@ -10,6 +10,9 @@ import {
     getCanonicalRevision,
 } from "./revision";
 import { acquireLock } from "./locks";
+import { indexResource } from "./inverted-index";
+import { readSidecar } from "./sidecar";
+import type { TextResource } from "./types";
 
 /** Determine the next version number for a resource (1-based, sequential). */
 export async function nextVersionNumber(
@@ -59,6 +62,27 @@ export async function createRevision(
 
         const maxRevisions = options.maxRevisions ?? 50;
         await pruneRevisions(projectRoot, resourceId, maxRevisions);
+
+        // Update full-text index for this resource. Construct a minimal TextResource
+        // object using sidecar metadata when available. Indexing is best-effort:
+        // failures should not block revision creation.
+        try {
+            const side = await readSidecar(projectRoot, resourceId);
+            const now = new Date().toISOString();
+            const minimal: TextResource = {
+                id: resourceId,
+                name: (side && (side as any).name) || resourceId,
+                slug: (side && (side as any).slug) || undefined,
+                type: "text",
+                folderId: undefined,
+                createdAt: now,
+                plainText: undefined,
+                tiptap: undefined,
+            } as unknown as TextResource;
+            await indexResource(projectRoot, minimal);
+        } catch (err) {
+            // Swallow errors: indexing is asynchronous best-effort for now.
+        }
 
         return rev;
     } finally {
