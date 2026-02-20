@@ -9,6 +9,7 @@ import {
     setCanonicalRevision,
     getCanonicalRevision,
 } from "./revision";
+import { acquireLock } from "./locks";
 
 /** Determine the next version number for a resource (1-based, sequential). */
 export async function nextVersionNumber(
@@ -37,26 +38,32 @@ export async function createRevision(
     content: string | Buffer,
     options: CreateOptions = {},
 ): Promise<Revision> {
-    const versionNumber =
-        options.versionNumber ??
-        (await nextVersionNumber(projectRoot, resourceId));
+    // Acquire a per-resource lock to prevent concurrent create/prune races.
+    const release = await acquireLock(resourceId);
+    try {
+        const versionNumber =
+            options.versionNumber ??
+            (await nextVersionNumber(projectRoot, resourceId));
 
-    const rev = await writeRevision(
-        projectRoot,
-        resourceId,
-        versionNumber,
-        content,
-        { author: options.author, isCanonical: !!options.isCanonical },
-    );
+        const rev = await writeRevision(
+            projectRoot,
+            resourceId,
+            versionNumber,
+            content,
+            { author: options.author, isCanonical: !!options.isCanonical },
+        );
 
-    if (options.isCanonical) {
-        await setCanonicalRevision(projectRoot, resourceId, versionNumber);
+        if (options.isCanonical) {
+            await setCanonicalRevision(projectRoot, resourceId, versionNumber);
+        }
+
+        const maxRevisions = options.maxRevisions ?? 50;
+        await pruneRevisions(projectRoot, resourceId, maxRevisions);
+
+        return rev;
+    } finally {
+        release();
     }
-
-    const maxRevisions = options.maxRevisions ?? 50;
-    await pruneRevisions(projectRoot, resourceId, maxRevisions);
-
-    return rev;
 }
 
 /** Mark the specified revision as canonical and unset others. */
