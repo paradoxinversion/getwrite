@@ -10,10 +10,17 @@ const dirname =
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+    resolve: {
+        alias: {
+            // map `@` imports to the frontend project root
+            "@": path.resolve(dirname, "."),
+        },
+    },
     test: {
         environment: "jsdom",
         globals: true,
         setupFiles: ["./tests/setup.ts"],
         include: ["**/*.(test|spec).(ts|tsx)"],
+        exclude: ["e2e/**", "playwright-report/**"],
     },
 });

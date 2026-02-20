@@ -9,10 +9,17 @@ const dirname =
         : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            // same alias as vitest config to resolve `@/...` imports in generated files
+            "@": path.resolve(dirname, "."),
+        },
+    },
     test: {
         environment: "jsdom",
         globals: true,
         include: ["stories/**/*.stories.@(tsx|mdx)"],
+        exclude: ["e2e/**", "playwright-report/**"],
         projects: [
             {
                 extends: true,
