@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: User description: "Determine the shape of data entities included in the app-spec.md: Projects, Folders, Resources (Text, Image, Audio), Revisions, and Metadata. Create configuration files for Project Types that define initial project structure and default project resources. Files should be easy for users to modify or create customized project types/structures. Do not integrate into app or compile resources — only data types, relations, and hierarchies."
 
+## Clarifications
+
+### Session 2026-02-20
+
+- Q: What should the default maximum number of revisions per resource be and is it configurable? → A: Default to 50, configurable per project (project configuration setting `maxRevisions`).
+- Q: What identity scheme should entities use (IDs)? → A: Use immutable UUID v4 as the canonical `id`, and provide an optional human-readable `slug` per-entity for UI/export purposes.
+- Q: How should metadata be stored for resources/folders/projects? → A: Sidecar JSON files per entity (e.g., `resource-<id>.meta.json`) stored alongside the resource; project-level metadata in the project config file.
+
 ## User Scenarios & Testing (mandatory)
 
 ### User Story 1 - Create a new project from a project type (Priority: P1)
@@ -72,15 +80,15 @@ Acceptance Scenarios:
 ### Key Entities (include if feature involves data)
 
 - **Project**: Represents a single user project.
-    - Attributes: id (opaque string), name, createdAt, updatedAt, projectType (string), config (project-scoped settings), rootPath (filesystem path for local-first), metadata (map)
+    - Attributes: id (immutable UUID v4), slug (optional human-readable unique string per project), name, createdAt, updatedAt, projectType (string), config (project-scoped settings), rootPath (filesystem path for local-first), metadata (map)
     - Relationships: has many `Folder`, has many `Resource` (top-level), contains Project-level `Status` definitions
 
 - **Folder**: Logical container within a Project.
-    - Attributes: id, name, parentId (nullable), orderIndex, createdAt, updatedAt
+    - Attributes: id (immutable UUID v4), slug (optional human-readable unique string per project), name, parentId (nullable), orderIndex, createdAt, updatedAt
     - Relationships: contains many `Resource` and many child `Folder`
 
 - **Resource** (base): File-like entity stored in a project. Common attributes below; type-specific attributes follow.
-    - Common attributes: id, name (display name), type (one of `text`|`image`|`audio`), createdAt, updatedAt, folderId, sizeBytes (derived), notes (multiline), statuses (list), metadata (map)
+    - Common attributes: id (immutable UUID v4), slug (optional human-readable unique string per project), name (display name), type (one of `text`|`image`|`audio`), createdAt, updatedAt, folderId, sizeBytes (derived), notes (multiline), statuses (list), metadata (map)
 
 - **Text Resource** (extends Resource):
     - Additional metadata: wordCount, charCount, paragraphCount, pov (string or reference to Character id), characters (list of Character ids), locations (list of Location ids), items (list of Item ids), timeframe {start, end}
@@ -98,8 +106,20 @@ Acceptance Scenarios:
         - Exactly one Revision MUST be canonical per Resource.
         - A Revision BELONGS to exactly one Resource.
         - Deleting a Revision MUST NOT leave the Resource without a Revision; deletion of canonical revision is disallowed.
+    - Operational limits:
+        - `maxRevisions` (integer): default 50 per Resource; configurable at the Project level via project configuration. When creating a new revision that would exceed `maxRevisions`, the system MUST prompt the user to select revisions to delete. If the user declines to delete revisions, creation of the new revision MUST be aborted.
 
-- **Metadata**: Flexible key/value pairs scoped to Projects, Folders, or Resources. Metadata keys used by the app include Statuses, Notes, and type-specific metrics. Metadata entries must be typed (string, number, boolean, date, list).
+- **Metadata**: Flexible key/value pairs scoped to Projects, Folders, or Resources. Metadata keys used by the app include Statuses, Notes, and type-specific metrics. Metadata entries must be typed (string, number, boolean, date, list). - Storage and format: - Metadata for a resource or folder SHOULD be stored in a sidecar JSON file placed next to the resource file or folder root. Filename convention: `resource-<id>.meta.json` or `folder-<id>.meta.json`. - Project-level metadata (project config, Status definitions, `maxRevisions`) SHOULD reside in the project configuration file (eg, `project.json`). - Sidecar schema (example):
+  `json
+                  {
+                      "id": "<uuid>",
+                      "slug": "optional-human-slug",
+                      "notes": "...",
+                      "statuses": ["Draft"],
+                      "metadata": { "wordCount": 1234 },
+                      "updatedAt": "2026-02-20T12:34:56Z"
+                  }
+                  ` - Rationale: sidecar JSONs are type-agnostic (work for binary/audio), human-editable, and move with the resource when files are relocated.
 
 ### Project Type Definition (declarative template)
 
