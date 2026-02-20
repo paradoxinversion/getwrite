@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 import { useEditor, EditorContent, EditorContext } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { HeadingDropdownMenu } from "../@/components/tiptap-ui/heading-dropdown-menu";
-import { UndoRedoButton } from "./tiptap-ui/undo-redo-button";
-import { TextAlignButton } from "./tiptap-ui/text-align-button";
+// import { UndoRedoButton } from "./tiptap-ui/undo-redo-button";
+// import { TextAlignButton } from "./tiptap-ui/text-align-button";
 import { TextAlign } from "@tiptap/extension-text-align";
 
 export interface TipTapEditorProps {
@@ -52,7 +52,7 @@ export default function TipTapEditor({
         <EditorContext.Provider value={{ editor }}>
             <div className="prose max-w-none">
                 <div className="flex">
-                    <HeadingDropdownMenu editor={editor} />
+                    {/* <HeadingDropdownMenu editor={editor} />
                     <UndoRedoButton
                         editor={editor}
                         action="undo"
@@ -72,7 +72,7 @@ export default function TipTapEditor({
                     <TextAlignButton editor={editor} align="left" />
                     <TextAlignButton editor={editor} align="center" />
                     <TextAlignButton editor={editor} align="right" />
-                    <TextAlignButton editor={editor} align="justify" />
+                    <TextAlignButton editor={editor} align="justify" /> */}
                 </div>
                 <EditorContent editor={editor} id={id} />
             </div>
