@@ -32,7 +32,7 @@ Phase 3: User Story Implementation (priority order)
     - selection of oldest non-canonical revisions
     - skipping preserved revisions (`metadata.preserve=true`)
     - headless behavior when `autoPrune=true` and when `autoPrune=false` (abort)
-- [ ] T015 [P] [US2] Implement TipTap/plain-text conversion helpers `frontend/src/lib/tiptap-utils.ts` (persist both `plainText` and `tiptap` forms)
+- [x] T015 [P] [US2] Implement TipTap/plain-text conversion helpers `frontend/src/lib/tiptap-utils.ts` (persist both `plainText` and `tiptap` forms)
 
 **User Story: Modify or create Project Types (Priority: P2)**
 
