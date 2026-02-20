@@ -49,16 +49,16 @@ Phase 6: [US4] Metadata Sidebar & Edit Interactions (Priority: P2)
 
 Phase 7: Polish, Accessibility, and Cross-Cutting Concerns
 
-- [ ] T030 [P] Add keyboard navigation, focus management, and aria attributes to critical components (ResourceTree, ViewSwitcher, Modals, MetadataSidebar) and perform WCAG 2.1 AA checks; update files in place (`frontend/components/**`)
-- [ ] T031 [P] Add Storybook accessibility addon and run visual checks for components (`.storybook/`)
-- [ ] T032 [P] Implement unit/component tests for core flows (Start -> Open Project -> Open Resource -> Edit) in `frontend/tests/flows.test.tsx` (`frontend/tests/flows.test.tsx`)
-- [ ] T033 [P] Create README for frontend scaffold with run/test/storybook commands at `frontend/README.md` (`frontend/README.md`)
-- [ ] T034 Final polish: visual tweaks, spacing, tokens, and designer sign-off; update affected component files (`frontend/components/**`)
+- [x] T030 [P] Add keyboard navigation, focus management, and aria attributes to critical components (ResourceTree, ViewSwitcher, Modals, MetadataSidebar) and perform WCAG 2.1 AA checks; update files in place (`frontend/components/**`)
+- [x] T031 [P] Add Storybook accessibility addon and run visual checks for components (`.storybook/`)
+- [x] T032 [P] Implement unit/component tests for core flows (Start -> Open Project -> Open Resource -> Edit) in `frontend/tests/flows.test.tsx` (`frontend/tests/flows.test.tsx`)
+- [x] T033 [P] Create README for frontend scaffold with run/test/storybook commands at `frontend/README.md` (`frontend/README.md`)
+- [x] T034 Final polish: visual tweaks, spacing, tokens, and designer sign-off; update affected component files (`frontend/components/**`)
 
 Final Phase: Delivery
 
-- [ ] T035 Create a demo branch PR checklist and draft PR description in `specs/001-ui-getwrite-skeleton/tasks.md` including screenshots and Storybook links (`specs/001-ui-getwrite-skeleton/tasks.md`)
-- [ ] T036 Commit and push scaffolded frontend changes to feature branch (`git push origin 001-ui-getwrite-skeleton`)
+- [x] T035 Create a demo branch PR checklist and draft PR description in `specs/001-ui-getwrite-skeleton/tasks.md` including screenshots and Storybook links (`specs/001-ui-getwrite-skeleton/tasks.md`)
+- [x] T036 Commit and push scaffolded frontend changes to feature branch (`git push origin 001-ui-getwrite-skeleton`)
 
 Dependencies
 
