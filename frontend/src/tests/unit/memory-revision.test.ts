@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { createMemoryAdapter } from "../../../../src/lib/models/memoryAdapter";
-import { setStorageAdapter } from "../../../../src/lib/models/io";
+import { createMemoryAdapter } from "../../../src/lib/models/memoryAdapter";
+import { setStorageAdapter } from "../../../src/lib/models/io";
 import {
     writeRevision,
     listRevisions,
     pruneRevisions,
     revisionsBaseDir,
-} from "../../../../src/lib/models/revision";
-import { generateUUID } from "../../../../src/lib/models/uuid";
+} from "../../../src/lib/models/revision";
+import { generateUUID } from "../../../src/lib/models/uuid";
 
 describe("memory-backed revision storage", () => {
     it("writes and prunes revisions in-memory", async () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
-import * as io from "../../../../src/lib/models/io";
-import { createMemoryAdapter } from "../../../../src/lib/models/memoryAdapter";
+import * as io from "../../../src/lib/models/io";
+import { createMemoryAdapter } from "../../../src/lib/models/memoryAdapter";
 
 describe("io adapter", () => {
     const original = io.getStorageAdapter();

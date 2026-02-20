@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ProjectSchema } from "../../../lib/models/schemas";
+import { ProjectSchema } from "../../lib/models/schemas";
 
 /**
  * Placeholder unit test for model schemas.

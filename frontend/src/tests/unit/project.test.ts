@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createProject, validateProject } from "../../../lib/models/project";
-import { isValidUUID } from "../../../lib/models/uuid";
+import { createProject, validateProject } from "../../lib/models/project";
+import { isValidUUID } from "../../lib/models/uuid";
 
 describe("models: createProject / validateProject", () => {
     it("createProject applies defaults and returns a valid project", () => {

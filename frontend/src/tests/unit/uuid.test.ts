@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateUUID, isValidUUID } from "../../../../src/lib/models/uuid";
+import { generateUUID, isValidUUID } from "../../../src/lib/models/uuid";
 
 describe("models/uuid", () => {
     it("generates a valid UUID v4", () => {

@@ -4,7 +4,7 @@ import {
     createImageResource,
     createAudioResource,
     validateResource,
-} from "../../../lib/models/resource";
+} from "../../lib/models/resource";
 
 describe("models/resource", () => {
     it("creates and validates TextResource", () => {

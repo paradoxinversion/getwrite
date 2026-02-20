@@ -2,13 +2,13 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { createProjectFromType } from "../../../../../src/lib/models/project-creator";
-import { readSidecar } from "../../../../../src/lib/models/sidecar";
-import { validateProject } from "../../../../../src/lib/models/project";
+import { createProjectFromType } from "../../../../src/lib/models/project-creator";
+import { readSidecar } from "../../../../src/lib/models/sidecar";
+import { validateProject } from "../../../../src/lib/models/project";
 import type {
     Folder as FolderType,
     TextResource,
-} from "../../../../../src/lib/models/types";
+} from "../../../../src/lib/models/types";
 
 export interface CreateAndAssertResult {
     projectPath: string;

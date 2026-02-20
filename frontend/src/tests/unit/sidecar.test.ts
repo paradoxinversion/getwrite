@@ -6,8 +6,8 @@ import {
     sidecarFilename,
     readSidecar,
     writeSidecar,
-} from "../../../../src/lib/models/sidecar";
-import { generateUUID } from "../../../../src/lib/models/uuid";
+} from "../../../src/lib/models/sidecar";
+import { generateUUID } from "../../../src/lib/models/uuid";
 
 describe("models/sidecar", () => {
     it("writes and reads a sidecar file in project meta folder", async () => {

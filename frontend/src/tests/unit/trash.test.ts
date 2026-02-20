@@ -8,8 +8,8 @@ import {
     softDeleteResource,
     restoreResource,
     purgeResource,
-} from "../../../lib/models/trash";
-import { readSidecar } from "../../../lib/models/sidecar";
+} from "../../lib/models/trash";
+import { readSidecar } from "../../lib/models/sidecar";
 
 describe("models/trash (T026)", () => {
     it("soft-deletes, restores, and purges a resource", async () => {

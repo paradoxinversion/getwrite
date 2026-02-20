@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createMemoryAdapter } from "../../../../src/lib/models/memoryAdapter";
-import { setStorageAdapter } from "../../../../src/lib/models/io";
-import { generateUUID } from "../../../../src/lib/models/uuid";
+import { createMemoryAdapter } from "../../../src/lib/models/memoryAdapter";
+import { setStorageAdapter } from "../../../src/lib/models/io";
+import { generateUUID } from "../../../src/lib/models/uuid";
 import {
     nextVersionNumber,
     createRevision,
-} from "../../../../src/lib/models/revision-manager";
+} from "../../../src/lib/models/revision-manager";
 import {
     listRevisions,
     getCanonicalRevision,
     revisionsBaseDir,
-} from "../../../../src/lib/models/revision";
+} from "../../../src/lib/models/revision";
 
 describe("revision-manager", () => {
     beforeEach(() => {

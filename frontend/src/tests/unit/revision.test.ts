@@ -7,8 +7,8 @@ import {
     listRevisions,
     pruneRevisions,
     revisionsBaseDir,
-} from "../../../../src/lib/models/revision";
-import { generateUUID } from "../../../../src/lib/models/uuid";
+} from "../../../src/lib/models/revision";
+import { generateUUID } from "../../../src/lib/models/uuid";
 
 describe("models/revision", () => {
     it("writes revisions and prunes oldest non-canonical", async () => {
@@ -37,8 +37,9 @@ describe("models/revision", () => {
         await fs.rm(tmp, { recursive: true, force: true });
     });
 });
-import { describe, it, expect } from "vitest";
-import { selectPruneCandidates } from "../../../../src/lib/models/revision";
+
+import { describe as d2, it as it2, expect as expect2 } from "vitest";
+import { selectPruneCandidates } from "../../../src/lib/models/revision";
 
 function makeRev(
     id: string,
@@ -56,13 +57,13 @@ function makeRev(
     } as const;
 }
 
-describe("models/revision.selectPruneCandidates", () => {
-    it("returns empty when within limit", () => {
+d2("models/revision.selectPruneCandidates", () => {
+    it2("returns empty when within limit", () => {
         const revs = [makeRev("a", 1, true), makeRev("b", 2), makeRev("c", 3)];
-        expect(selectPruneCandidates(revs as any, 3)).toEqual([]);
+        expect2(selectPruneCandidates(revs as any, 3)).toEqual([]);
     });
 
-    it("selects oldest non-canonical when over limit", () => {
+    it2("selects oldest non-canonical when over limit", () => {
         const revs = [
             makeRev("a", 1, false),
             makeRev("b", 2, false),
@@ -70,10 +71,10 @@ describe("models/revision.selectPruneCandidates", () => {
         ];
         const candidates = selectPruneCandidates(revs as any, 2);
         // total 3 -> need to remove 1; oldest non-canonical is version 1
-        expect(candidates.map((r) => r.versionNumber)).toEqual([1]);
+        expect2(candidates.map((r) => r.versionNumber)).toEqual([1]);
     });
 
-    it("never returns canonical revisions", () => {
+    it2("never returns canonical revisions", () => {
         const revs = [
             makeRev("a", 1, true),
             makeRev("b", 2, true),
@@ -82,11 +83,11 @@ describe("models/revision.selectPruneCandidates", () => {
         const candidates = selectPruneCandidates(revs as any, 1);
         // Only non-canonical revision 3 is available; total 3 -> need remove 2,
         // but we only return non-canonical ones (just 3)
-        expect(candidates.every((r) => !r.isCanonical)).toBe(true);
-        expect(candidates.map((r) => r.versionNumber)).toEqual([3]);
+        expect2(candidates.every((r) => !r.isCanonical)).toBe(true);
+        expect2(candidates.map((r) => r.versionNumber)).toEqual([3]);
     });
 
-    it("returns multiple candidates in ascending order", () => {
+    it2("returns multiple candidates in ascending order", () => {
         const revs = [
             makeRev("a", 1),
             makeRev("b", 2),
@@ -95,10 +96,10 @@ describe("models/revision.selectPruneCandidates", () => {
         ];
         const candidates = selectPruneCandidates(revs as any, 1);
         // total 4 -> need to remove 3; non-canonical are versions 1,2,3 -> return all three
-        expect(candidates.map((r) => r.versionNumber)).toEqual([1, 2, 3]);
+        expect2(candidates.map((r) => r.versionNumber)).toEqual([1, 2, 3]);
     });
 
-    it("throws on negative maxRevisions", () => {
-        expect(() => selectPruneCandidates([], -1)).toThrow();
+    it2("throws on negative maxRevisions", () => {
+        expect2(() => selectPruneCandidates([], -1)).toThrow();
     });
 });

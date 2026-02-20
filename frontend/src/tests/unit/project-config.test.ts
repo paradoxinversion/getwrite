@@ -6,8 +6,8 @@ import {
     loadProject,
     loadProjectConfig,
     PROJECT_FILENAME,
-} from "../../../../src/lib/models/project-config";
-import { generateUUID } from "../../../../src/lib/models/uuid";
+} from "../../../src/lib/models/project-config";
+import { generateUUID } from "../../../src/lib/models/uuid";
 
 describe("models/project-config", () => {
     it("loads project.json and applies defaults to config", async () => {

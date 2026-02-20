@@ -7,9 +7,9 @@ import {
     saveResourceTemplate,
     createResourceFromTemplate,
     duplicateResource,
-} from "../../../lib/models/resource-templates";
+} from "../../lib/models/resource-templates";
 import { createAndAssertProject } from "./helpers/project-creator";
-import { readSidecar } from "../../../lib/models/sidecar";
+import { readSidecar } from "../../lib/models/sidecar";
 
 describe("models/resource-templates (T027)", () => {
     it("saves a template and creates a resource from it", async () => {
