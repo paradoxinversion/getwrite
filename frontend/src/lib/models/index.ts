@@ -2,3 +2,4 @@
 // Keep this file small: one responsibility (module exports).
 
 export * from "./types";
+export * from "./project";
