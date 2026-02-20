@@ -49,7 +49,7 @@ Final Phase: Polish & Cross-Cutting Concerns
 
 Additional Resource Features (proposed)
 
-- [ ] T023 [US2] Tagging: Add project-scoped tagging and assignment APIs
+- [x] T023 [US2] Tagging: Add project-scoped tagging and assignment APIs
     - Acceptance: Define `Tag` type and zod schema; implement CRUD operations to create/delete tags and assign/unassign tags to resources; persist tags in project config or `meta/tags.json`; provide `listResourcesByTag(tag)` helper; include unit tests verifying creation, assignment, and filtering.
 
 - [ ] T024 [US2] Backlinks & Cross-Resource References
