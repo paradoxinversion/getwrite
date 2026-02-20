@@ -6,18 +6,20 @@ Purpose
 
 - Run the pruning executor across a project to enforce `maxRevisions` per resource.
 
-Basic usage
+Build and usage
 
-- Local dev with `tsx` (no build required):
+- Build the CLI (outputs into `dist-cli/` to avoid colliding with the Next app build):
 
 ```bash
-pnpm dlx tsx ./frontend/bin/prune-revisions.mjs <projectRoot> [maxRevisions]
+cd frontend
+pnpm install # if needed
+pnpm build:cli
 ```
 
-- If you have a JS build output, run with Node directly:
+- Run the built CLI with Node:
 
 ```bash
-node ./frontend/dist/bin/prune-revisions.mjs <projectRoot> [maxRevisions]
+node ./frontend/dist-cli/bin/prune-revisions.mjs <projectRoot> [maxRevisions]
 ```
 
 Notes
@@ -28,4 +30,4 @@ Notes
 
 Next steps
 
-- Optionally add a `bin` entry in `frontend/package.json` or add a `pnpm` script to simplify invocation.
+- This repository exposes a `bin` entry in `frontend/package.json` after building; it maps to `dist-cli/bin/prune-revisions.mjs` so the CLI is installable and runnable without touching the app build output.
