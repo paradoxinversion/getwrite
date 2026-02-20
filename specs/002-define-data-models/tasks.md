@@ -24,7 +24,7 @@ Phase 3: User Story Implementation (priority order)
 
 **User Story: Add and manage resources and revisions (Priority: P1)**
 
-- [ ] T011 [US2] Implement `ResourceBase`, `TextResource`, `ImageResource`, `AudioResource` models in `frontend/src/lib/models/resource.ts`
+- [x] T011 [US2] Implement `ResourceBase`, `TextResource`, `ImageResource`, `AudioResource` models in `frontend/src/lib/models/resource.ts`
 - [ ] T012 [P] [US2] Implement `Revision` model and persistence in `frontend/src/lib/models/revision.ts`
 - [ ] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
 - [ ] T014 [US2] Add unit tests for revision invariants `frontend/src/tests/unit/revision.test.ts` (ensure canonical exists, prevents deleting canonical, prompt-delete behavior simulated)
@@ -58,10 +58,10 @@ Additional Resource Features (proposed)
 - [ ] T025 [US2] Incremental Full-Text Indexing
     - Acceptance: Implement a per-project incremental inverted index stored in `meta/index/` with APIs `indexResource(resource)`, `removeResourceFromIndex(resourceId)`, and `search(query)` returning ranked result ids; index updates on resource save and revision creation; include unit tests verifying indexing and search correctness.
 
-- [ ] T026 [US1] Soft-Delete / Recycle Bin
+- [x] T026 [US1] Soft-Delete / Recycle Bin
     - Acceptance: Implement `softDeleteResource(resourceId)` which moves resource files and sidecars to a `.trash/` subfolder preserving metadata; implement `restoreResource(resourceId)` and `purgeResource(resourceId)`; unit tests must verify restore preserves identity and purge permanently removes data.
 
-- [ ] T027 [US1] Resource Templates & Duplication
+- [x] T027 [US1] Resource Templates & Duplication
     - Acceptance: Add `createResourceFromTemplate(templateId, overrides)` and `duplicateResource(resourceId)` helpers that clone metadata and initial revision while generating new identities; unit tests should validate metadata cloning and id uniqueness while preserving content.
 
 - [ ] T028 [US2] Resource Previews (thumbnails & audio waveforms)
