@@ -22,6 +22,6 @@ export default defineConfig({
         setupFiles: ["./tests/setup.ts"],
         // match conventional test file patterns and avoid including e2e specs
         include: ["**/*.{test,spec}.{ts,tsx}"],
-        exclude: ["**/e2e/**", "playwright-report/**"],
+        exclude: ["**/e2e/**", "playwright-report/**", "node_modules/**"],
     },
 });
