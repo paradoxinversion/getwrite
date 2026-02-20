@@ -14,6 +14,22 @@
 - Q: How should metadata be stored for resources/folders/projects? → A: Sidecar JSON files per entity (e.g., `resource-<id>.meta.json`) stored alongside the resource; project-level metadata in the project config file.
 - Q: How should revisions be stored on disk? → A: Full-file copies per revision (no delta storage). Each revision is saved as a separate file; `Revision.filePath` references the stored copy. Revisions may be organized under a `revisions/<resourceId>/` folder or colocated with resource files using the naming convention `resource-<id>-rev-<version>.<ext>`.
 - Q: Which revision file layout should be default? → A: Per-resource revisions folder (recommended): `revisions/<resourceId>/v-<version>/<file>`; colocated naming is an alternative.
+- Q: How should revision pruning / user interaction behave when `maxRevisions` is exceeded? → A: Deterministic, testable behavior described below:
+    - Project config additions:
+        - `maxRevisions` (integer, default 50)
+        - `autoPrune` (boolean, default false) — if true, automatically delete oldest non-canonical revisions until under limit; if false, prompt (interactive) or abort in non-interactive contexts.
+    - Interactive (UI) behavior (default `autoPrune=false`):
+        - Show a modal listing candidate revisions (sorted oldest→newest, excluding canonical), with checkboxes pre-selected for the oldest revisions required to reduce count to `maxRevisions`.
+        - Provide actions: "Delete Selected", "Auto-Prune Oldest", "Cancel".
+        - "Auto-Prune Oldest" deletes the oldest non-canonical revisions up to the required count.
+        - If user cancels, creation of the new revision is aborted.
+    - Non-interactive / headless behavior:
+        - If `autoPrune=true`: delete oldest non-canonical revisions until within limits and proceed.
+        - If `autoPrune=false`: abort revision creation and return a structured error indicating the required deletions.
+    - Preservation rules:
+        - Revisions may have `metadata.preserve: true` (or other tags) indicating they must not be auto-deleted; pruning must skip preserved revisions and select the next eligible ones.
+    - Tests and automation:
+        - The above behavior MUST be unit-tested: interactive modal logic is tested by the UI layer; pruning logic and non-interactive fallback are tested in model/unit tests.
 
 ## User Scenarios & Testing (mandatory)
 
@@ -91,6 +107,7 @@ Acceptance Scenarios:
 
 - **Resource** (base): File-like entity stored in a project. Common attributes below; type-specific attributes follow.
     - Common attributes: id (immutable UUID v4), slug (optional human-readable unique string per project), name (display name), type (one of `text`|`image`|`audio`), createdAt, updatedAt, folderId, sizeBytes (derived), notes (multiline), statuses (list), metadata (map)
+        - `slug` normalization & uniqueness: - Scope: `slug` uniqueness is enforced per-project. - Normalization rules: - Trim whitespace, convert to lower-case. - Replace spaces and consecutive non-alphanumeric characters with `-`. - Remove leading/trailing `-`. - Enforce max length 64 characters. - Conflict resolution: - If normalized slug collides with an existing slug in the project, append a numeric suffix `-1`, `-2`, ... until unique. - Validation: - Slug must match regex `^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$`. - Tests: - Unit tests must assert normalization and collision resolution behavior.
 
 - **Text Resource** (extends Resource):
     - Additional metadata: wordCount, charCount, paragraphCount, pov (string or reference to Character id), characters (list of Character ids), locations (list of Location ids), items (list of Item ids), timeframe {start, end}
@@ -119,15 +136,15 @@ Acceptance Scenarios:
 
 - **Metadata**: Flexible key/value pairs scoped to Projects, Folders, or Resources. Metadata keys used by the app include Statuses, Notes, and type-specific metrics. Metadata entries must be typed (string, number, boolean, date, list). - Storage and format: - Metadata for a resource or folder SHOULD be stored in a sidecar JSON file placed next to the resource file or folder root. Filename convention: `resource-<id>.meta.json` or `folder-<id>.meta.json`. - Project-level metadata (project config, Status definitions, `maxRevisions`) SHOULD reside in the project configuration file (eg, `project.json`). - Sidecar schema (example):
   `json
-              {
-                  "id": "<uuid>",
-                  "slug": "optional-human-slug",
-                  "notes": "...",
-                  "statuses": ["Draft"],
-                  "metadata": { "wordCount": 1234 },
-                  "updatedAt": "2026-02-20T12:34:56Z"
-              }
-              ` - Rationale: sidecar JSONs are type-agnostic (work for binary/audio), human-editable, and move with the resource when files are relocated.
+            {
+                "id": "<uuid>",
+                "slug": "optional-human-slug",
+                "notes": "...",
+                "statuses": ["Draft"],
+                "metadata": { "wordCount": 1234 },
+                "updatedAt": "2026-02-20T12:34:56Z"
+            }
+            ` - Rationale: sidecar JSONs are type-agnostic (work for binary/audio), human-editable, and move with the resource when files are relocated.
 
 ### Project Type Definition (declarative template)
 

@@ -11,6 +11,7 @@ Phase 2: Foundational
 - [ ] T004 [P] Implement UUID utility `frontend/src/lib/models/uuid.ts` (generate/validate UUID v4)
 - [ ] T005 [P] Implement sidecar read/write helpers `frontend/src/lib/models/sidecar.ts` (read/write `resource-<id>.meta.json`)
 - [ ] T006 Implement revision storage helper `frontend/src/lib/models/revisions.ts` (create path, list revisions, prune logic per `maxRevisions`)
+    - Acceptance: `revisions.ts` exports a `selectPruneCandidates(resourceId, revisions, maxRevisions, options)` deterministic pure function that unit tests can call. Add unit tests that assert selection order, preservation tag handling, and behavior when only canonical remains.
 
 Phase 3: User Story Implementation (priority order)
 
@@ -26,7 +27,12 @@ Phase 3: User Story Implementation (priority order)
 - [ ] T011 [US2] Implement `ResourceBase`, `TextResource`, `ImageResource`, `AudioResource` models in `frontend/src/lib/models/resource.ts`
 - [ ] T012 [P] [US2] Implement `Revision` model and persistence in `frontend/src/lib/models/revision.ts`
 - [ ] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
+- [ ] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
 - [ ] T014 [US2] Add unit tests for revision invariants `frontend/src/tests/unit/revision.test.ts` (ensure canonical exists, prevents deleting canonical, prompt-delete behavior simulated)
+- [ ] T014a Add unit tests for prune algorithm `frontend/src/tests/unit/revision-prune.test.ts` covering:
+    - selection of oldest non-canonical revisions
+    - skipping preserved revisions (`metadata.preserve=true`)
+    - headless behavior when `autoPrune=true` and when `autoPrune=false` (abort)
 - [ ] T015 [P] [US2] Implement TipTap/plain-text conversion helpers `frontend/src/lib/tiptap-utils.ts` (persist both `plainText` and `tiptap` forms)
 
 **User Story: Modify or create Project Types (Priority: P2)**
@@ -40,6 +46,7 @@ Final Phase: Polish & Cross-Cutting Concerns
 - [ ] T019 Update `specs/002-define-data-models/data-model.md` with links to implemented TypeScript files (docs)
 - [ ] T020 Add example sidecar metadata files under `specs/002-define-data-models/project-types/` to demonstrate `resource-<id>.meta.json`
 - [ ] T021 Add integration notes to `specs/002-define-data-models/quickstart.md` explaining how to run tests and validate models
+- [ ] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
 
 Dependencies
 

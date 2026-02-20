@@ -7,6 +7,16 @@ This document defines the TypeScript interfaces and example JSON schema fragment
 ```ts
 export type UUID = string; // UUID v4
 
+export type MetadataValue =
+    | string
+    | number
+    | boolean
+    | null
+    | string[]
+    | number[]
+    | boolean[]
+    | { [key: string]: MetadataValue };
+
 export interface ProjectConfig {
     maxRevisions?: number; // default 50
     statuses?: string[];
@@ -21,7 +31,7 @@ export interface Project {
     projectType?: string;
     rootPath?: string;
     config?: ProjectConfig;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, MetadataValue>;
 }
 
 export interface Folder {
@@ -45,7 +55,7 @@ export interface ResourceBase {
     sizeBytes?: number;
     notes?: string;
     statuses?: string[];
-    metadata?: Record<string, any>;
+    metadata?: Record<string, MetadataValue>;
     createdAt: string;
     updatedAt?: string;
 }
@@ -53,7 +63,7 @@ export interface ResourceBase {
 export interface TextResource extends ResourceBase {
     type: "text";
     plainText?: string; // canonical plain text body
-    tiptap?: any; // TipTap JSON/Delta format
+    tiptap?: TipTapDocument; // TipTap JSON/Delta format (see minimal shape below)
     wordCount?: number;
     charCount?: number;
     paragraphCount?: number;
@@ -102,4 +112,22 @@ Example `resource-<id>.meta.json`:
 ## Notes
 
 - Text resources SHOULD store both `plainText` (for exports and plain editing) and `tiptap` (for editor persistence). Conversion helpers will be provided in `frontend/src/lib/tiptap-utils.ts`.
+- TipTap minimal shape (recommended for validation)
+
+```ts
+// minimal-safe TipTap shape for storage/validation (not full TipTap schema)
+export interface TipTapNode {
+    type: string;
+    attrs?: Record<string, any>;
+    content?: TipTapNode[];
+}
+
+export interface TipTapDocument {
+    type: "doc";
+    content: TipTapNode[];
+}
+```
+
+Implementations should validate incoming TipTap JSON against this minimal shape and provide conversion helpers to/from `plainText`. Add unit tests for conversion helpers.
+
 - Use runtime validators (`zod`) in implementation to validate incoming data and sidecar files.
