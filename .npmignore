@@ -1,0 +1,9 @@
+# Ignore development files when publishing
+tests/
+stories/
+.specify/
+.vscode/
+.idea/
+*.md
+frontend/tests/
+frontend/stories/

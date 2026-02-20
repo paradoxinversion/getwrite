@@ -1,0 +1,16 @@
+node_modules/
+.next/
+
+# Build outputs
+dist/
+build/
+coverage/
+*.log
+.env*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tmp
+*.swp
+/frontend/storybook-static/

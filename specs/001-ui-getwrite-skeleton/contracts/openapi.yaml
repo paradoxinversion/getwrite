@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+    title: GetWrite (placeholder UI contracts)
+    version: 0.0.0
+    description: |
+        Placeholder API contract for future backend integrations. These endpoints are NOT implemented for this UI-only milestone but serve as a contract for later integration.
+servers:
+    - url: /api
+paths:
+    /projects:
+        get:
+            summary: List projects (placeholder)
+            responses:
+                "200":
+                    description: OK
+        post:
+            summary: Create project (placeholder)
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Project"
+            responses:
+                "201":
+                    description: Created
+    /projects/{projectId}/resources:
+        get:
+            summary: List resources for project (placeholder)
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: OK
+components:
+    schemas:
+        Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string
+                createdAt:
+                    type: string
+        Resource:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string
+                size:
+                    type: integer
+                status:
+                    type: string
