@@ -9,17 +9,22 @@ import type { UUID } from "./types";
 
 /** Generate a UUID v4 string. */
 export function generateUUID(): UUID {
-    if (
-        typeof globalThis !== "undefined" &&
-        typeof (globalThis as any).crypto?.randomUUID === "function"
-    ) {
-        return (globalThis as any).crypto.randomUUID();
+    // Narrow `globalThis.crypto` without using `any`.
+    type GlobalCrypto = {
+        randomUUID?: () => string;
+        getRandomValues?: (arr: Uint8Array) => void;
+    };
+
+    const g = globalThis as unknown as { crypto?: GlobalCrypto };
+
+    if (g.crypto && typeof g.crypto.randomUUID === "function") {
+        return g.crypto.randomUUID();
     }
 
     const bytes = new Uint8Array(16);
 
-    if (typeof (globalThis as any).crypto?.getRandomValues === "function") {
-        (globalThis as any).crypto.getRandomValues(bytes);
+    if (g.crypto && typeof g.crypto.getRandomValues === "function") {
+        g.crypto.getRandomValues(bytes);
     } else {
         for (let i = 0; i < bytes.length; i++) {
             bytes[i] = Math.floor(Math.random() * 256);
