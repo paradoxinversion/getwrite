@@ -6,9 +6,16 @@ export default defineConfig({
     expect: { timeout: 5000 },
     fullyParallel: false,
     reporter: [["list"], ["html", { open: "never" }]],
+    // Store artifacts in a dedicated directory and enable capture of
+    // screenshots, video and trace so CI can collect debugging data.
+    outputDir: "playwright-report",
     use: {
         actionTimeout: 5000,
-        trace: "on-first-retry",
+        // Capture artifacts for every test run (can be adjusted to
+        // 'only-on-failure' / 'retain-on-failure' to reduce storage).
+        screenshot: "on",
+        video: "on",
+        trace: "on",
     },
     projects: [
         {
