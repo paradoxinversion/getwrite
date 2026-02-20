@@ -10,7 +10,7 @@ import {
     getCanonicalRevision,
 } from "./revision";
 import { acquireLock } from "./locks";
-import { indexResource } from "./inverted-index";
+import { enqueueIndex } from "./indexer-queue";
 import { readSidecar } from "./sidecar";
 import type { TextResource } from "./types";
 
@@ -67,21 +67,10 @@ export async function createRevision(
         // object using sidecar metadata when available. Indexing is best-effort:
         // failures should not block revision creation.
         try {
-            const side = await readSidecar(projectRoot, resourceId);
-            const now = new Date().toISOString();
-            const minimal: TextResource = {
-                id: resourceId,
-                name: (side && (side as any).name) || resourceId,
-                slug: (side && (side as any).slug) || undefined,
-                type: "text",
-                folderId: undefined,
-                createdAt: now,
-                plainText: undefined,
-                tiptap: undefined,
-            } as unknown as TextResource;
-            await indexResource(projectRoot, minimal);
+            // enqueue indexing in background and do not await (fire-and-forget)
+            void enqueueIndex(projectRoot, resourceId);
         } catch (err) {
-            // Swallow errors: indexing is asynchronous best-effort for now.
+            // ignore queueing errors
         }
 
         return rev;
