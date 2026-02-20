@@ -36,7 +36,11 @@ test("keyboard navigation and activation fires action and closes", async ({
     const menu = page.locator('[role="menu"]');
     await expect(menu).toBeVisible();
 
-    // Focus is given to first item; press ArrowDown until we reach Delete (4th item)
+    // Ensure focus is on the first menu item before sending keyboard events
+    const firstItem = page.getByRole("menuitem", { name: "Create" });
+    await firstItem.focus();
+
+    // Focus is now on the first item; press ArrowDown until we reach Delete (4th item)
     // Items: Create, Copy, Duplicate, Delete, Export
     await page.keyboard.press("ArrowDown"); // to Copy
     await page.keyboard.press("ArrowDown"); // to Duplicate
