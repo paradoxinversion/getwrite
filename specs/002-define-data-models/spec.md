@@ -13,6 +13,7 @@
 - Q: What identity scheme should entities use (IDs)? → A: Use immutable UUID v4 as the canonical `id`, and provide an optional human-readable `slug` per-entity for UI/export purposes.
 - Q: How should metadata be stored for resources/folders/projects? → A: Sidecar JSON files per entity (e.g., `resource-<id>.meta.json`) stored alongside the resource; project-level metadata in the project config file.
 - Q: How should revisions be stored on disk? → A: Full-file copies per revision (no delta storage). Each revision is saved as a separate file; `Revision.filePath` references the stored copy. Revisions may be organized under a `revisions/<resourceId>/` folder or colocated with resource files using the naming convention `resource-<id>-rev-<version>.<ext>`.
+- Q: Which revision file layout should be default? → A: Per-resource revisions folder (recommended): `revisions/<resourceId>/v-<version>/<file>`; colocated naming is an alternative.
 
 ## User Scenarios & Testing (mandatory)
 
@@ -109,24 +110,24 @@ Acceptance Scenarios:
         - Deleting a Revision MUST NOT leave the Resource without a Revision; deletion of canonical revision is disallowed.
     - Storage model:
         - Revisions are stored as full-file copies (no delta/diff storage by default).
-        - `filePath` points to the revision file stored on disk. Suggested layouts:
-            - Per-resource folder: `revisions/<resourceId>/v-<version>/<file>`
-            - Or colocated with resource: `resource-<id>-rev-<version>.<ext>`
-        - Rationale: full copies simplify handling of binary assets (images/audio) and align with a local-first design. Delta storage may be introduced later as an opt-in project configuration.
+        - `filePath` points to the revision file stored on disk. Suggested layouts (recommended first):
+            - Recommended (per-resource folder): `revisions/<resourceId>/v-<version>/<file>` — keeps revisions grouped, simplifies pruning and move operations.
+            - Alternative (colocated): `resource-<id>-rev-<version>.<ext>` — single-folder view, simpler for small projects.
+        - Rationale: full copies simplify handling of binary assets (images/audio) and align with a local-first design. Per-resource folders reduce clutter and make per-resource maintenance (pruning, backups) straightforward. Delta storage may be introduced later as an opt-in project configuration.
     - Operational limits:
         - `maxRevisions` (integer): default 50 per Resource; configurable at the Project level via project configuration. When creating a new revision that would exceed `maxRevisions`, the system MUST prompt the user to select revisions to delete. If the user declines to delete revisions, creation of the new revision MUST be aborted.
 
 - **Metadata**: Flexible key/value pairs scoped to Projects, Folders, or Resources. Metadata keys used by the app include Statuses, Notes, and type-specific metrics. Metadata entries must be typed (string, number, boolean, date, list). - Storage and format: - Metadata for a resource or folder SHOULD be stored in a sidecar JSON file placed next to the resource file or folder root. Filename convention: `resource-<id>.meta.json` or `folder-<id>.meta.json`. - Project-level metadata (project config, Status definitions, `maxRevisions`) SHOULD reside in the project configuration file (eg, `project.json`). - Sidecar schema (example):
   `json
-                {
-                    "id": "<uuid>",
-                    "slug": "optional-human-slug",
-                    "notes": "...",
-                    "statuses": ["Draft"],
-                    "metadata": { "wordCount": 1234 },
-                    "updatedAt": "2026-02-20T12:34:56Z"
-                }
-                ` - Rationale: sidecar JSONs are type-agnostic (work for binary/audio), human-editable, and move with the resource when files are relocated.
+              {
+                  "id": "<uuid>",
+                  "slug": "optional-human-slug",
+                  "notes": "...",
+                  "statuses": ["Draft"],
+                  "metadata": { "wordCount": 1234 },
+                  "updatedAt": "2026-02-20T12:34:56Z"
+              }
+              ` - Rationale: sidecar JSONs are type-agnostic (work for binary/audio), human-editable, and move with the resource when files are relocated.
 
 ### Project Type Definition (declarative template)
 
