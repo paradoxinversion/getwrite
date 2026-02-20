@@ -4,3 +4,4 @@
 export * from "./types";
 export * from "./project";
 export * from "./resource";
+export * from "./resource-templates";
