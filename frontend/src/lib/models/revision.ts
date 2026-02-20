@@ -136,6 +136,42 @@ export async function pruneRevisions(
     return deleted;
 }
 
+/** Mark the specified revision as canonical and unset others. */
+export async function setCanonicalRevision(
+    projectRoot: string,
+    resourceId: UUID,
+    versionNumber: number,
+): Promise<Revision | null> {
+    const revs = await listRevisions(projectRoot, resourceId);
+    const target = revs.find((r) => r.versionNumber === versionNumber);
+    if (!target) return null;
+
+    const base = revisionsBaseDir(projectRoot, resourceId);
+
+    // Update every metadata.json to reflect canonical flag (set true for target, false otherwise)
+    for (const r of revs) {
+        const dir = path.join(base, `v-${r.versionNumber}`);
+        const metaPath = path.join(dir, "metadata.json");
+        const updated: Revision = {
+            ...r,
+            isCanonical: r.versionNumber === versionNumber,
+            savedAt: new Date().toISOString(),
+        };
+        await fs.writeFile(metaPath, JSON.stringify(updated, null, 2), "utf8");
+    }
+
+    return { ...target, isCanonical: true };
+}
+
+/** Return the current canonical revision if present. */
+export async function getCanonicalRevision(
+    projectRoot: string,
+    resourceId: UUID,
+): Promise<Revision | null> {
+    const revs = await listRevisions(projectRoot, resourceId);
+    return revs.find((r) => r.isCanonical) ?? null;
+}
+
 export default {
     selectPruneCandidates,
     revisionsBaseDir,
@@ -143,4 +179,6 @@ export default {
     writeRevision,
     listRevisions,
     pruneRevisions,
+    setCanonicalRevision,
+    getCanonicalRevision,
 };
