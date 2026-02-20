@@ -59,7 +59,7 @@ export default function MetadataSidebar({
 
     return (
         <aside
-            className={`p-4 bg-slate-50 ${className}`}
+            className={`p-4 bg-white ${className}`}
             aria-label="metadata-sidebar"
         >
             <div className="mb-6">
