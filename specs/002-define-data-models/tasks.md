@@ -27,7 +27,6 @@ Phase 3: User Story Implementation (priority order)
 - [ ] T011 [US2] Implement `ResourceBase`, `TextResource`, `ImageResource`, `AudioResource` models in `frontend/src/lib/models/resource.ts`
 - [ ] T012 [P] [US2] Implement `Revision` model and persistence in `frontend/src/lib/models/revision.ts`
 - [ ] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
-- [ ] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
 - [ ] T014 [US2] Add unit tests for revision invariants `frontend/src/tests/unit/revision.test.ts` (ensure canonical exists, prevents deleting canonical, prompt-delete behavior simulated)
 - [ ] T014a Add unit tests for prune algorithm `frontend/src/tests/unit/revision-prune.test.ts` covering:
     - selection of oldest non-canonical revisions
@@ -47,6 +46,26 @@ Final Phase: Polish & Cross-Cutting Concerns
 - [ ] T020 Add example sidecar metadata files under `specs/002-define-data-models/project-types/` to demonstrate `resource-<id>.meta.json`
 - [ ] T021 Add integration notes to `specs/002-define-data-models/quickstart.md` explaining how to run tests and validate models
 - [ ] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
+
+Additional Resource Features (proposed)
+
+- [ ] T023 [US2] Tagging: Add project-scoped tagging and assignment APIs
+    - Acceptance: Define `Tag` type and zod schema; implement CRUD operations to create/delete tags and assign/unassign tags to resources; persist tags in project config or `meta/tags.json`; provide `listResourcesByTag(tag)` helper; include unit tests verifying creation, assignment, and filtering.
+
+- [ ] T024 [US2] Backlinks & Cross-Resource References
+    - Acceptance: Provide an API `computeBacklinks(projectRoot)` that scans `plainText` and `tiptap` fields to produce a mapping `resourceId -> referencedResourceIds`; persist backlink index under `meta/backlinks.json`; add unit tests that assert backlinks are discovered and updated after edits.
+
+- [ ] T025 [US2] Incremental Full-Text Indexing
+    - Acceptance: Implement a per-project incremental inverted index stored in `meta/index/` with APIs `indexResource(resource)`, `removeResourceFromIndex(resourceId)`, and `search(query)` returning ranked result ids; index updates on resource save and revision creation; include unit tests verifying indexing and search correctness.
+
+- [ ] T026 [US1] Soft-Delete / Recycle Bin
+    - Acceptance: Implement `softDeleteResource(resourceId)` which moves resource files and sidecars to a `.trash/` subfolder preserving metadata; implement `restoreResource(resourceId)` and `purgeResource(resourceId)`; unit tests must verify restore preserves identity and purge permanently removes data.
+
+- [ ] T027 [US1] Resource Templates & Duplication
+    - Acceptance: Add `createResourceFromTemplate(templateId, overrides)` and `duplicateResource(resourceId)` helpers that clone metadata and initial revision while generating new identities; unit tests should validate metadata cloning and id uniqueness while preserving content.
+
+- [ ] T028 [US2] Resource Previews (thumbnails & audio waveforms)
+    - Acceptance: Add preview metadata generation APIs that produce lightweight preview artifacts (JSON thumbnails/waveforms) and persist them in `meta/previews/<resourceId>.json`; include unit tests that mock generation and verify preview metadata is written and retrievable.
 
 Dependencies
 
