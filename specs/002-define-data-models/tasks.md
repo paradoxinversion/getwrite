@@ -52,7 +52,7 @@ Additional Resource Features (proposed)
 - [x] T023 [US2] Tagging: Add project-scoped tagging and assignment APIs
     - Acceptance: Define `Tag` type and zod schema; implement CRUD operations to create/delete tags and assign/unassign tags to resources; persist tags in project config or `meta/tags.json`; provide `listResourcesByTag(tag)` helper; include unit tests verifying creation, assignment, and filtering.
 
-- [ ] T024 [US2] Backlinks & Cross-Resource References
+- [x] T024 [US2] Backlinks & Cross-Resource References
     - Acceptance: Provide an API `computeBacklinks(projectRoot)` that scans `plainText` and `tiptap` fields to produce a mapping `resourceId -> referencedResourceIds`; persist backlink index under `meta/backlinks.json`; add unit tests that assert backlinks are discovered and updated after edits.
 
 - [ ] T025 [US2] Incremental Full-Text Indexing
