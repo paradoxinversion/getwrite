@@ -8,9 +8,9 @@ Phase 1: Setup
 
 Phase 2: Foundational
 
-- [ ] T004 [P] Implement UUID utility `frontend/src/lib/models/uuid.ts` (generate/validate UUID v4)
-- [ ] T005 [P] Implement sidecar read/write helpers `frontend/src/lib/models/sidecar.ts` (read/write `resource-<id>.meta.json`)
-- [ ] T006 Implement revision storage helper `frontend/src/lib/models/revisions.ts` (create path, list revisions, prune logic per `maxRevisions`)
+- [x] T004 [P] Implement UUID utility `frontend/src/lib/models/uuid.ts` (generate/validate UUID v4)
+- [x] T005 [P] Implement sidecar read/write helpers `frontend/src/lib/models/sidecar.ts` (read/write `resource-<id>.meta.json`)
+- [x] T006 Implement revision storage helper `frontend/src/lib/models/revisions.ts` (create path, list revisions, prune logic per `maxRevisions`)
     - Acceptance: `revisions.ts` exports a `selectPruneCandidates(resourceId, revisions, maxRevisions, options)` deterministic pure function that unit tests can call. Add unit tests that assert selection order, preservation tag handling, and behavior when only canonical remains.
 
 Phase 3: User Story Implementation (priority order)
