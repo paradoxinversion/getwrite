@@ -27,10 +27,12 @@ Phase 3: User Story Implementation (priority order)
 - [x] T011 [US2] Implement `ResourceBase`, `TextResource`, `ImageResource`, `AudioResource` models in `frontend/src/lib/models/resource.ts`
 - [x] T012 [P] [US2] Implement `Revision` model and persistence in `frontend/src/lib/models/revision.ts`
 - [x] T013 [US2] Implement revision-manager `frontend/src/lib/models/revision-manager.ts` to create revisions, enforce `maxRevisions`, and set canonical revision
-      [x] T014 [US2] Add unit tests for revision invariants `frontend/src/tests/unit/revision.test.ts` (ensure canonical exists, prevents deleting canonical, prompt-delete behavior simulated)
+- [ ] T014 [US2] Add unit tests for revision invariants `frontend/src/tests/unit/revision.test.ts` (ensure canonical exists, prevents deleting canonical, prompt-delete behavior simulated)
+- [ ] T014a Add unit tests for prune algorithm `frontend/src/tests/unit/revision-prune.test.ts` covering:
     - selection of oldest non-canonical revisions
     - skipping preserved revisions (`metadata.preserve=true`)
     - headless behavior when `autoPrune=true` and when `autoPrune=false` (abort)
+- [ ] T015 [P] [US2] Implement TipTap/plain-text conversion helpers `frontend/src/lib/tiptap-utils.ts` (persist both `plainText` and `tiptap` forms)
 
 **User Story: Modify or create Project Types (Priority: P2)**
 
