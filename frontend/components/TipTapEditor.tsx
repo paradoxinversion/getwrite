@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { HeadingDropdownMenu } from "../@/components/tiptap-ui/heading-dropdown-menu";
 
 export interface TipTapEditorProps {
     value?: string;
@@ -43,6 +44,7 @@ export default function TipTapEditor({
 
     return (
         <div className="prose max-w-none">
+            <HeadingDropdownMenu editor={editor} />
             <EditorContent editor={editor} id={id} />
         </div>
     );
