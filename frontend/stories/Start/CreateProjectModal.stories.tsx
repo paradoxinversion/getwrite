@@ -23,5 +23,32 @@ export const Open: Story = {
         onCreate: (payload: CreateProjectPayload) =>
             console.log("create", payload),
     },
-    render: (args: CreateProjectModalProps) => <CreateProjectModal {...args} />,
+    render: (args: CreateProjectModalProps) => {
+        const Wrapper = () => {
+            const [open, setOpen] = React.useState(true);
+            const [created, setCreated] =
+                React.useState<CreateProjectPayload | null>(null);
+            return (
+                <div>
+                    <CreateProjectModal
+                        {...args}
+                        isOpen={open}
+                        onClose={() => setOpen(false)}
+                        onCreate={(p) => {
+                            setCreated(p);
+                            args.onCreate?.(p);
+                        }}
+                    />
+                    <div
+                        data-testid="created-payload"
+                        aria-hidden
+                        style={{ display: "none" }}
+                    >
+                        {created ? JSON.stringify(created) : ""}
+                    </div>
+                </div>
+            );
+        };
+        return <Wrapper />;
+    },
 };
