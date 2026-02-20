@@ -32,3 +32,32 @@ export const WithResults: Story = {
         placeholder: "Search resources...",
     },
 };
+
+export const Interactive: Story = {
+    render: (args) => {
+        const Wrapper = () => {
+            const [selected, setSelected] = React.useState<string | null>(null);
+            return (
+                <div>
+                    <SearchBar
+                        {...args}
+                        onSelect={(id: string) => setSelected(id)}
+                    />
+                    <div
+                        data-testid="search-last-selected"
+                        aria-hidden
+                        style={{ display: "none" }}
+                    >
+                        {selected}
+                    </div>
+                </div>
+            );
+        };
+
+        return <Wrapper />;
+    },
+    args: {
+        resources,
+        placeholder: "Search resources...",
+    },
+};
