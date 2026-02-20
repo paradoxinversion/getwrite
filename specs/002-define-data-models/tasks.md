@@ -19,7 +19,7 @@ Phase 3: User Story Implementation (priority order)
 
 - [x] T007 [US1] Implement `Project` TypeScript model in `frontend/src/lib/models/project.ts`
 - [x] T008 [P] [US1] Implement Project config and loader `frontend/src/lib/models/project-config.ts` (load `project.json`, apply defaults e.g., `maxRevisions: 50`)
-- [ ] T009 [US1] Implement project-creator that instantiates folder/resource placeholders from `specs/002-define-data-models/project-types/*` in `frontend/src/lib/models/project-creator.ts`
+- [x] T009 [US1] Implement project-creator that instantiates folder/resource placeholders from `specs/002-define-data-models/project-types/*` in `frontend/src/lib/models/project-creator.ts`
 - [ ] T010 [US1] Add unit tests for project creation `frontend/src/tests/unit/project.test.ts`
 
 **User Story: Add and manage resources and revisions (Priority: P1)**
