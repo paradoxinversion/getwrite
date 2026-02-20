@@ -31,6 +31,16 @@ export const ProjectConfigSchema = z.object({
     maxRevisions: z.number().int().nonnegative().optional(),
     statuses: z.array(z.string()).optional(),
     autoPrune: z.boolean().optional(),
+    tags: z
+        .array(
+            z.object({
+                id: UUID,
+                name: z.string(),
+                color: z.string().optional(),
+            }),
+        )
+        .optional(),
+    tagAssignments: z.record(z.array(UUID)).optional(),
 });
 
 export const ProjectSchema = z.object({

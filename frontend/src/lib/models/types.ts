@@ -32,6 +32,17 @@ export interface ProjectConfig {
      * When false, the UI should prompt the user (interactive) or abort in headless contexts.
      */
     autoPrune?: boolean;
+    /** Optional list of project-scoped tags. */
+    tags?: Tag[];
+    /** Optional map of resourceId -> tagId[] assignments persisted in project config. */
+    tagAssignments?: Record<string, string[]>;
+}
+
+/** Simple Tag type for project-scoped tagging. */
+export interface Tag {
+    id: UUID;
+    name: string;
+    color?: string;
 }
 
 /** Represents a single GetWrite project (local-first). */
