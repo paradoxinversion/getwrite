@@ -17,7 +17,10 @@ export function selectPruneCandidates(
     const total = revisions.length;
     if (total <= maxRevisions) return [];
 
-    const nonCanonical = revisions.filter((r) => !r.isCanonical);
+    // Exclude canonical and preserved revisions from pruning candidates.
+    const nonCanonical = revisions.filter(
+        (r) => !r.isCanonical && !(r as any).metadata?.preserve,
+    );
     if (nonCanonical.length === 0) return [];
 
     const sorted = [...nonCanonical].sort(
@@ -152,10 +155,18 @@ export async function pruneRevisions(
     projectRoot: string,
     resourceId: UUID,
     maxRevisions: number,
+    options?: { autoPrune?: boolean },
 ): Promise<Revision[]> {
     const revisions = await listRevisions(projectRoot, resourceId);
     const candidates = selectPruneCandidates(revisions, maxRevisions);
     const deleted: Revision[] = [];
+
+    const requiredToRemove = Math.max(0, revisions.length - maxRevisions);
+    if (candidates.length < requiredToRemove && options?.autoPrune === false) {
+        // In headless/non-autoPrune mode, abort and perform no deletions.
+        return [];
+    }
+
     for (const c of candidates) {
         const dir = revisionDir(projectRoot, resourceId, c.versionNumber);
         await rm(dir, { recursive: true, force: true });

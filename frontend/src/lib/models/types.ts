@@ -170,6 +170,8 @@ export interface Revision {
     filePath: string;
     /** True when this revision is the canonical/current revision for the resource. */
     isCanonical: boolean;
+    /** Optional arbitrary metadata persisted alongside the revision (e.g., preserve flags). */
+    metadata?: Record<string, unknown>;
 }
 
 export type AnyResource = TextResource | ImageResource | AudioResource;
