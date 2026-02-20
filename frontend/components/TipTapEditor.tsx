@@ -1,7 +1,10 @@
 import React, { useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, EditorContext } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { HeadingDropdownMenu } from "../@/components/tiptap-ui/heading-dropdown-menu";
+import { UndoRedoButton } from "./tiptap-ui/undo-redo-button";
+import { TextAlignButton } from "./tiptap-ui/text-align-button";
+import { TextAlign } from "@tiptap/extension-text-align";
 
 export interface TipTapEditorProps {
     value?: string;
@@ -19,7 +22,10 @@ export default function TipTapEditor({
     const isClient = typeof window !== "undefined";
 
     const editor = useEditor({
-        extensions: [StarterKit],
+        extensions: [
+            StarterKit,
+            TextAlign.configure({ types: ["heading", "paragraph"] }),
+        ],
         content: value || "",
         editable: !readonly,
         onUpdate: ({ editor }) => {
@@ -43,9 +49,33 @@ export default function TipTapEditor({
     if (!editor) return <div>Loading editor...</div>;
 
     return (
-        <div className="prose max-w-none">
-            <HeadingDropdownMenu editor={editor} />
-            <EditorContent editor={editor} id={id} />
-        </div>
+        <EditorContext.Provider value={{ editor }}>
+            <div className="prose max-w-none">
+                <div className="flex">
+                    <HeadingDropdownMenu editor={editor} />
+                    <UndoRedoButton
+                        editor={editor}
+                        action="undo"
+                        // text="Undo"
+                        hideWhenUnavailable={true}
+                        // showShortcut={true}
+                        onExecuted={() => console.log("Action executed!")}
+                    />
+                    <UndoRedoButton
+                        editor={editor}
+                        action="redo"
+                        // text="Redo"
+                        hideWhenUnavailable={true}
+                        // showShortcut={true}
+                        onExecuted={() => console.log("Action executed!")}
+                    />
+                    <TextAlignButton editor={editor} align="left" />
+                    <TextAlignButton editor={editor} align="center" />
+                    <TextAlignButton editor={editor} align="right" />
+                    <TextAlignButton editor={editor} align="justify" />
+                </div>
+                <EditorContent editor={editor} id={id} />
+            </div>
+        </EditorContext.Provider>
     );
 }
