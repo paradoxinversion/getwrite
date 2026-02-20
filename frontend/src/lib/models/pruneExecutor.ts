@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { pruneRevisions } from "./revisionStorage";
+import { pruneRevisions } from "./revision";
 
 /**
  * List resource IDs that have a `revisions/` entry under a project root.

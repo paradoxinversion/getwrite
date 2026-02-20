@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { describe, it, expect } from "vitest";
-import { writeRevision } from "../../../../src/lib/models/revisionStorage";
+import { writeRevision } from "../../../../src/lib/models/revision";
 import { pruneAllResources } from "../../../../src/lib/models/pruneExecutor";
 
 async function makeTmpProject() {
