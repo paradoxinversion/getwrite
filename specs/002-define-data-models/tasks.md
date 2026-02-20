@@ -2,9 +2,9 @@
 
 Phase 1: Setup
 
-- [ ] T001 [P] Create models directory and index in `frontend/src/lib/models/index.ts`
-- [ ] T002 [P] Add runtime schema file `frontend/src/lib/models/schemas.ts` (use `zod`-style schemas)
-- [ ] T003 [P] Create unit test folder `frontend/src/tests/unit/models` and a placeholder test `frontend/src/tests/unit/models/index.test.ts`
+- [x] T001 [P] Create models directory and index in `frontend/src/lib/models/index.ts`
+- [x] T002 [P] Add runtime schema file `frontend/src/lib/models/schemas.ts` (use `zod`-style schemas)
+- [x] T003 [P] Create unit test folder `frontend/src/tests/unit/models` and a placeholder test `frontend/src/tests/unit/models/index.test.ts`
 
 Phase 2: Foundational
 
