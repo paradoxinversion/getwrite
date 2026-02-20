@@ -57,7 +57,7 @@ export default function TipTapEditor({
                         editor={editor}
                         action="undo"
                         // text="Undo"
-                        hideWhenUnavailable={true}
+                        hideWhenUnavailable={false}
                         // showShortcut={true}
                         onExecuted={() => console.log("Action executed!")}
                     />
@@ -65,7 +65,7 @@ export default function TipTapEditor({
                         editor={editor}
                         action="redo"
                         // text="Redo"
-                        hideWhenUnavailable={true}
+                        hideWhenUnavailable={false}
                         // showShortcut={true}
                         onExecuted={() => console.log("Action executed!")}
                     />
