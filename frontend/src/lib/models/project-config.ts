@@ -1,14 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ProjectConfigSchema, ProjectSchema } from "./schemas";
-import type { ProjectConfig, Project as ProjectType } from "./types";
+import { ProjectConfigSchema, ProjectSchema, Infer } from "./schemas";
+import type { ProjectConfig } from "./types";
 import { normalizeProjectConfig } from "./project";
 
 /** Default project filename stored at a project's root. */
 export const PROJECT_FILENAME = "project.json";
 
 /** Read and parse `project.json` from disk, validate it, and apply config defaults. */
-export async function loadProject(projectRoot: string): Promise<ProjectType> {
+export async function loadProject(
+    projectRoot: string,
+): Promise<Infer<typeof ProjectSchema>> {
     const p = path.join(projectRoot, PROJECT_FILENAME);
     const raw = await fs.readFile(p, "utf8");
     const parsed = JSON.parse(raw) as unknown;

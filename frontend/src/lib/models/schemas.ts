@@ -1,4 +1,9 @@
 import { z } from "zod";
+import type {
+    MetadataValue as MetadataValueType,
+    TipTapNode as TipTapNodeType,
+    TipTapDocument as TipTapDocumentType,
+} from "./types";
 
 /** UUID schema (v4) */
 export const UUID = z.string().uuid();
@@ -18,7 +23,7 @@ export const MetadataValue: z.ZodTypeAny = z.lazy(() =>
         z.array(z.string()),
         z.array(z.number()),
         z.array(z.boolean()),
-        z.record(MetadataValue),
+        z.record(z.string(), MetadataValue),
     ]),
 );
 
@@ -37,7 +42,7 @@ export const ProjectSchema = z.object({
     projectType: z.string().optional(),
     rootPath: z.string().optional(),
     config: ProjectConfigSchema.optional(),
-    metadata: z.record(MetadataValue).optional(),
+    metadata: z.record(z.string(), MetadataValue).optional(),
 });
 
 export const FolderSchema = z.object({
@@ -55,12 +60,12 @@ export const ResourceTypeSchema = z.enum(["text", "image", "audio"]);
 export const TipTapNodeSchema: z.ZodTypeAny = z.lazy(() =>
     z.object({
         type: z.string(),
-        attrs: z.record(MetadataValue).optional(),
+        attrs: z.record(z.string(), MetadataValue).optional(),
         content: z.array(TipTapNodeSchema).optional(),
     }),
 );
 
-export const TipTapDocumentSchema = z.object({
+export const TipTapDocumentSchema: z.ZodTypeAny = z.object({
     type: z.literal("doc"),
     content: z.array(TipTapNodeSchema),
 });
@@ -74,7 +79,7 @@ export const ResourceBaseSchema = z.object({
     sizeBytes: z.number().int().nonnegative().optional(),
     notes: z.string().optional(),
     statuses: z.array(z.string()).optional(),
-    metadata: z.record(MetadataValue).optional(),
+    metadata: z.record(z.string(), MetadataValue).optional(),
     createdAt: IsoDateString,
     updatedAt: IsoDateString.optional(),
 });
@@ -92,7 +97,7 @@ export const ImageResourceSchema = ResourceBaseSchema.extend({
     type: z.literal("image"),
     width: z.number().int().nonnegative().optional(),
     height: z.number().int().nonnegative().optional(),
-    exif: z.record(MetadataValue).optional(),
+    exif: z.record(z.string(), MetadataValue).optional(),
 });
 
 export const AudioResourceSchema = ResourceBaseSchema.extend({
