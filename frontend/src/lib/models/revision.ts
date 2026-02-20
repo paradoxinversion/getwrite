@@ -1,7 +1,7 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { generateUUID } from "./uuid";
 import type { UUID, Revision } from "./types";
+import { mkdir, writeFile, readFile, readdir, stat, rm, rename } from "./io";
 
 /**
  * Determine which revisions should be pruned when enforcing a maximum retained
@@ -61,11 +61,10 @@ export async function writeRevision(
 
     // Ensure final dir does not already exist to avoid clobbering.
     try {
-        const stat = await fs.stat(finalDir).catch(() => null);
-        if (stat)
+        const st = await stat(finalDir).catch(() => null);
+        if (st)
             throw new Error(`revision directory already exists: ${finalDir}`);
     } catch (err) {
-        // propagate
         throw err;
     }
 
@@ -73,12 +72,12 @@ export async function writeRevision(
     // then atomically rename the temp dir to the final v-<version> directory.
     const tmpDir = path.join(base, `.tmp-${generateUUID()}`);
     try {
-        await fs.mkdir(tmpDir, { recursive: true });
+        await mkdir(tmpDir, { recursive: true });
 
         const filename = "content.bin";
         const finalFilePath = path.join(finalDir, filename);
         const tmpFilePath = path.join(tmpDir, filename);
-        await fs.writeFile(tmpFilePath, content);
+        await writeFile(tmpFilePath, content);
 
         const now = new Date().toISOString();
         const rev: Revision = {
@@ -93,16 +92,16 @@ export async function writeRevision(
         };
 
         const metaPath = path.join(tmpDir, "metadata.json");
-        await fs.writeFile(metaPath, JSON.stringify(rev, null, 2), "utf8");
+        await writeFile(metaPath, JSON.stringify(rev, null, 2), "utf8");
 
         // Atomic move into place. If finalDir exists, this will throw.
-        await fs.rename(tmpDir, finalDir);
+        await rename(tmpDir, finalDir);
 
         return rev;
     } catch (err) {
         // Best-effort cleanup of tmpDir on error.
         try {
-            await fs.rm(tmpDir, { recursive: true, force: true });
+            await rm(tmpDir, { recursive: true, force: true });
         } catch (_) {
             // ignore cleanup errors
         }
@@ -117,7 +116,7 @@ export async function listRevisions(
 ): Promise<Revision[]> {
     const base = revisionsBaseDir(projectRoot, resourceId);
     try {
-        const entries = await fs.readdir(base, { withFileTypes: true });
+        const entries = await readdir(base, { withFileTypes: true });
         const revDirs = entries
             .filter((e) => e.isDirectory() && e.name.startsWith("v-"))
             .map((d) => d.name);
@@ -125,7 +124,7 @@ export async function listRevisions(
         for (const d of revDirs) {
             const metaPath = path.join(base, d, "metadata.json");
             try {
-                const raw = await fs.readFile(metaPath, "utf8");
+                const raw = await readFile(metaPath, "utf8");
                 const parsed = JSON.parse(raw) as Revision;
                 results.push(parsed);
             } catch (err: unknown) {
@@ -159,7 +158,7 @@ export async function pruneRevisions(
     const deleted: Revision[] = [];
     for (const c of candidates) {
         const dir = revisionDir(projectRoot, resourceId, c.versionNumber);
-        await fs.rm(dir, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
         deleted.push(c);
     }
     return deleted;
@@ -186,7 +185,7 @@ export async function setCanonicalRevision(
             isCanonical: r.versionNumber === versionNumber,
             savedAt: new Date().toISOString(),
         };
-        await fs.writeFile(metaPath, JSON.stringify(updated, null, 2), "utf8");
+        await writeFile(metaPath, JSON.stringify(updated, null, 2), "utf8");
     }
 
     return { ...target, isCanonical: true };
