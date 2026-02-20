@@ -12,15 +12,16 @@ const dirname =
 export default defineConfig({
     resolve: {
         alias: {
-            // map `@` imports to the frontend project root
-            "@": path.resolve(dirname, "."),
+            // map `@` imports to the frontend `@` folder used by generated files
+            "@": path.resolve(dirname, "@"),
         },
     },
     test: {
         environment: "jsdom",
         globals: true,
         setupFiles: ["./tests/setup.ts"],
-        include: ["**/*.(test|spec).(ts|tsx)"],
-        exclude: ["e2e/**", "playwright-report/**"],
+        // match conventional test file patterns and avoid including e2e specs
+        include: ["**/*.{test,spec}.{ts,tsx}"],
+        exclude: ["**/e2e/**", "playwright-report/**"],
     },
 });

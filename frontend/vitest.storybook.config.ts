@@ -12,14 +12,16 @@ export default defineConfig({
     resolve: {
         alias: {
             // same alias as vitest config to resolve `@/...` imports in generated files
-            "@": path.resolve(dirname, "."),
+            "@": path.resolve(dirname, "@"),
         },
     },
     test: {
         environment: "jsdom",
         globals: true,
+        // only run story files with the Storybook Vitest plugin
         include: ["stories/**/*.stories.@(tsx|mdx)"],
-        exclude: ["e2e/**", "playwright-report/**"],
+        // explicitly exclude the e2e folder and Playwright artifacts
+        exclude: ["**/e2e/**", "playwright-report/**"],
         projects: [
             {
                 extends: true,
