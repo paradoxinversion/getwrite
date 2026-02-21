@@ -119,17 +119,40 @@ async function main(argv: Argv): Promise<number> {
         }
 
         if (cmd === "create") {
+            // supports: create <projectRoot> <templateId> [name] [--vars '{}'] [--dry-run]
+            const nameIndex = args.indexOf("--vars");
+            const dryIndex = args.indexOf("--dry-run");
+            let vars: string | undefined;
+            if (nameIndex !== -1) {
+                vars = args[nameIndex + 1];
+                args.splice(nameIndex, 2);
+            }
             const [_, projectRoot, templateId, name] = args;
             if (!projectRoot || !templateId) {
                 console.error(usage());
                 return 1;
             }
-            const created = await createResourceFromTemplate(
+            const dry = dryIndex !== -1;
+            const result = await createResourceFromTemplate(
                 projectRoot,
                 templateId,
-                { name },
+                {
+                    name,
+                    vars: vars ? JSON.parse(vars) : undefined,
+                    dryRun: dry,
+                },
             );
-            console.log(`Created resource ${created.id}`);
+            if (dry && (result as any).plannedWrites) {
+                console.log("Dry-run planned writes:");
+                for (const p of (result as any).plannedWrites) {
+                    console.log(
+                        `${p.path}` +
+                            (p.content === null ? " (no content)" : ""),
+                    );
+                }
+                return 0;
+            }
+            console.log(`Created resource ${(result as any).id}`);
             return 0;
         }
 

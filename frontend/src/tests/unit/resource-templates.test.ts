@@ -251,4 +251,71 @@ describe("models/resource-templates (T027)", () => {
             await fs.rm(tmp, { recursive: true, force: true });
         }
     });
+
+    it("creates from template with vars (dry-run and real)", async () => {
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-rt-"));
+        try {
+            const specPath = path.join(
+                process.cwd(),
+                "..",
+                "specs",
+                "002-define-data-models",
+                "project-types",
+                "novel_project_type.json",
+            );
+
+            const { projectPath } = await createAndAssertProject(specPath, {
+                projectRoot: tmp,
+                name: "Vars Test",
+            });
+
+            const tplId = "tpl-vars";
+            const template = {
+                id: tplId,
+                name: "My {{TITLE}}",
+                type: "text" as const,
+                plainText: "{{TITLE}}\n\nBody",
+            };
+            await saveResourceTemplate(projectPath, template as any);
+
+            // dry-run
+            const { plannedWrites } = (
+                await import("../../lib/models/resource-templates")
+            ).createResourceFromTemplate(projectPath, tplId, {
+                name: undefined,
+                vars: { TITLE: "Draft" },
+                dryRun: true,
+            }) as any;
+            expect(Array.isArray(await plannedWrites)).toBeTruthy();
+
+            // CLI dry-run
+            const argvDry = [
+                "node",
+                "templates",
+                "create",
+                projectPath,
+                tplId,
+                "--vars",
+                JSON.stringify({ TITLE: "CLI" }),
+                "--dry-run",
+            ];
+            const codeDry = await templatesMain(argvDry);
+            expect(codeDry).toBe(0);
+
+            // real create
+            const result = (await (
+                await import("../../lib/models/resource-templates")
+            ).createResourceFromTemplate(projectPath, tplId, {
+                vars: { TITLE: "Final" },
+            })) as any;
+            expect(result.id).toBeTruthy();
+
+            const resourcesDir = path.join(projectPath, "resources");
+            const entries = await fs.readdir(resourcesDir);
+            const found = entries.find((e) => e.includes(result.id));
+            expect(found).toBeTruthy();
+        } finally {
+            await fs.rm(tmp, { recursive: true, force: true });
+        }
+    });
 });

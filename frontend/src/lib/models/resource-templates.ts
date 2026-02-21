@@ -62,66 +62,166 @@ export async function loadResourceTemplate(
 export async function createResourceFromTemplate(
     projectRoot: string,
     templateId: string,
-    opts?: { name?: string },
-): Promise<TextResource | ImageResource | AudioResource> {
+    opts?: {
+        name?: string;
+        vars?: Record<string, string> | string;
+        dryRun?: boolean;
+    },
+): Promise<
+    | TextResource
+    | ImageResource
+    | AudioResource
+    | {
+          plannedWrites: Array<{ path: string; content: string | null }>;
+          resourcePreview: any;
+      }
+> {
     const tmpl = await loadResourceTemplate(projectRoot, templateId);
-    const name = opts?.name ?? tmpl.name;
+
+    const vars: Record<string, string> | undefined =
+        typeof opts?.vars === "string"
+            ? JSON.parse(opts!.vars as string)
+            : (opts?.vars as any | undefined);
+
+    // helper to apply vars substitution ({{VAR}}) into strings/objects
+    function applyVars(v: unknown): unknown {
+        if (!vars) return v;
+        if (typeof v === "string") {
+            let out = v as string;
+            for (const k of Object.keys(vars)) {
+                out = out.split(`{{${k}}}`).join(String(vars[k]));
+            }
+            return out;
+        }
+        if (Array.isArray(v)) return v.map(applyVars);
+        if (v && typeof v === "object") {
+            const o: Record<string, unknown> = {};
+            for (const key of Object.keys(v as Record<string, unknown>)) {
+                o[key] = applyVars((v as Record<string, unknown>)[key]);
+            }
+            return o;
+        }
+        return v;
+    }
+
+    const name = (opts?.name ?? tmpl.name) as string;
+    const appliedName = (applyVars(name) as string) ?? name;
 
     await ensureDir(RESOURCES_DIR(projectRoot));
 
+    const plannedWrites: Array<{ path: string; content: string | null }> = [];
+
     if (tmpl.type === "text") {
         const res = createTextResource({
-            name,
+            name: appliedName,
             folderId: tmpl.folderId ?? null,
-            plainText: tmpl.plainText ?? "",
+            plainText: (applyVars(tmpl.plainText ?? "") as string) ?? "",
             metadata: tmpl.metadata,
         });
-        const filename = `${res.slug ?? name.replace(/\s+/g, "-")}-${res.id}.txt`;
+        const filename = `${res.slug ?? appliedName.replace(/\s+/g, "-")}-${res.id}.txt`;
         const filePath = path.join(RESOURCES_DIR(projectRoot), filename);
-        await fs.writeFile(filePath, res.plainText ?? "", "utf8");
-        await writeSidecar(projectRoot, res.id, {
-            id: res.id,
-            name: res.name,
-            type: res.type,
-            createdAt: res.createdAt,
-        });
+
+        const content = res.plainText ?? "";
+        const sidecar = JSON.stringify(
+            {
+                id: res.id,
+                name: res.name,
+                type: res.type,
+                createdAt: res.createdAt,
+            },
+            null,
+            2,
+        );
+
+        if (opts?.dryRun) {
+            plannedWrites.push({ path: filePath, content });
+            plannedWrites.push({
+                path: path.join(
+                    projectRoot,
+                    "meta",
+                    `resource-${res.id}.meta.json`,
+                ),
+                content: sidecar,
+            });
+            return { plannedWrites, resourcePreview: res };
+        }
+
+        await fs.writeFile(filePath, content, "utf8");
+        await writeSidecar(projectRoot, res.id, JSON.parse(sidecar));
         return res;
     }
 
     if (tmpl.type === "image") {
         const res = createImageResource({
-            name,
+            name: appliedName,
             folderId: tmpl.folderId ?? null,
             metadata: tmpl.metadata,
         });
-        const filename = `${res.slug ?? name.replace(/\s+/g, "-")}-${res.id}.img`;
+        const filename = `${res.slug ?? appliedName.replace(/\s+/g, "-")}-${res.id}.img`;
         const filePath = path.join(RESOURCES_DIR(projectRoot), filename);
-        // create empty placeholder file
+        const sidecar = JSON.stringify(
+            {
+                id: res.id,
+                name: res.name,
+                type: res.type,
+                createdAt: res.createdAt,
+            },
+            null,
+            2,
+        );
+
+        if (opts?.dryRun) {
+            plannedWrites.push({ path: filePath, content: "" });
+            plannedWrites.push({
+                path: path.join(
+                    projectRoot,
+                    "meta",
+                    `resource-${res.id}.meta.json`,
+                ),
+                content: sidecar,
+            });
+            return { plannedWrites, resourcePreview: res };
+        }
+
         await fs.writeFile(filePath, "", "utf8");
-        await writeSidecar(projectRoot, res.id, {
-            id: res.id,
-            name: res.name,
-            type: res.type,
-            createdAt: res.createdAt,
-        });
+        await writeSidecar(projectRoot, res.id, JSON.parse(sidecar));
         return res;
     }
 
     // audio
     const res = createAudioResource({
-        name,
+        name: appliedName,
         folderId: tmpl.folderId ?? null,
         metadata: tmpl.metadata,
     });
-    const filename = `${res.slug ?? name.replace(/\s+/g, "-")}-${res.id}.aud`;
+    const filename = `${res.slug ?? appliedName.replace(/\s+/g, "-")}-${res.id}.aud`;
     const filePath = path.join(RESOURCES_DIR(projectRoot), filename);
+    const sidecar = JSON.stringify(
+        {
+            id: res.id,
+            name: res.name,
+            type: res.type,
+            createdAt: res.createdAt,
+        },
+        null,
+        2,
+    );
+
+    if (opts?.dryRun) {
+        plannedWrites.push({ path: filePath, content: "" });
+        plannedWrites.push({
+            path: path.join(
+                projectRoot,
+                "meta",
+                `resource-${res.id}.meta.json`,
+            ),
+            content: sidecar,
+        });
+        return { plannedWrites, resourcePreview: res };
+    }
+
     await fs.writeFile(filePath, "", "utf8");
-    await writeSidecar(projectRoot, res.id, {
-        id: res.id,
-        name: res.name,
-        type: res.type,
-        createdAt: res.createdAt,
-    });
+    await writeSidecar(projectRoot, res.id, JSON.parse(sidecar));
     return res;
 }
 
