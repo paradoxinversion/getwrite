@@ -14,7 +14,7 @@ import {
 describe("inverted index (T025)", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("indexes resources and returns results by term frequency", async () => {

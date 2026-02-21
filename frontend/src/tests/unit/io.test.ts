@@ -12,7 +12,7 @@ describe("io adapter", () => {
     it("replaces adapter and routes calls to the new adapter", async () => {
         // use an in-memory adapter for isolation
         const mem = createMemoryAdapter();
-        io.setStorageAdapter(mem as any);
+        io.setStorageAdapter(mem);
 
         await io.mkdir("/project-x", { recursive: true });
         await io.writeFile("/project-x/content", "hi");

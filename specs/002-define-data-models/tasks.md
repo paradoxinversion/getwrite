@@ -43,10 +43,10 @@ Phase 3: User Story Implementation (priority order)
 Final Phase: Polish & Cross-Cutting Concerns
 
 - [x] T019 Update `specs/002-define-data-models/data-model.md` with links to implemented TypeScript files (docs)
-- [ ] T020 Add example sidecar metadata files under `specs/002-define-data-models/project-types/` to demonstrate `resource-<id>.meta.json`
 - [x] T020 Add example sidecar metadata files under `specs/002-define-data-models/project-types/` to demonstrate `resource-<id>.meta.json`
-- [ ] T021 Add integration notes to `specs/002-define-data-models/quickstart.md` explaining how to run tests and validate models
+- [x] T021 Add integration notes to `specs/002-define-data-models/quickstart.md` explaining how to run tests and validate models
 - [ ] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
+- [x] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
 
 Additional Resource Features (proposed)
 

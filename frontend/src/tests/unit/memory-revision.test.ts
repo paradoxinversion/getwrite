@@ -12,7 +12,7 @@ import { generateUUID } from "../../../src/lib/models/uuid";
 describe("memory-backed revision storage", () => {
     it("writes and prunes revisions in-memory", async () => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
 
         const projectRoot = "/proj-" + generateUUID();
         const resourceId = generateUUID();
@@ -32,10 +32,10 @@ describe("memory-backed revision storage", () => {
 
         const base = revisionsBaseDir(projectRoot, resourceId);
         // readdir via adapter: expect v-3 and v-4 remain
-        const entries = await (mem as any).readdir(base, {
+        const entries = (await mem.readdir(base, {
             withFileTypes: true,
-        });
-        const names = entries.map((e: any) => e.name);
+        })) as unknown as { name: string }[];
+        const names = entries.map((e) => e.name);
         expect(names).toContain("v-3");
         expect(names).toContain("v-4");
     });

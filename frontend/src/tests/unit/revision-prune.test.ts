@@ -15,7 +15,7 @@ import { writeFile as ioWriteFile } from "../../../src/lib/models/io";
 describe("revision pruning algorithm (T014a)", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("selects oldest non-canonical revisions", () => {

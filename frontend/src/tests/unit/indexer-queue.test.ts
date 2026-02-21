@@ -27,7 +27,7 @@ async function waitForIndex(
 describe("indexer queue integration", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("indexes resource after createRevision (async)", async () => {

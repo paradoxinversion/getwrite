@@ -73,7 +73,7 @@ export interface ImageResource extends ResourceBase {
     type: "image";
     width?: number;
     height?: number;
-    exif?: Record<string, any>;
+    exif?: Record<string, MetadataValue>;
 }
 
 export interface AudioResource extends ResourceBase {
@@ -127,7 +127,7 @@ Example sidecar JSON files demonstrating common metadata shapes are available in
 // minimal-safe TipTap shape for storage/validation (not full TipTap schema)
 export interface TipTapNode {
     type: string;
-    attrs?: Record<string, any>;
+    attrs?: Record<string, MetadataValue>;
     content?: TipTapNode[];
 }
 

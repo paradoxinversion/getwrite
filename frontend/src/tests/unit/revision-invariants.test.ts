@@ -13,7 +13,7 @@ import {
 describe("revision invariants (T014)", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("ensures a canonical revision can be observed", async () => {

@@ -16,7 +16,7 @@ import { generateUUID } from "../../../src/lib/models/uuid";
 describe("backlinks wiki-link edge cases", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("handles pipe-syntax and uses left side for resolution", async () => {

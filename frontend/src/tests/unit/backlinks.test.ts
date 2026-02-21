@@ -15,7 +15,7 @@ import { generateUUID } from "../../../src/lib/models/uuid";
 describe("backlinks (T024)", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("discovers backlinks between resources and persists index", async () => {

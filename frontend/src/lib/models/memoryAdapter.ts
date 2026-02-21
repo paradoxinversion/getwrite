@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { StorageAdapter } from "./io";
+import type { Dirent, Stats } from "node:fs";
 
 type Node =
     | { type: "dir"; children: Map<string, Node> }
@@ -66,7 +67,7 @@ export function createMemoryAdapter(): StorageAdapter {
                 throw Object.assign(new Error("EISDIR"), { code: "EISDIR" });
             return cur.data.toString();
         },
-        readdir: async (p: string, opts?: any) => {
+        readdir: async (p: string, opts?: { withFileTypes?: boolean }) => {
             const parts = splitPath(p);
             let cur: Node = root;
             for (const part of parts) {
@@ -80,9 +81,13 @@ export function createMemoryAdapter(): StorageAdapter {
             }
             if (cur.type !== "dir")
                 throw Object.assign(new Error("ENOTDIR"), { code: "ENOTDIR" });
-            const entries: any[] = [];
+            const entries: Dirent[] = [] as unknown as Dirent[];
             for (const [name, node] of cur.children.entries()) {
-                entries.push({ name, isDirectory: () => node.type === "dir" });
+                // Minimal Dirent-like object used by tests and adapters
+                entries.push({
+                    name,
+                    isDirectory: () => node.type === "dir",
+                } as unknown as Dirent);
             }
             return entries;
         },
@@ -99,9 +104,14 @@ export function createMemoryAdapter(): StorageAdapter {
                     });
                 cur = child;
             }
-            return { isDirectory: () => cur.type === "dir" } as any;
+            return {
+                isDirectory: () => cur.type === "dir",
+            } as unknown as Stats;
         },
-        rm: async (p: string, opts?: any) => {
+        rm: async (
+            p: string,
+            opts?: { recursive?: boolean; force?: boolean },
+        ) => {
             const res = resolveParent(p);
             if (!res || !res.name) return;
             const { parent, name } = res;

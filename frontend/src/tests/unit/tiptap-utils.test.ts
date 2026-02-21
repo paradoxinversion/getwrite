@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createMemoryAdapter } from "../../../src/lib/models/memoryAdapter";
 import { setStorageAdapter } from "../../../src/lib/models/io";
+import type { TipTapDocument } from "../../../src/lib/models/types";
 import {
     persistResourceContent,
     tiptapToPlainText,
@@ -12,11 +13,11 @@ import { generateUUID } from "../../../src/lib/models/uuid";
 describe("tiptap-utils (T015)", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("converts tiptap doc to plain text and back", () => {
-        const doc = {
+        const doc: TipTapDocument = {
             type: "doc",
             content: [
                 { type: "heading", content: [{ type: "text", text: "Title" }] },
@@ -29,7 +30,7 @@ describe("tiptap-utils (T015)", () => {
                     content: [{ type: "text", text: "Second line" }],
                 },
             ],
-        } as any;
+        };
 
         const plain = tiptapToPlainText(doc);
         expect(plain).toContain("Title");
@@ -43,7 +44,7 @@ describe("tiptap-utils (T015)", () => {
     it("persists both tiptap and plain text forms to disk and can load them", async () => {
         const projectRoot = "/proj-" + generateUUID();
         const resourceId = generateUUID();
-        const doc = {
+        const doc: TipTapDocument = {
             type: "doc",
             content: [
                 {
@@ -51,7 +52,7 @@ describe("tiptap-utils (T015)", () => {
                     content: [{ type: "text", text: "hello world" }],
                 },
             ],
-        } as any;
+        };
 
         await persistResourceContent(projectRoot, resourceId, doc);
 

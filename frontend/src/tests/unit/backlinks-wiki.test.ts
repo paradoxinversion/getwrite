@@ -16,7 +16,7 @@ import { generateUUID } from "../../../src/lib/models/uuid";
 describe("backlinks wiki-links and redirects", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("resolves wiki-style links by sidecar name/slug", async () => {

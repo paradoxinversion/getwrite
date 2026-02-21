@@ -15,7 +15,7 @@ import {
 describe("revision-manager", () => {
     beforeEach(() => {
         const mem = createMemoryAdapter();
-        setStorageAdapter(mem as any);
+        setStorageAdapter(mem);
     });
 
     it("nextVersionNumber starts at 1 and increments after writes", async () => {
