@@ -7,6 +7,7 @@ Phase 1 — Setup
 
 - [x] T001 Create `getwrite-config/templates/project-types` directory and add example template `getwrite-config/templates/project-types/novel_project_type.json`
 - [x] T002 [P] Add sample Project Type JSON examples in `getwrite-config/templates/project-types/*.json`
+- [ ] T021 Add Redux to setup: install `redux`/`@reduxjs/toolkit`/`react-redux`, create a basic store, and provide it at the app root (update docs with minimal wiring steps)
 
 Phase 2 — Foundational
 
