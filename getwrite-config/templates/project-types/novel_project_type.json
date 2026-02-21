@@ -11,6 +11,7 @@
     ],
     "defaultResources": [
         {
+            "folder": "Workspace",
             "name": "Manuscript Start",
             "type": "text",
             "template": "# Chapter 1\n\n"

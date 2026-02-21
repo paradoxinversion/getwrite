@@ -11,9 +11,10 @@
     ],
     "defaultResources": [
         {
-            "name": "Episode Template",
-            "type": "text",
-            "template": "# Episode Title\n\n"
+                "folder": "Workspace",
+                "name": "Episode Template",
+                "type": "text",
+                "template": "# Episode Title\\n\\n"
         }
     ]
 }

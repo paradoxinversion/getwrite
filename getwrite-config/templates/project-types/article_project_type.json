@@ -11,6 +11,7 @@
     ],
     "defaultResources": [
         {
+            "folder": "Workspace",
             "name": "Article Outline",
             "type": "text",
             "template": "# Headline\n\n- Intro\n- Points\n- Conclusion\n"
