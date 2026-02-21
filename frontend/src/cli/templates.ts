@@ -45,6 +45,35 @@ async function main(argv: Argv): Promise<number> {
     }
 
     try {
+        // support a convenience command to capture an existing resource as a template
+        if (cmd === "save-from-resource") {
+            // args can include optional --name <name>
+            const nameIndex = args.indexOf("--name");
+            let name: string | undefined;
+            if (nameIndex !== -1) {
+                name = args[nameIndex + 1];
+                // remove the name flag so positional parsing works below
+                args.splice(nameIndex, 2);
+            }
+            const [_, projectRoot, resourceId, templateId] = args;
+            if (!projectRoot || !resourceId || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { saveResourceTemplateFromResource } =
+                await import("../lib/models/resource-templates");
+            await saveResourceTemplateFromResource(
+                projectRoot,
+                resourceId,
+                templateId,
+                { name },
+            );
+            console.log(
+                `Saved template ${templateId} from resource ${resourceId}`,
+            );
+            return 0;
+        }
+
         if (cmd === "save") {
             const [_, projectRoot, templateId, name] = args;
             if (!projectRoot || !templateId || !name) {

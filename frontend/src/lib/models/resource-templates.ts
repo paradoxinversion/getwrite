@@ -178,3 +178,67 @@ export default {
     createResourceFromTemplate,
     duplicateResource,
 };
+
+/**
+ * Create and persist a resource template based on an existing resource in the project.
+ * Captures sidecar metadata and (for text resources) the file contents as `plainText`.
+ */
+export async function saveResourceTemplateFromResource(
+    projectRoot: string,
+    resourceId: UUID,
+    templateId: string,
+    opts?: { name?: string },
+): Promise<void> {
+    const meta = await readSidecar(projectRoot, resourceId);
+    if (!meta) {
+        throw new Error(
+            `sidecar metadata for resource ${resourceId} not found`,
+        );
+    }
+
+    // determine type (prefer sidecar.type)
+    const type = (meta.type as ResourceType) ?? "text";
+
+    // locate the resource file if present
+    let plainText: string | undefined = undefined;
+    try {
+        const entries = await fs.readdir(RESOURCES_DIR(projectRoot));
+        for (const e of entries) {
+            if (e.includes(resourceId)) {
+                const p = path.join(RESOURCES_DIR(projectRoot), e);
+                if (type === "text") {
+                    try {
+                        plainText = await fs.readFile(p, "utf8");
+                    } catch (_) {
+                        plainText = undefined;
+                    }
+                }
+                break;
+            }
+        }
+    } catch (_) {
+        // ignore missing resources dir
+    }
+
+    // Compose template; copy metadata but avoid embedding volatile fields like id/createdAt
+    const {
+        id: _id,
+        createdAt: _created,
+        ...restMeta
+    } = meta as Record<string, unknown>;
+
+    const tpl: ResourceTemplate = {
+        id: templateId,
+        name: opts?.name ?? (meta.name as string) ?? templateId,
+        type,
+        folderId: (meta.folderId as UUID) ?? null,
+        metadata: Object.keys(restMeta).length
+            ? (restMeta as Record<string, MetadataValue>)
+            : undefined,
+        plainText: plainText,
+    };
+
+    await saveResourceTemplate(projectRoot, tpl);
+}
+
+export { saveResourceTemplateFromResource };
