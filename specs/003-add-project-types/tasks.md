@@ -26,8 +26,8 @@ User Story 1 - Create Project from Project Type (Priority: P1)
 
 User Story 2 - Resource Tree shows generated resources (Priority: P1)
 
-- [ ] T011 [US2] Update `frontend/components/Tree/ResourceTree.tsx` to accept a persisted `Project` object and render folders/resources from that data
-- [ ] T012 [P] [US2] Add unit tests `frontend/tests/unit/resource-tree.spec.ts` covering folder order and default resource presence
+- [x] T011 [US2] Update `frontend/components/Tree/ResourceTree.tsx` to accept a persisted `Project` object and render folders/resources from that data
+- [ ] T012 [P] [US2] Add unit tests `frontend/tests/resourceTree.test.ts` covering folder order and default resource presence
 - [ ] T013 [US2] Ensure Resource Tree ordering follows `folders.orderIndex` or Project Type declaration; update data mapping in `frontend/src/lib/models/project-creator.ts` if needed
 
 User Story 3 - Project Type selection UX & validation (Priority: P2)

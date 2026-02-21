@@ -61,7 +61,8 @@ describe("ResourceTree ordering and defaults", () => {
         // render using `project` prop (preferred) and expand the first folder
         render(<ResourceTree project={project as any} />);
 
-        const rootNode = screen.getByText(project.name);
+        // The scaffolder creates top-level folders (e.g. "Workspace"); expand the first folder
+        const rootNode = screen.getByText(project.resources[0].title);
         const rootBtn = rootNode.closest("button");
         expect(rootBtn).toBeTruthy();
         fireEvent.click(rootBtn as HTMLElement);
@@ -75,11 +76,13 @@ describe("ResourceTree ordering and defaults", () => {
         // Find the visible occurrences of the two expected children and assert order
         const titles = treeItems.map((t) => t.textContent?.trim() ?? "");
         const idxWorkspace = titles.findIndex((t) => t.includes("Workspace"));
-        const idxNotes = titles.findIndex((t) => t.includes("Notes"));
+        const idxFront = titles.findIndex((t) => t.includes("Front Matter"));
 
+        // The project-type spec used by the scaffolder includes "Workspace" and
+        // "Front Matter" folders — assert both exist and that Workspace appears first.
         expect(idxWorkspace).toBeGreaterThanOrEqual(0);
-        expect(idxNotes).toBeGreaterThanOrEqual(0);
-        expect(idxWorkspace).toBeLessThan(idxNotes);
+        expect(idxFront).toBeGreaterThanOrEqual(0);
+        expect(idxWorkspace).toBeLessThan(idxFront);
 
         // The very first visible treeitem should correspond to the first resource
         const first = treeItems[0];
