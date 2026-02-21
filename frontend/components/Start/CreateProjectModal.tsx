@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import type { ResourceType } from "../../lib/types";
+import type { ResourceType, Project } from "../../lib/types";
 
 export interface CreateProjectPayload {
     name: string;
@@ -9,7 +9,8 @@ export interface CreateProjectPayload {
 export interface CreateProjectModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (payload: CreateProjectPayload) => void;
+    // onCreate receives the form payload and, when available, the persisted `Project` returned by the server
+    onCreate: (payload: CreateProjectPayload, createdProject?: Project) => void;
     defaultName?: string;
     defaultType?: CreateProjectPayload["projectType"];
 }
@@ -129,23 +130,23 @@ export default function CreateProjectModal({
 
         setCreating(true);
         setError(null);
-        try {
-            const res = await fetch("/api/projects", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: payload.name,
-                    projectType: payload.projectType,
-                }),
-            });
-            if (!res.ok) {
+            try {
+                const res = await fetch("/api/projects", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: payload.name,
+                        projectType: payload.projectType,
+                    }),
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => null);
+                    throw new Error(body?.error || `Status ${res.status}`);
+                }
                 const body = await res.json().catch(() => null);
-                throw new Error(body?.error || `Status ${res.status}`);
-            }
-            // we don't yet integrate the returned project into the UI here;
-            // keep existing parent callback contract for now
-            onCreate(payload);
-            onClose();
+                const createdProject: Project | undefined = body?.project;
+                onCreate(payload, createdProject);
+                onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {

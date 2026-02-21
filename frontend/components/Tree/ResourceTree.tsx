@@ -1,11 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import type { Resource } from "../../lib/types";
+import type { Resource, Project } from "../../lib/types";
 import ResourceContextMenu, {
     type ResourceContextAction,
 } from "./ResourceContextMenu";
 
 export interface ResourceTreeProps {
-    resources: Resource[];
+    /** Either pass a `project` object (preferred) or a raw `resources` array. */
+    project?: Project;
+    resources?: Resource[];
     selectedId?: string | null;
     onSelect?: (id: string) => void;
     className?: string;
@@ -111,8 +113,11 @@ export default function ResourceTree({
     onReorder,
     onResourceAction,
 }: ResourceTreeProps) {
+    // prefer project resources when provided
+    const resourcesList: Resource[] = project ? project.resources : resources ?? [];
+
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
-        resources.map((r) => r.id),
+        resourcesList.map((r) => r.id),
     );
     const [contextMenu, setContextMenu] = useState<{
         open: boolean;
@@ -123,16 +128,16 @@ export default function ResourceTree({
     }>({ open: false, x: 0, y: 0 });
 
     useEffect(() => {
-        setLocalOrder(resources.map((r) => r.id));
-    }, [resources]);
+        setLocalOrder(resourcesList.map((r) => r.id));
+    }, [resourcesList]);
 
     const nodes = useMemo(() => {
         const map = new Map<string, TreeNode>();
-        resources.forEach((r) => map.set(r.id, { resource: r, children: [] }));
+        resourcesList.forEach((r) => map.set(r.id, { resource: r, children: [] }));
         const roots: TreeNode[] = [];
         const orderedIds = reorderable
             ? localOrder
-            : resources.map((r) => r.id);
+            : resourcesList.map((r) => r.id);
         orderedIds.forEach((id) => {
             const node = map.get(id);
             if (!node) return;
@@ -432,7 +437,7 @@ export default function ResourceTree({
             {/* Fixed footer aligned to tree nav rect so it sits at the bottom of the viewport */}
             {(() => {
                 const selectedResource = selectedId
-                    ? resources.find((r) => r.id === selectedId)
+                    ? resourcesList.find((r) => r.id === selectedId)
                     : undefined;
                 const style: React.CSSProperties = {
                     position: "fixed",
