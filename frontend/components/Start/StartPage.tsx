@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { Project } from "../../lib/types";
 import { sampleProjects, createProject } from "../../lib/placeholders";
+import { buildProjectView } from "../../src/lib/models/project-view";
 import CreateProjectModal, {
     type CreateProjectPayload,
 } from "./CreateProjectModal";
@@ -20,6 +21,16 @@ export default function StartPage({
 }: StartPageProps): JSX.Element {
     const [localProjects, setLocalProjects] = useState<Project[]>(projects);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+    const projectViews = React.useMemo(() => {
+        return localProjects.map((p) =>
+            buildProjectView({
+                project: p as any,
+                folders: (p as any).folders ?? [],
+                resources: (p as any).resources ?? [],
+            }),
+        );
+    }, [localProjects]);
 
     const handleOpen = (id: string): void => {
         if (onOpen) onOpen(id);
@@ -58,7 +69,14 @@ export default function StartPage({
             </div>
 
             <div className="mt-6 grid gap-4">
-                {localProjects.map((p) => (
+                {localProjects.map((p, idx) => {
+                    const view = projectViews[idx];
+                    const resourceList = view
+                        ? view.resources.filter((r) => r.type !== "folder")
+                        : p.resources;
+                    const projName = view?.project?.name ?? p.name;
+
+                    return (
                     <article
                         key={p.id}
                         className="rounded bg-white p-4 shadow-card border flex items-start justify-between"
@@ -69,7 +87,7 @@ export default function StartPage({
                                 id={`proj-${p.id}-title`}
                                 className="font-medium"
                             >
-                                {p.name}
+                                {projName}
                             </h2>
                             {p.description ? (
                                 <p className="text-sm text-slate-600 mt-1 truncate-2">
@@ -77,14 +95,14 @@ export default function StartPage({
                                 </p>
                             ) : null}
                             <div className="text-xs text-slate-500 mt-2">
-                                {p.resources.length} resources
+                                {resourceList.length} resources
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
                             <ManageProjectMenu
                                 projectId={p.id}
-                                projectName={p.name}
+                                projectName={projName}
                                 onRename={(id, newName) => {
                                     setLocalProjects((prev) =>
                                         prev.map((proj) =>
@@ -111,7 +129,7 @@ export default function StartPage({
                                         `Package placeholder for ${proj?.name ?? id}${selText}`,
                                     );
                                 }}
-                                resources={p.resources}
+                                resources={resourceList as any}
                             />
 
                             <button
@@ -123,7 +141,8 @@ export default function StartPage({
                             </button>
                         </div>
                     </article>
-                ))}
+                    );
+                })}
             </div>
         </section>
     );

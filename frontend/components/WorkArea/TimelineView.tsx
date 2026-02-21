@@ -5,6 +5,8 @@ import { createProject } from "../../lib/placeholders";
 export interface TimelineViewProps {
     /** Single project to scope timeline (required) */
     project?: Project;
+    /** Optional adapter view from `buildProjectView` (canonical models). */
+    view?: { project: any; folders: any[]; resources: any[] };
     className?: string;
 }
 
@@ -27,15 +29,16 @@ function groupByDate(resources: Resource[]) {
 
 export default function TimelineView({
     project,
+    view,
     className = "",
 }: TimelineViewProps) {
     const effectiveProject = React.useMemo(
-        () => project ?? createProject("Sample Project"),
-        [project],
+        () => view?.project ?? project ?? createProject("Sample Project"),
+        [view, project],
     );
     const resources = React.useMemo(
-        () => effectiveProject.resources,
-        [effectiveProject],
+        () => (view?.resources ?? effectiveProject.resources),
+        [view, effectiveProject],
     );
 
     const { dates, dated, undated } = React.useMemo(

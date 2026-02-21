@@ -7,6 +7,8 @@ export interface DataViewProps {
     projects?: Project[];
     /** The single project to display statistics for (used when `projects` is not provided) */
     project?: Project;
+    /** Optional adapter view from `buildProjectView` (canonical models). */
+    view?: { project: any; folders: any[]; resources: any[] };
     /** Optional override flat list of resources to render (uses project(s).resources by default) */
     resources?: Resource[];
     className?: string;
@@ -20,20 +22,22 @@ export interface DataViewProps {
 export default function DataView({
     projects,
     project,
+    view,
     resources,
     className = "",
 }: DataViewProps): JSX.Element {
     const effectiveProject = React.useMemo(
-        () => project ?? createProject("Sample Project"),
-        [project],
+        () => view?.project ?? project ?? createProject("Sample Project"),
+        [view, project],
     );
 
     const flatResources = React.useMemo(() => {
         if (resources) return resources;
+        if (view && view.resources) return view.resources;
         if (projects && projects.length > 0)
             return projects.flatMap((p) => p.resources);
         return effectiveProject.resources;
-    }, [resources, projects, effectiveProject]);
+    }, [resources, view, projects, effectiveProject]);
 
     const totalResources = flatResources.length;
     const totalWords = flatResources.reduce(

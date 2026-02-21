@@ -37,7 +37,10 @@ export interface Resource {
     metadata: Metadata;
 }
 
-/** Project container used in placeholder data with a small `resources` array. */
+/**
+ * @deprecated Use `Project` from `frontend/src/lib/models/types.ts` instead.
+ * Project container used in placeholder data with a small `resources` array.
+ */
 export interface Project {
     id: string;
     name: string;

@@ -23,39 +23,23 @@ describe("ResourceTree ordering and defaults", () => {
             name: "Order Project Real",
         });
 
-        // Map returned folders/resources to the UI Resource shape
+        // Build a UI view from canonical project/folders/resources
+        const { buildProjectView } = await import(
+            "../src/lib/models/project-view"
+        );
+        const view = buildProjectView({
+            project: created.project,
+            folders: created.folders,
+            resources: created.resources,
+        });
+
         const project = {
-            id: created.project.id,
-            name: created.project.name,
+            id: view.project.id,
+            name: view.project.name,
             description: undefined,
-            createdAt: created.project.createdAt ?? new Date().toISOString(),
-            updatedAt: created.project.updatedAt ?? created.project.createdAt,
-            resources: [
-                // folders as folder-type resources
-                ...created.folders.map((f) => ({
-                    id: f.id,
-                    projectId: created.project.id,
-                    parentId: undefined,
-                    title: f.name,
-                    type: "folder",
-                    content: undefined,
-                    createdAt: f.createdAt,
-                    updatedAt: f.createdAt,
-                    metadata: {},
-                })),
-                // text resources as documents under their folder
-                ...created.resources.map((r) => ({
-                    id: r.id,
-                    projectId: created.project.id,
-                    parentId: r.folderId,
-                    title: r.name,
-                    type: "document",
-                    content: r.plainText ?? "",
-                    createdAt: r.createdAt,
-                    updatedAt: r.createdAt,
-                    metadata: {},
-                })),
-            ],
+            createdAt: view.project.createdAt ?? new Date().toISOString(),
+            updatedAt: view.project.updatedAt ?? view.project.createdAt,
+            resources: view.resources,
         };
 
         // render using `project` prop (preferred) and expand the first folder

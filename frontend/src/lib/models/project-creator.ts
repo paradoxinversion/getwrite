@@ -129,7 +129,8 @@ export async function createProjectFromType(options: {
     const resourcesDir = path.join(projectRoot, "resources");
     await fs.mkdir(resourcesDir, { recursive: true });
 
-    for (const r of specObj.defaultResources ?? []) {
+    for (let j = 0; j < (specObj.defaultResources ?? []).length; j += 1) {
+        const r = specObj.defaultResources![j];
         // console.log(
         //     "createProjectFromType: processing defaultResource:",
         //     JSON.stringify(r),
@@ -156,15 +157,17 @@ export async function createProjectFromType(options: {
                 folderId: folder.id,
                 createdAt: now,
                 plainText: r.template ?? "",
+                metadata: { orderIndex: j } as Record<string, MetadataValue>,
             };
             resources.push(res);
 
-            // write sidecar metadata for resource
+            // write sidecar metadata for resource (include orderIndex)
             const meta: Record<string, MetadataValue> = {
                 id: res.id,
                 name: res.name,
                 type: res.type,
                 createdAt: res.createdAt,
+                orderIndex: j,
             };
             await writeSidecar(projectRoot, res.id, meta);
         }

@@ -12,8 +12,8 @@ export type ProjectTypeEntry = {
     fileName: string;
 };
 
+// May need to add '..' to the front segment at runtime so creating projects does't break
 const TEMPLATES_DIR = path.join(
-    "..",
     "getwrite-config",
     "templates",
     "project-types",

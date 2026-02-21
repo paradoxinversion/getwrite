@@ -1,5 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { Resource, Project } from "../../lib/types";
+import type {
+    UIResource,
+    FolderWithResources,
+} from "../../src/lib/models/project-view";
 import ResourceContextMenu, {
     type ResourceContextAction,
 } from "./ResourceContextMenu";
@@ -7,6 +11,12 @@ import ResourceContextMenu, {
 export interface ResourceTreeProps {
     /** Either pass a `project` object (preferred) or a raw `resources` array. */
     project?: Project;
+    /** Optional adapter view from `buildProjectView` (canonical models). */
+    view?: {
+        project: any;
+        folders: FolderWithResources[];
+        resources: UIResource[];
+    };
     resources?: Resource[];
     selectedId?: string | null;
     onSelect?: (id: string) => void;
@@ -106,6 +116,7 @@ function ChevronDown({ className = "w-3 h-3" }: { className?: string }) {
  */
 export default function ResourceTree({
     project,
+    view,
     resources,
     selectedId,
     onSelect,
@@ -114,8 +125,10 @@ export default function ResourceTree({
     onReorder,
     onResourceAction,
 }: ResourceTreeProps) {
-    // prefer project resources when provided
-    const resourcesList: Resource[] = project
+    // prefer adapter view resources when provided, then project.resources fallback
+    const resourcesList: Resource[] = view
+        ? (view.resources as unknown as Resource[])
+        : project
         ? project.resources
         : (resources ?? []);
 
