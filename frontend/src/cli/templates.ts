@@ -8,6 +8,7 @@ import {
     duplicateResource,
     scaffoldResourcesFromTemplate,
     applyMultipleFromTemplate,
+    previewResourceTemplate,
 } from "../lib/models/resource-templates";
 
 type Argv = string[];
@@ -24,6 +25,7 @@ function usage(): string {
     pnpm ts-node src/cli/templates.ts export <projectRoot> <templateId> <out.zip>
     pnpm ts-node src/cli/templates.ts import <projectRoot> <pack.zip>
     pnpm ts-node src/cli/templates.ts validate <projectRoot> <templateId>
+    pnpm ts-node src/cli/templates.ts preview <projectRoot> <templateId> [--vars '{}'] [--out <file>]
 `;
 }
 
@@ -236,6 +238,30 @@ async function main(argv: Argv): Promise<number> {
                 inputPath,
             );
             console.log(`Created ${created.length} resources`);
+            return 0;
+        }
+
+        if (cmd === "preview") {
+            // preview <projectRoot> <templateId> [--vars '{}'] [--out <file>]
+            const varsIndex = args.indexOf("--vars");
+            const outIndex = args.indexOf("--out");
+            let vars: string | undefined;
+            let outPath: string | undefined;
+            if (varsIndex !== -1) vars = args[varsIndex + 1];
+            if (outIndex !== -1) outPath = args[outIndex + 1];
+
+            const projectRoot = args[1];
+            const templateId = args[2];
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const out = await previewResourceTemplate(projectRoot, templateId, {
+                vars: vars ? JSON.parse(vars) : undefined,
+                outPath,
+            });
+            if (!outPath) console.log(out);
+            else console.log(`Wrote preview -> ${out}`);
             return 0;
         }
 

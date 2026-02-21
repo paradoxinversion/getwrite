@@ -714,3 +714,24 @@ export async function parametrizeResourceTemplate(
     await saveResourceTemplate(projectRoot, newTpl);
     return [varName];
 }
+
+/** Render a template with provided vars to stdout or an output file. */
+export async function previewResourceTemplate(
+    projectRoot: string,
+    templateId: string,
+    opts?: { vars?: Record<string, string> | string; outPath?: string },
+): Promise<string> {
+    // reuse createResourceFromTemplate in dry-run mode to get a resource preview
+    const res = await createResourceFromTemplate(projectRoot, templateId, {
+        vars: opts?.vars as any,
+        dryRun: true,
+    });
+    const preview = (res as any).resourcePreview;
+    const plain = preview && preview.plainText ? preview.plainText : "";
+    if (opts?.outPath) {
+        await ensureDir(path.dirname(opts.outPath));
+        await fs.writeFile(opts.outPath, plain, "utf8");
+        return opts.outPath;
+    }
+    return plain;
+}
