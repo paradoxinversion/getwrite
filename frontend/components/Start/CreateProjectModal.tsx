@@ -43,6 +43,7 @@ export default function CreateProjectModal({
     const [loadingTypes, setLoadingTypes] = useState(false);
     const [typesError, setTypesError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
     const nameRef = useRef<HTMLInputElement | null>(null);
 
     const loadTypes = useCallback(async () => {
@@ -112,7 +113,8 @@ export default function CreateProjectModal({
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e?: React.FormEvent) => {
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (creating) return; // ignore duplicate submits while creating
         e?.preventDefault();
         if (!name.trim()) {
             setError("Please enter a project name.");
@@ -124,8 +126,31 @@ export default function CreateProjectModal({
             name: name.trim(),
             projectType,
         };
-        onCreate(payload);
-        onClose();
+
+        setCreating(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: payload.name,
+                    projectType: payload.projectType,
+                }),
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                throw new Error(body?.error || `Status ${res.status}`);
+            }
+            // we don't yet integrate the returned project into the UI here;
+            // keep existing parent callback contract for now
+            onCreate(payload);
+            onClose();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setCreating(false);
+        }
     };
 
     return (
@@ -147,6 +172,7 @@ export default function CreateProjectModal({
                 onKeyDown={(ev) => {
                     if (ev.key === "Escape") onClose();
                 }}
+                aria-busy={creating}
             >
                 <h2 id="create-project-title" className="text-lg font-medium">
                     Create Project
@@ -160,6 +186,7 @@ export default function CreateProjectModal({
                         onChange={(e) => setName(e.target.value)}
                         className="mt-1 block w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
                         aria-required
+                        disabled={creating}
                     />
                 </label>
 
@@ -171,7 +198,11 @@ export default function CreateProjectModal({
                             setProjectType(e.target.value as string)
                         }
                         className="mt-1 block w-full border rounded px-3 py-2"
-                        disabled={loadingTypes || (types && types.length === 0)}
+                        disabled={
+                            creating ||
+                            loadingTypes ||
+                            (types && types.length === 0)
+                        }
                     >
                         {loadingTypes ? (
                             <option>Loading...</option>
@@ -217,14 +248,16 @@ export default function CreateProjectModal({
                         type="button"
                         onClick={onClose}
                         className="px-3 py-1 rounded border"
+                        disabled={creating}
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         className="px-3 py-1 rounded bg-brand-500 text-white"
+                        disabled={creating}
                     >
-                        Create
+                        {creating ? "Creating…" : "Create"}
                     </button>
                 </div>
             </form>
