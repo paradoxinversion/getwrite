@@ -23,6 +23,7 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 003-add-project-types: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 - 001-ui-getwrite-skeleton: Added
 

@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+    title: GetWrite Project Creator
+    version: 0.1.0
+
+paths:
+    /projects:
+        post:
+            summary: Create a new project from a Project Type
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                name:
+                                    type: string
+                                projectTypeId:
+                                    type: string
+                            required: [name, projectTypeId]
+            responses:
+                "201":
+                    description: Project created
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Project"
+                "400":
+                    description: Validation error
+
+components:
+    schemas:
+        Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                projectTypeId:
+                    type: string
+                folders:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Folder"
+                resources:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Resource"
+
+        Folder:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                parentId:
+                    type: string
+                orderIndex:
+                    type: integer
+
+        Resource:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string
+                folderId:
+                    type: string
+                metadata:
+                    type: object
