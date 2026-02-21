@@ -23,6 +23,11 @@ Key changes
     - Added `getwrite-config/templates/project-types/example_custom.json` as a shipped runtime example template.
     - Updated `specs/002-define-data-models/tasks.md` to mark T018 complete and point to the `getwrite-config` location.
 
+- CLI integration
+    - Ensured CLI scaffold/templating commands use the same runtime validators and helpers so templates validated in the frontend are also validated by CLI workflows.
+    - CLI commands impacted: `templates scaffold`, `templates validate`, `templates export/import`, and `templates preview`. These commands now rely on `validateProjectTypeFile()` when accepting project-type JSON input.
+    - Tests for CLI template commands were exercised during the full test run; scaffolding via CLI uses the same defensive slugification behavior added to `createProjectFromType()`.
+
 - Documentation
     - Added `docs/features/project-types.md` and `docs/features/sidecars.md`.
     - Added a data-types reference: `docs/features/data/data-types.md`.
