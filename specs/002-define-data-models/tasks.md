@@ -37,7 +37,7 @@ Phase 3: User Story Implementation (priority order)
 **User Story: Modify or create Project Types (Priority: P2)**
 
 - [x] T016 [US3] Add project-type validator `frontend/src/lib/models/schemas.ts` (add `projectType` schema and validation for `folders` / `defaultResources`)
-- [ ] T017 [P] [US3] Add unit tests for project-type validation `frontend/src/tests/unit/project-type.test.ts`
+- [x] T017 [P] [US3] Add unit tests for project-type validation `frontend/src/tests/unit/project-type.test.ts`
 - [ ] T018 [US3] Add example custom project-type `specs/002-define-data-models/project-types/example_custom.json`
 
 Final Phase: Polish & Cross-Cutting Concerns
