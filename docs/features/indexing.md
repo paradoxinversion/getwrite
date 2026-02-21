@@ -74,3 +74,43 @@ Maintenance
 Contact
 
 - For questions about design decisions, see `specs/002-define-data-models` and the commit history on branch `002-define-data-models`.
+
+## TODO
+
+- Replace `flushIndexer()` polling with a promise-based signaling mechanism.
+
+    What: implement a completion signal in `frontend/src/lib/models/indexer-queue.ts` (for example an internal promise or EventEmitter-based API) that resolves when the queue has finished processing the currently enqueued tasks. Export a `waitForDrain()` or similar API consumers (tests and tooling) can call instead of polling.
+
+    Why: polling adds latency and relies on timeouts which can mask races or cause flaky tests on slow CI. A promise-based signal is deterministic, faster, and eliminates the need for arbitrary timeouts, improving test stability and making shutdown semantics clearer.
+
+## Proposals
+
+- Promise-based drain signal
+
+    What: replace `flushIndexer()` polling with a deterministic `waitForDrain()` API (e.g. an internal promise or EventEmitter) that resolves when the queue has finished processing currently enqueued tasks. Export this API for tests and tooling.
+
+    Why: eliminates polling/timeouts, yields deterministic synchronization for tests and shutdown flows, reduces CI flakiness and wasted wait time.
+
+- Durable meta writes (fsync)
+
+    What: after writing key meta files (index, backlinks, templates), optionally perform an `fsync`/`fdatasync` on the file descriptor before closing to ensure data is flushed to disk.
+
+    Why: reduces risk of data loss on sudden crashes and makes integration tests behave more deterministically across platforms. Note: this increases latency and should be configurable.
+
+- Graceful indexer shutdown
+
+    What: add an explicit shutdown/flush method for the indexer queue that stops accepting new tasks, finishes in-flight tasks, and signals completion. Integrate this with application lifecycle hooks (e.g. before-exit).
+
+    Why: avoids data races and incomplete writes when the app is stopped or during test teardown; it's more explicit and safer than relying on ad-hoc waits.
+
+- Reindex/repair CLI
+
+    What: add a CLI command such as `reindex <projectRoot>` that rebuilds the entire inverted index from resource files and revisions.
+
+    Why: provides a recovery and maintenance path for corrupted or stale indexes and enables offline reindexing for large projects.
+
+- Optional backend/search engine migration
+
+    What: evaluate replacing the JSON index with a more scalable store (SQLite FTS, Tantivy, or an external search service) for larger datasets.
+
+    Why: a JSON file works for small projects but will become slow and memory-heavy at scale. A proper search engine will provide better performance, advanced queries, and durability guarantees.
