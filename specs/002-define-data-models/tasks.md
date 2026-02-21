@@ -55,7 +55,7 @@ Additional Resource Features (proposed)
 - [x] T024 [US2] Backlinks & Cross-Resource References
     - Acceptance: Provide an API `computeBacklinks(projectRoot)` that scans `plainText` and `tiptap` fields to produce a mapping `resourceId -> referencedResourceIds`; persist backlink index under `meta/backlinks.json`; add unit tests that assert backlinks are discovered and updated after edits.
 
-- [ ] T025 [US2] Incremental Full-Text Indexing
+- [x] T025 [US2] Incremental Full-Text Indexing
     - Acceptance: Implement a per-project incremental inverted index stored in `meta/index/` with APIs `indexResource(resource)`, `removeResourceFromIndex(resourceId)`, and `search(query)` returning ranked result ids; index updates on resource save and revision creation; include unit tests verifying indexing and search correctness.
 
 - [x] T026 [US1] Soft-Delete / Recycle Bin
@@ -64,7 +64,7 @@ Additional Resource Features (proposed)
 - [x] T027 [US1] Resource Templates & Duplication
     - Acceptance: Add `createResourceFromTemplate(templateId, overrides)` and `duplicateResource(resourceId)` helpers that clone metadata and initial revision while generating new identities; unit tests should validate metadata cloning and id uniqueness while preserving content.
 
-- [ ] T028 [US2] Resource Previews (thumbnails & audio waveforms)
+- [x] T028 [US2] Resource Previews (thumbnails & audio waveforms)
     - Acceptance: Add preview metadata generation APIs that produce lightweight preview artifacts (JSON thumbnails/waveforms) and persist them in `meta/previews/<resourceId>.json`; include unit tests that mock generation and verify preview metadata is written and retrievable.
 
 Additional Template CLI Features (proposed)
