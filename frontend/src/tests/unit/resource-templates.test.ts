@@ -181,4 +181,74 @@ describe("models/resource-templates (T027)", () => {
             await fs.rm(tmp, { recursive: true, force: true });
         }
     });
+
+    it("parametrizes a template via helper and CLI", async () => {
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-rt-"));
+        try {
+            const specPath = path.join(
+                process.cwd(),
+                "..",
+                "specs",
+                "002-define-data-models",
+                "project-types",
+                "novel_project_type.json",
+            );
+
+            const { projectPath } = await createAndAssertProject(specPath, {
+                projectRoot: tmp,
+                name: "Param Test",
+            });
+
+            const tplId = "tpl-param";
+            const template = {
+                id: tplId,
+                name: "Chapter One",
+                type: "text" as const,
+                plainText: "Chapter One\n\nContent here",
+            };
+            await saveResourceTemplate(projectPath, template as any);
+
+            // helper
+            const { parametrizeResourceTemplate } =
+                await import("../../lib/models/resource-templates");
+            const vars = await parametrizeResourceTemplate(
+                projectPath,
+                tplId,
+                "{{TITLE}}",
+            );
+            expect(vars).toContain("TITLE");
+
+            const raw = await fs.readFile(
+                path.join(projectPath, "meta", "templates", `${tplId}.json`),
+                "utf8",
+            );
+            const parsed = JSON.parse(raw);
+            expect(parsed.name).toBe("{{TITLE}}");
+            expect(parsed.plainText.startsWith("{{TITLE}}"));
+
+            // CLI
+            const tplCliId = "tpl-param-cli";
+            const tpl2 = { ...template, id: tplCliId };
+            await saveResourceTemplate(projectPath, tpl2 as any);
+            const argv = [
+                "node",
+                "templates",
+                "parametrize",
+                projectPath,
+                tplCliId,
+                "--placeholder",
+                "{{TITLE}}",
+            ];
+            const code = await templatesMain(argv);
+            expect(code).toBe(0);
+            const raw2 = await fs.readFile(
+                path.join(projectPath, "meta", "templates", `${tplCliId}.json`),
+                "utf8",
+            );
+            const parsed2 = JSON.parse(raw2);
+            expect(parsed2.name).toBe("{{TITLE}}");
+        } finally {
+            await fs.rm(tmp, { recursive: true, force: true });
+        }
+    });
 });

@@ -74,6 +74,33 @@ async function main(argv: Argv): Promise<number> {
             return 0;
         }
 
+        if (cmd === "parametrize") {
+            // expects: parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"
+            const phIndex = args.indexOf("--placeholder");
+            if (phIndex === -1) {
+                console.error("--placeholder is required");
+                return 1;
+            }
+            const placeholder = args[phIndex + 1];
+            // remove placeholder args so positional parsing works
+            args.splice(phIndex, 2);
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { parametrizeResourceTemplate } =
+                await import("../lib/models/resource-templates");
+            const vars = await parametrizeResourceTemplate(
+                projectRoot,
+                templateId,
+                placeholder,
+            );
+            console.log(`Parametrized template ${templateId}`);
+            console.log(`Variables: ${vars.join(", ")}`);
+            return 0;
+        }
+
         if (cmd === "save") {
             const [_, projectRoot, templateId, name] = args;
             if (!projectRoot || !templateId || !name) {

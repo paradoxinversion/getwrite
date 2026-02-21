@@ -240,3 +240,51 @@ export async function saveResourceTemplateFromResource(
 
     await saveResourceTemplate(projectRoot, tpl);
 }
+
+/**
+ * Replace literal occurrences of the template's name in string fields with
+ * a placeholder (e.g. "{{TITLE}}") and persist the updated template.
+ * Returns the list of variable names introduced (extracted from the placeholder).
+ */
+export async function parametrizeResourceTemplate(
+    projectRoot: string,
+    templateId: string,
+    placeholder: string,
+): Promise<string[]> {
+    const tpl = await loadResourceTemplate(projectRoot, templateId);
+    if (!tpl) throw new Error(`template ${templateId} not found`);
+
+    const m = String(placeholder).match(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/);
+    if (!m) throw new Error("Invalid placeholder format. Use {{NAME}}");
+    const varName = m[1];
+
+    // Replace occurrences of the template name in strings recursively
+    function replaceStrings(v: unknown): unknown {
+        if (typeof v === "string") {
+            return v.split(tpl.name).join(placeholder);
+        }
+        if (Array.isArray(v)) return v.map(replaceStrings);
+        if (v && typeof v === "object") {
+            const out: Record<string, unknown> = {};
+            for (const k of Object.keys(v as Record<string, unknown>)) {
+                out[k] = replaceStrings((v as Record<string, unknown>)[k]);
+            }
+            return out;
+        }
+        return v;
+    }
+
+    const newTpl: ResourceTemplate = {
+        ...tpl,
+        name: replaceStrings(tpl.name) as string,
+        plainText: tpl.plainText
+            ? (replaceStrings(tpl.plainText) as string)
+            : tpl.plainText,
+        metadata: tpl.metadata
+            ? (replaceStrings(tpl.metadata) as Record<string, MetadataValue>)
+            : tpl.metadata,
+    };
+
+    await saveResourceTemplate(projectRoot, newTpl);
+    return [varName];
+}
