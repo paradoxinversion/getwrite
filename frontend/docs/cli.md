@@ -12,7 +12,31 @@ Overview
 Commands
 
 -- `getwrite-cli prune [projectRoot] --max <n>` — Prune old revisions under a project root.
--- `getwrite-cli templates <save|save-from-resource|create|duplicate|list|inspect|parametrize|export|import>` — Manage resource templates in a project.
+-- `getwrite-cli templates <save|save-from-resource|create|duplicate|list|inspect|parametrize|export|import|validate|scaffold|apply-multiple|preview|version|history|rollback|changeset>` — Manage resource templates in a project (detailed subcommands below).
+
+**Templates CLI**
+
+The `templates` subcommand group provides helpers for creating, inspecting, exporting, importing and auditing resource templates in a project.
+
+Common subcommands (dev loader usage shown):
+
+- `templates save-from-resource <projectRoot> <resourceId> <templateId> [--name <name>]` — Capture an existing resource into `meta/templates/<templateId>.json`.
+- `templates save <projectRoot> <templateId> <name>` — Create a simple template file.
+- `templates create <projectRoot> <templateId> [name] [--vars '{}'] [--dry-run]` — Instantiate a resource; `--dry-run` prints planned writes.
+- `templates duplicate <projectRoot> <resourceId>` — Duplicate a resource (new id, cloned sidecar/file).
+- `templates list <projectRoot> [--query <text>]` — List templates (id, name, type).
+- `templates inspect <projectRoot> <templateId>` — Print template details: placeholders and metadata keys.
+- `templates parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"` — Replace literal strings with a placeholder variable and return introduced variables.
+- `templates export <projectRoot> <templateId> <out.zip>` — Export template JSON into a .zip package.
+- `templates import <projectRoot> <pack.zip>` — Import templates from a .zip package into `meta/templates/`.
+- `templates validate <projectRoot> <templateId>` — Validate template JSON against the runtime schema (zod) and print errors.
+- `templates scaffold <projectRoot> <templateId> <count>` — Generate `<count>` resources from a template using sequential names.
+- `templates apply-multiple <projectRoot> <templateId> <inputPath>` — Create multiple resources from a JSON array or CSV file of variable sets.
+- `templates preview <projectRoot> <templateId> [--vars '{}'] [--out <file>]` — Render the template with vars; prints plainText or writes to `--out`.
+- `templates version <projectRoot> <templateId>` — Snapshot current template to `<templateId>.v<N>.json`.
+- `templates history <projectRoot> <templateId>` — List saved template versions.
+- `templates rollback <projectRoot> <templateId> <version>` — Restore a saved version into the main template file.
+- `templates changeset <projectRoot> <templateId> [--since <ISO-date>]` — Show compact change entries recorded when templates are saved (timestamps, action, changed keys).
 
 - `getwrite-cli screenshots capture` — Capture Storybook screenshots (uses Playwright).
 
@@ -64,5 +88,17 @@ node ./frontend/dist-cli/bin/getwrite-cli.cjs project create ./my/new-project \
 ```
 
 Note: Project-type specs must include a `folders` array and, per the project-type schema, a `Workspace` folder is required. Default resources in a spec should include a `folder` property (e.g. `"Workspace"`) so the CLI can place seeded resources correctly.
+
+-- Export a template (dev loader):
+
+```bash
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates export ./my/project my-template out.zip
+```
+
+-- Preview a template with vars and write to file (dev loader):
+
+```bash
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates preview ./my/project my-template --vars '{"TITLE":"Hello"}' --out preview.txt
+```
 
 If you want me to also remove the dev loader (`frontend/bin/getwrite-cli.mjs`) or change the package `bin` mapping, say the word and I will update these files and CI accordingly.

@@ -93,10 +93,10 @@ Additional Template CLI Features (proposed)
 - [x] T036 `templates preview`: Render template with vars to stdout or temp file
     - Acceptance: `preview <projectRoot> <templateId> --vars '{"TITLE":"X"}'` outputs rendered plainText/tiptap to stdout; unit tests validate content substitution.
 
-- [ ] T037 `templates version` / `templates history` / `templates rollback`: Basic template versioning
+- [x] T037 `templates version` / `templates history` / `templates rollback`: Basic template versioning
     - Acceptance: Commands to record simple versioned snapshots under `meta/templates/<id>.v<N>.json`, list history, and rollback to a prior snapshot; unit tests validate record and rollback behavior.
 
-- [ ] T038 `templates audit` / `templates changeset`: Show template changes
+- [x] T038 `templates audit` / `templates changeset`: Show template changes
     - Acceptance: `changeset <projectRoot> <templateId> --since <date)` prints a compact diff of template edits (local CLI timestamped entries); unit tests validate change detection for edits performed via CLI.
 
 Dependencies
