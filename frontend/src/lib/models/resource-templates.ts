@@ -354,6 +354,172 @@ export default {
 };
 
 /**
+ * Export a template (and optional sample data) as a simple .zip package.
+ * Currently packages only the template JSON as <templateId>.json.
+ */
+export async function exportResourceTemplate(
+    projectRoot: string,
+    templateId: string,
+    outPath: string,
+): Promise<void> {
+    const tpl = await loadResourceTemplate(projectRoot, templateId);
+    const name = `${tpl.id}.json`;
+    const data = Buffer.from(JSON.stringify(tpl, null, 2), "utf8");
+    const zip = createZipBuffer([{ name, data }]);
+    await ensureDir(path.dirname(outPath));
+    await fs.writeFile(outPath, zip);
+}
+
+/**
+ * Import templates from a simple .zip package produced by `exportResourceTemplate`.
+ * Extracts .json entries and writes them into meta/templates/.
+ * Returns list of imported template ids.
+ */
+export async function importResourceTemplates(
+    projectRoot: string,
+    packPath: string,
+): Promise<string[]> {
+    const buf = await fs.readFile(packPath);
+    const entries = parseZipBuffer(buf);
+    if (!entries || entries.length === 0) {
+        throw new Error("Invalid or empty template package");
+    }
+    const dir = TEMPLATES_DIR(projectRoot);
+    await ensureDir(dir);
+    const imported: string[] = [];
+    for (const e of entries) {
+        if (!e.name.endsWith(".json")) continue;
+        const tpl = JSON.parse(e.data.toString("utf8")) as ResourceTemplate;
+        const file = path.join(dir, `${tpl.id}.json`);
+        await withMetaLock(projectRoot, async () => {
+            await fs.writeFile(file, JSON.stringify(tpl, null, 2), "utf8");
+        });
+        imported.push(tpl.id);
+    }
+    return imported;
+}
+
+// --- Minimal ZIP writer/reader for single/multiple file packages ---
+
+function crc32(buf: Buffer): number {
+    const table = CRC32_TABLE;
+    let crc = 0xffffffff;
+    for (let i = 0; i < buf.length; i++)
+        crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xff];
+    return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createZipBuffer(
+    entries: Array<{ name: string; data: Buffer }>,
+): Buffer {
+    const localParts: Buffer[] = [];
+    const centralParts: Buffer[] = [];
+    let offset = 0;
+
+    for (const e of entries) {
+        const nameBuf = Buffer.from(e.name, "utf8");
+        const crc = crc32(e.data);
+        const compSize = e.data.length;
+        const uncompSize = e.data.length;
+
+        const localHeader = Buffer.alloc(30);
+        // local file header signature
+        localHeader.writeUInt32LE(0x04034b50, 0);
+        // version needed
+        localHeader.writeUInt16LE(20, 4);
+        // flags
+        localHeader.writeUInt16LE(0, 6);
+        // compression (0 = none)
+        localHeader.writeUInt16LE(0, 8);
+        // mod time/date
+        localHeader.writeUInt16LE(0, 10);
+        localHeader.writeUInt16LE(0, 12);
+        // crc32
+        localHeader.writeUInt32LE(crc, 14);
+        // comp size
+        localHeader.writeUInt32LE(compSize, 18);
+        // uncomp size
+        localHeader.writeUInt32LE(uncompSize, 22);
+        // filename len
+        localHeader.writeUInt16LE(nameBuf.length, 26);
+        // extra len
+        localHeader.writeUInt16LE(0, 28);
+
+        localParts.push(localHeader, nameBuf, e.data);
+
+        const centralHeader = Buffer.alloc(46);
+        centralHeader.writeUInt32LE(0x02014b50, 0);
+        centralHeader.writeUInt16LE(0, 4); // version made by
+        centralHeader.writeUInt16LE(20, 6); // version needed
+        centralHeader.writeUInt16LE(0, 8); // flags
+        centralHeader.writeUInt16LE(0, 10); // compression
+        centralHeader.writeUInt16LE(0, 12); // mod time
+        centralHeader.writeUInt16LE(0, 14); // mod date
+        centralHeader.writeUInt32LE(crc, 16);
+        centralHeader.writeUInt32LE(compSize, 20);
+        centralHeader.writeUInt32LE(uncompSize, 24);
+        centralHeader.writeUInt16LE(nameBuf.length, 28);
+        centralHeader.writeUInt16LE(0, 30); // extra
+        centralHeader.writeUInt16LE(0, 32); // comment
+        centralHeader.writeUInt16LE(0, 34); // disk start
+        centralHeader.writeUInt16LE(0, 36); // internal attrs
+        centralHeader.writeUInt32LE(0, 38); // external attrs
+        centralHeader.writeUInt32LE(offset, 42); // relative offset
+
+        centralParts.push(centralHeader, nameBuf);
+
+        offset += localHeader.length + nameBuf.length + e.data.length;
+    }
+
+    const centralDir = Buffer.concat(centralParts);
+    const local = Buffer.concat(localParts);
+
+    const eocdr = Buffer.alloc(22);
+    eocdr.writeUInt32LE(0x06054b50, 0);
+    eocdr.writeUInt16LE(0, 4); // disk
+    eocdr.writeUInt16LE(0, 6); // start disk
+    eocdr.writeUInt16LE(entries.length, 8); // entries this disk
+    eocdr.writeUInt16LE(entries.length, 10); // total entries
+    eocdr.writeUInt32LE(centralDir.length, 12); // size of central
+    eocdr.writeUInt32LE(local.length, 16); // offset of start of central
+    eocdr.writeUInt16LE(0, 20); // comment len
+
+    return Buffer.concat([local, centralDir, eocdr]);
+}
+
+function parseZipBuffer(buf: Buffer): Array<{ name: string; data: Buffer }> {
+    const out: Array<{ name: string; data: Buffer }> = [];
+    let offset = 0;
+    while (offset + 30 <= buf.length) {
+        const sig = buf.readUInt32LE(offset);
+        if (sig !== 0x04034b50) break;
+        const nameLen = buf.readUInt16LE(offset + 26);
+        const extraLen = buf.readUInt16LE(offset + 28);
+        const crc = buf.readUInt32LE(offset + 14);
+        const compSize = buf.readUInt32LE(offset + 18);
+        const uncompSize = buf.readUInt32LE(offset + 22);
+        const nameStart = offset + 30;
+        const name = buf.slice(nameStart, nameStart + nameLen).toString("utf8");
+        const dataStart = nameStart + nameLen + extraLen;
+        const data = buf.slice(dataStart, dataStart + compSize);
+        out.push({ name, data });
+        offset = dataStart + compSize;
+    }
+    return out;
+}
+
+// CRC table (generated once)
+const CRC32_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+        let r = i;
+        for (let j = 0; j < 8; j++)
+            r = r & 1 ? 0xedb88320 ^ (r >>> 1) : r >>> 1;
+        t[i] = r >>> 0;
+    }
+    return Array.from(t);
+})();
+/**
  * Create and persist a resource template based on an existing resource in the project.
  * Captures sidecar metadata and (for text resources) the file contents as `plainText`.
  */

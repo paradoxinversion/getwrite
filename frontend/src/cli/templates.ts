@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import {
     saveResourceTemplate,
     loadResourceTemplate,
@@ -11,10 +12,15 @@ type Argv = string[];
 
 function usage(): string {
     return `Usage:
-  pnpm ts-node src/cli/templates.ts save <projectRoot> <templateId> <name>
-  pnpm ts-node src/cli/templates.ts create <projectRoot> <templateId> [name]
-  pnpm ts-node src/cli/templates.ts duplicate <projectRoot> <resourceId>
-  pnpm ts-node src/cli/templates.ts list <projectRoot>
+    pnpm ts-node src/cli/templates.ts save-from-resource <projectRoot> <resourceId> <templateId> [--name <name>]
+    pnpm ts-node src/cli/templates.ts save <projectRoot> <templateId> <name>
+    pnpm ts-node src/cli/templates.ts create <projectRoot> <templateId> [name] [--vars '{}'] [--dry-run]
+    pnpm ts-node src/cli/templates.ts duplicate <projectRoot> <resourceId>
+    pnpm ts-node src/cli/templates.ts list <projectRoot> [--query <text>]
+    pnpm ts-node src/cli/templates.ts inspect <projectRoot> <templateId>
+    pnpm ts-node src/cli/templates.ts parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"
+    pnpm ts-node src/cli/templates.ts export <projectRoot> <templateId> <out.zip>
+    pnpm ts-node src/cli/templates.ts import <projectRoot> <pack.zip>
 `;
 }
 
@@ -152,7 +158,50 @@ async function main(argv: Argv): Promise<number> {
                 }
                 return 0;
             }
+
             console.log(`Created resource ${(result as any).id}`);
+            return 0;
+        }
+
+        // top-level export/import commands
+        if (cmd === "export") {
+            // export <projectRoot> <templateId> <out.zip>
+            const [_, projectRoot, templateId, outPath] = args;
+            if (!projectRoot || !templateId || !outPath) {
+                console.error(usage());
+                return 1;
+            }
+            // ensure output directory exists and is writable
+            const dir = path.dirname(outPath);
+            try {
+                await fs.mkdir(dir, { recursive: true });
+                await fs.access(dir, fsConstants.W_OK);
+            } catch (err) {
+                console.error(`Cannot write to output directory: ${dir}`);
+                return 2;
+            }
+
+            const { exportResourceTemplate } =
+                await import("../lib/models/resource-templates");
+            await exportResourceTemplate(projectRoot, templateId, outPath);
+            console.log(`Exported template ${templateId} -> ${outPath}`);
+            return 0;
+        }
+
+        if (cmd === "import") {
+            // import <projectRoot> <pack.zip>
+            const [_, projectRoot, packPath] = args;
+            if (!projectRoot || !packPath) {
+                console.error(usage());
+                return 1;
+            }
+            const { importResourceTemplates } =
+                await import("../lib/models/resource-templates");
+            const imported = await importResourceTemplates(
+                projectRoot,
+                packPath,
+            );
+            console.log(`Imported templates: ${imported.join(", ")}`);
             return 0;
         }
 

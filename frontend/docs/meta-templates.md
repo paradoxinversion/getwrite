@@ -19,7 +19,17 @@ Format
 
 Operations
 
-- Use the CLI helper at `frontend/src/cli/templates.ts` for quick management in development.
+- Use the CLI helper at `frontend/src/cli/templates.ts` for quick management in development. The helper supports the following commands (developer-facing):
+    - `save-from-resource <projectRoot> <resourceId> <templateId> [--name <name>]` — capture an existing resource and persist it as a template.
+    - `save <projectRoot> <templateId> <name>` — create an empty template stub.
+    - `create <projectRoot> <templateId> [name] [--vars '{}'] [--dry-run]` — create a resource from a template; `--vars` accepts a JSON object of substitutions; `--dry-run` prints planned writes.
+    - `duplicate <projectRoot> <resourceId>` — duplicate an existing resource in-place.
+    - `list <projectRoot> [--query <text>]` — list available templates (optional query filter).
+    - `inspect <projectRoot> <templateId>` — show template details and placeholders.
+    - `parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"` — replace literal occurrences with a placeholder and return introduced variables.
+    - `export <projectRoot> <templateId> <out.zip>` — package a template (JSON) into a ZIP file for sharing.
+    - `import <projectRoot> <pack.zip>` — import templates from a ZIP package into `meta/templates/`.
+
 - Programmatic APIs are exposed by `frontend/src/lib/models/resource-templates.ts`.
 
 Notes

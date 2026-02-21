@@ -69,19 +69,19 @@ Additional Resource Features (proposed)
 
 Additional Template CLI Features (proposed)
 
-- [ ] T029 `templates save-from-resource`: Create a template from an existing resource
+- [x] T029 `templates save-from-resource`: Create a template from an existing resource
     - Acceptance: CLI command `save-from-resource <projectRoot> <resourceId> <templateId> [--name]` captures resource content and sidecar metadata and writes a template JSON under `meta/templates/<templateId>.json`; add unit tests verifying template file content and id/name fields.
 
-- [ ] T030 `templates parametrize`: Convert template fields to placeholders
+- [x] T030 `templates parametrize`: Convert template fields to placeholders
     - Acceptance: CLI command `parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"` rewrites template JSON replacing literal tokens with placeholders and emits a list of required variables; include unit tests asserting placeholder insertion and variable listing.
 
-- [ ] T031 `templates create --vars` (dry-run support): Create resource from template with variable substitution
+- [x] T031 `templates create --vars` (dry-run support): Create resource from template with variable substitution
     - Acceptance: CLI supports `create <projectRoot> <templateId> --vars '{"TITLE":"X"}' [--dry-run]` and when `--dry-run` prints planned filesystem writes without mutating disk; unit tests should assert dry-run output and actual creation when dry-run omitted.
 
-- [ ] T032 `templates list` / `templates inspect`: Discover and inspect templates
+- [x] T032 `templates list` / `templates inspect`: Discover and inspect templates
     - Acceptance: `list <projectRoot> [--query <text>]` returns template id/name/type; `inspect <projectRoot> <templateId>` prints template details (placeholders, metadata); include unit tests for listing and inspection output.
 
-- [ ] T033 `templates export` / `templates import`: Package templates for sharing
+- [x] T033 `templates export` / `templates import`: Package templates for sharing
     - Acceptance: `export <projectRoot> <templateId> <out.zip>` bundles template JSON (and optional sample resources); `import <projectRoot> <pack.zip>` restores templates into `meta/templates/`; unit tests validate export/import roundtrip.
 
 - [ ] T034 `templates validate`: Validate template against zod schema

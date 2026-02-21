@@ -11,8 +11,9 @@ Overview
 
 Commands
 
-- `getwrite-cli prune [projectRoot] --max <n>` — Prune old revisions under a project root.
-- `getwrite-cli templates <save|create|duplicate|list>` — Manage resource templates in a project.
+-- `getwrite-cli prune [projectRoot] --max <n>` — Prune old revisions under a project root.
+-- `getwrite-cli templates <save|save-from-resource|create|duplicate|list|inspect|parametrize|export|import>` — Manage resource templates in a project.
+
 - `getwrite-cli screenshots capture` — Capture Storybook screenshots (uses Playwright).
 
 Developer usage (no build)

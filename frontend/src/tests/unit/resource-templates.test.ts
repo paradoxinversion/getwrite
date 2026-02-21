@@ -279,14 +279,14 @@ describe("models/resource-templates (T027)", () => {
             await saveResourceTemplate(projectPath, template as any);
 
             // dry-run
-            const { plannedWrites } = (
-                await import("../../lib/models/resource-templates")
-            ).createResourceFromTemplate(projectPath, tplId, {
-                name: undefined,
-                vars: { TITLE: "Draft" },
-                dryRun: true,
-            }) as any;
-            expect(Array.isArray(await plannedWrites)).toBeTruthy();
+            const mod = await import("../../lib/models/resource-templates");
+            const dryRes = (await mod.createResourceFromTemplate(
+                projectPath,
+                tplId,
+                { name: undefined, vars: { TITLE: "Draft" }, dryRun: true },
+            )) as any;
+            const { plannedWrites } = dryRes;
+            expect(Array.isArray(plannedWrites)).toBeTruthy();
 
             // CLI dry-run
             const argvDry = [
@@ -309,6 +309,9 @@ describe("models/resource-templates (T027)", () => {
                 vars: { TITLE: "Final" },
             })) as any;
             expect(result.id).toBeTruthy();
+
+            // wait for background indexing/sidecar writes to finish
+            await flushIndexer();
 
             const resourcesDir = path.join(projectPath, "resources");
             const entries = await fs.readdir(resourcesDir);
