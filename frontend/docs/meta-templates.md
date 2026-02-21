@@ -4,7 +4,9 @@ This document explains the on-disk layout and usage for resource templates.
 
 Location
 
-- Templates are stored per-project under `meta/templates/` as individual JSON files named `<templateId>.json`.
+- Resource templates (used to create resources inside a project) are stored per-project under `meta/templates/` as individual JSON files named `<templateId>.json`.
+
+- Project-type templates (JSON specs that define project folder structure and default resources) are maintained in the repository under `getwrite-config/templates/project-types/`. These files can be passed to the CLI `project create --spec <path>` to scaffold new projects.
 
 Format
 

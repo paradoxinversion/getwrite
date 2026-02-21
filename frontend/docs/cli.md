@@ -53,10 +53,15 @@ node ./frontend/dist-cli/bin/getwrite-cli.cjs --help
 node ./frontend/dist-cli/bin/getwrite-cli.cjs prune --help
 ```
 
-- Create a new project from a spec JSON (built):
+-- Create a new project from a project-type spec JSON (built):
 
 ```bash
-node ./frontend/dist-cli/bin/getwrite-cli.cjs project create ./my/new-project --spec ../specs/001-ui-getwrite-skeleton/project-type.json --name "My Project"
+# use one of the project-type templates maintained in the repository:
+node ./frontend/dist-cli/bin/getwrite-cli.cjs project create ./my/new-project \
+	--spec ../getwrite-config/templates/project-types/novel_project_type.json \
+	--name "My Project"
 ```
+
+Note: Project-type specs must include a `folders` array and, per the project-type schema, a `Workspace` folder is required. Default resources in a spec should include a `folder` property (e.g. `"Workspace"`) so the CLI can place seeded resources correctly.
 
 If you want me to also remove the dev loader (`frontend/bin/getwrite-cli.mjs`) or change the package `bin` mapping, say the word and I will update these files and CI accordingly.
