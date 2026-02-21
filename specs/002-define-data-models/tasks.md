@@ -87,10 +87,10 @@ Additional Template CLI Features (proposed)
 - [x] T034 `templates validate`: Validate template against zod schema
     - Acceptance: `validate <projectRoot> <templateId>` runs schema validation and reports errors; unit tests verify validation catches missing required fields and accepts valid templates.
 
-- [ ] T035 `templates scaffold` / `templates bulk-apply`: Generate multiple resources from a template
+- [x] T035 `templates scaffold` / `templates bulk-apply`: Generate multiple resources from a template
     - Acceptance: `scaffold <projectRoot> <templateId> --count N` creates N resources using template with generated names; `apply-multiple` accepts CSV/JSON input to create several resources; unit tests assert creation count and id uniqueness.
 
-- [ ] T036 `templates preview`: Render template with vars to stdout or temp file
+- [x] T036 `templates preview`: Render template with vars to stdout or temp file
     - Acceptance: `preview <projectRoot> <templateId> --vars '{"TITLE":"X"}'` outputs rendered plainText/tiptap to stdout; unit tests validate content substitution.
 
 - [ ] T037 `templates version` / `templates history` / `templates rollback`: Basic template versioning

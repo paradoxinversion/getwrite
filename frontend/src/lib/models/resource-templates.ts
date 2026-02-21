@@ -485,6 +485,68 @@ export async function applyMultipleFromTemplate(
     return created;
 }
 
+/** Create a version snapshot for a template: writes <templateId>.v<N>.json */
+export async function saveTemplateVersion(
+    projectRoot: string,
+    templateId: string,
+): Promise<string> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    const file = path.join(dir, `${templateId}.json`);
+    const raw = await fs.readFile(file, "utf8");
+    // find existing versions
+    const entries = await fs.readdir(dir);
+    const re = new RegExp(`^${templateId}\\.v(\\d+)\\.json$`);
+    let max = 0;
+    for (const e of entries) {
+        const m = e.match(re);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+    const next = max + 1;
+    const verFile = path.join(dir, `${templateId}.v${next}.json`);
+    await withMetaLock(projectRoot, async () => {
+        await fs.writeFile(verFile, raw, "utf8");
+    });
+    return verFile;
+}
+
+export async function listTemplateVersions(
+    projectRoot: string,
+    templateId: string,
+): Promise<Array<{ file: string; version: number }>> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    try {
+        const entries = await fs.readdir(dir);
+        const out: Array<{ file: string; version: number }> = [];
+        const re = new RegExp(`^${templateId}\\.v(\\d+)\\.json$`);
+        for (const e of entries) {
+            const m = e.match(re);
+            if (m)
+                out.push({
+                    file: path.join(dir, e),
+                    version: parseInt(m[1], 10),
+                });
+        }
+        out.sort((a, b) => a.version - b.version);
+        return out;
+    } catch (err) {
+        return [];
+    }
+}
+
+export async function rollbackTemplateVersion(
+    projectRoot: string,
+    templateId: string,
+    version: number,
+): Promise<void> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    const verFile = path.join(dir, `${templateId}.v${version}.json`);
+    const raw = await fs.readFile(verFile, "utf8");
+    const mainFile = path.join(dir, `${templateId}.json`);
+    await withMetaLock(projectRoot, async () => {
+        await fs.writeFile(mainFile, raw, "utf8");
+    });
+}
+
 // --- Minimal ZIP writer/reader for single/multiple file packages ---
 
 function crc32(buf: Buffer): number {

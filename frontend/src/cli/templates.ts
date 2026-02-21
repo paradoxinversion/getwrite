@@ -241,6 +241,49 @@ async function main(argv: Argv): Promise<number> {
             return 0;
         }
 
+        if (cmd === "version") {
+            // version <projectRoot> <templateId>
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { saveTemplateVersion } =
+                await import("../lib/models/resource-templates");
+            const p = await saveTemplateVersion(projectRoot, templateId);
+            console.log(`Saved version -> ${p}`);
+            return 0;
+        }
+
+        if (cmd === "history") {
+            // history <projectRoot> <templateId>
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { listTemplateVersions } =
+                await import("../lib/models/resource-templates");
+            const list = await listTemplateVersions(projectRoot, templateId);
+            for (const v of list) console.log(`${v.version}\t${v.file}`);
+            return 0;
+        }
+
+        if (cmd === "rollback") {
+            // rollback <projectRoot> <templateId> <version>
+            const [_, projectRoot, templateId, vStr] = args;
+            if (!projectRoot || !templateId || !vStr) {
+                console.error(usage());
+                return 1;
+            }
+            const ver = parseInt(vStr, 10);
+            const { rollbackTemplateVersion } =
+                await import("../lib/models/resource-templates");
+            await rollbackTemplateVersion(projectRoot, templateId, ver);
+            console.log(`Rolled back ${templateId} -> v${ver}`);
+            return 0;
+        }
+
         if (cmd === "preview") {
             // preview <projectRoot> <templateId> [--vars '{}'] [--out <file>]
             const varsIndex = args.indexOf("--vars");
