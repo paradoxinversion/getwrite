@@ -133,6 +133,15 @@ export const RevisionSchema = z.object({
     isCanonical: z.boolean(),
 });
 
+export const ResourceTemplateSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    type: ResourceTypeSchema,
+    folderId: UUID.nullable().optional(),
+    metadata: z.record(z.string(), MetadataValue).optional(),
+    plainText: z.string().optional(),
+});
+
 export const Schemas = {
     UUID,
     MetadataValue,
@@ -145,6 +154,7 @@ export const Schemas = {
     AudioResourceSchema,
     AnyResourceSchema,
     RevisionSchema,
+    ResourceTemplateSchema,
     TipTapDocumentSchema,
     TipTapNodeSchema,
 };

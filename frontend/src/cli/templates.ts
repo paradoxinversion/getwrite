@@ -21,6 +21,7 @@ function usage(): string {
     pnpm ts-node src/cli/templates.ts parametrize <projectRoot> <templateId> --placeholder "{{NAME}}"
     pnpm ts-node src/cli/templates.ts export <projectRoot> <templateId> <out.zip>
     pnpm ts-node src/cli/templates.ts import <projectRoot> <pack.zip>
+    pnpm ts-node src/cli/templates.ts validate <projectRoot> <templateId>
 `;
 }
 
@@ -257,6 +258,34 @@ async function main(argv: Argv): Promise<number> {
             } catch (err) {
                 console.error(
                     `Error inspecting template: ${err instanceof Error ? err.message : String(err)}`,
+                );
+                return 2;
+            }
+        }
+
+        if (cmd === "validate") {
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { validateResourceTemplate } =
+                await import("../lib/models/resource-templates");
+            try {
+                const r = await validateResourceTemplate(
+                    projectRoot,
+                    templateId,
+                );
+                if (r.valid) {
+                    console.log(`Template ${templateId} is valid`);
+                    return 0;
+                }
+                console.error(`Template ${templateId} is invalid:`);
+                for (const e of r.errors) console.error(`  - ${e}`);
+                return 2;
+            } catch (err) {
+                console.error(
+                    `Error validating template: ${err instanceof Error ? err.message : String(err)}`,
                 );
                 return 2;
             }

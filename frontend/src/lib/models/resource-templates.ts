@@ -16,6 +16,7 @@ import type {
     ResourceType,
     MetadataValue,
 } from "./types";
+import Schemas from "./schemas";
 
 const TEMPLATES_DIR = (projectRoot: string) =>
     path.join(projectRoot, "meta", "templates");
@@ -397,6 +398,21 @@ export async function importResourceTemplates(
         imported.push(tpl.id);
     }
     return imported;
+}
+
+/** Validate a saved template against the runtime schema. Returns validation result. */
+export async function validateResourceTemplate(
+    projectRoot: string,
+    templateId: string,
+): Promise<{ valid: true } | { valid: false; errors: string[] }> {
+    const tpl = await loadResourceTemplate(projectRoot, templateId);
+    const res = Schemas.ResourceTemplateSchema.safeParse(tpl);
+    if (res.success) return { valid: true };
+    const errors: string[] = [];
+    for (const issue of res.error.issues) {
+        errors.push(`${issue.path.join(".")}: ${issue.message}`);
+    }
+    return { valid: false, errors };
 }
 
 // --- Minimal ZIP writer/reader for single/multiple file packages ---
