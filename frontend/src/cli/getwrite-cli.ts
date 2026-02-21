@@ -3,7 +3,7 @@ import registerPrune from "./commands/prune";
 import registerTemplates from "./commands/templates";
 import registerScreenshots from "./commands/screenshots";
 
-const program = new Command({ name: "getwrite-cli" });
+const program = new Command("getwrite-cli");
 
 program.version("0.1.0");
 
