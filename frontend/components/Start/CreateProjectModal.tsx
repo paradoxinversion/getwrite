@@ -3,7 +3,7 @@ import type { ResourceType } from "../../lib/types";
 
 export interface CreateProjectPayload {
     name: string;
-    projectType: "novel" | "short" | "collection";
+    projectType: string;
 }
 
 export interface CreateProjectModalProps {
@@ -32,6 +32,15 @@ export default function CreateProjectModal({
     const [name, setName] = useState<string>(defaultName);
     const [projectType, setProjectType] =
         useState<CreateProjectPayload["projectType"]>(defaultType);
+    const [types, setTypes] = useState<
+        | {
+              id: string;
+              name: string;
+              description?: string;
+          }[]
+        | null
+    >(null);
+    const [loadingTypes, setLoadingTypes] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const nameRef = useRef<HTMLInputElement | null>(null);
 
@@ -40,6 +49,25 @@ export default function CreateProjectModal({
             setName(defaultName);
             setProjectType(defaultType);
             setError(null);
+            // load project types when modal opens via API
+            setLoadingTypes(true);
+            fetch("/api/project-types")
+                .then((r) => r.json())
+                .then(
+                    (
+                        list: {
+                            id: string;
+                            name: string;
+                            description?: string;
+                        }[],
+                    ) => {
+                        setTypes(list);
+                        if (!defaultType && list.length > 0)
+                            setProjectType(list[0].id);
+                    },
+                )
+                .catch(() => setTypes([]))
+                .finally(() => setLoadingTypes(false));
             // focus the name input when opening
             setTimeout(() => nameRef.current?.focus(), 50);
             // basic focus trap: keep focus inside the form while modal is open
@@ -135,17 +163,32 @@ export default function CreateProjectModal({
                     <select
                         value={projectType}
                         onChange={(e) =>
-                            setProjectType(
-                                e.target
-                                    .value as CreateProjectPayload["projectType"],
-                            )
+                            setProjectType(e.target.value as string)
                         }
                         className="mt-1 block w-full border rounded px-3 py-2"
+                        disabled={loadingTypes || (types && types.length === 0)}
                     >
-                        <option value="novel">Novel</option>
-                        <option value="short">Short Story</option>
-                        <option value="collection">Collection</option>
+                        {loadingTypes ? (
+                            <option>Loading...</option>
+                        ) : types && types.length > 0 ? (
+                            types.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                    {t.name}
+                                    {/* {t.description ? ` — ${t.description}` : ""} */}
+                                </option>
+                            ))
+                        ) : (
+                            <option value="">No project types available</option>
+                        )}
                     </select>
+                    {types && types.length > 0 && (
+                        <div className="text-xs text-slate-500 mt-1">
+                            {
+                                types.find((t) => t.id === projectType)
+                                    ?.description
+                            }
+                        </div>
+                    )}
                 </label>
 
                 {error ? (

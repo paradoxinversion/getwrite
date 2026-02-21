@@ -19,7 +19,7 @@ Phase 3 — User Stories (priority order)
 
 User Story 1 - Create Project from Project Type (Priority: P1)
 
-- [ ] T007 [US1] Update `frontend/components/Start/CreateProjectModal.tsx` to load Project Types on modal open and render a dropdown with name/description
+- [x] T007 [US1] Update `frontend/components/Start/CreateProjectModal.tsx` to load Project Types on modal open and render a dropdown with name/description
 - [ ] T008 [US1] Wire Create button in `frontend/components/Start/CreateProjectModal.tsx` to call `createProjectFromType(projectName, projectTypeId)` in `frontend/src/lib/models/project-creator.ts`
 - [ ] T009 [US1] Prevent double-submissions and show progress state in `frontend/components/Start/CreateProjectModal.tsx` (disable Create while creating)
 - [ ] T010 [P] [US1] Add integration/mocked test `frontend/tests/integration/create-project-modal.spec.ts` asserting the modal calls `createProjectFromType` and opens a project
