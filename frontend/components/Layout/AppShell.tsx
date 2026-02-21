@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect } from "react";
 import type { Resource, ViewName } from "../../lib/types";
 import type { Project as CanonicalProject } from "../../src/lib/models/types";
 import { buildProjectView } from "../../src/lib/models/project-view";
+import { useDispatch } from "react-redux";
+import { persistReorder, setProject } from "../../src/store/projectsSlice";
+import type { AppDispatch } from "../../src/store/store";
 import ResourceTree from "../Tree/ResourceTree";
 import ConfirmDialog from "../common/ConfirmDialog";
 import CreateResourceModal from "../Tree/CreateResourceModal";
@@ -208,8 +211,9 @@ export default function AppShell({
             resources: (project as any).resources ?? [],
         });
     }, [project]);
+    const dispatch = useDispatch<AppDispatch>();
 
-    const handlePersistReorder = async (nextIds: string[] | undefined) => {
+    const handlePersistReorder = (nextIds: string[] | undefined) => {
         if (!nextIds || !project) return;
         // map id -> position
         const pos = new Map<string, number>();
@@ -229,18 +233,24 @@ export default function AppShell({
                     : (r.metadata?.orderIndex ?? 0),
             })) ?? [];
 
-        try {
-            await fetch(`/api/projects/${project.id}/reorder`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ folderOrder, resourceOrder }),
-            });
-        } catch (e) {
-            // ignore network errors for now; UI remains responsive
-            // In future show a toast to retry.
-            // eslint-disable-next-line no-console
-            console.error("persist reorder failed", e);
-        }
+        // optimistic update
+        dispatch(
+            setProject({
+                id: project.id,
+                name: project.name,
+                folders: project.folders ?? [],
+                resources: project.resources ?? [],
+            }),
+        );
+
+        // persist asynchronously
+        dispatch(
+            persistReorder({
+                projectId: project.id,
+                folderOrder,
+                resourceOrder,
+            }),
+        );
     };
 
     return (

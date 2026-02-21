@@ -1,5 +1,6 @@
 import "./globals.css";
 import React from "react";
+import ClientProvider from "../src/store/ClientProvider";
 
 /** Page metadata for Next.js layout — basic title for dev/storybook. */
 export const metadata = {
@@ -15,9 +16,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                <div className="min-h-screen bg-gray-50 text-slate-900">
-                    {children}
-                </div>
+                <ClientProvider>
+                    <div className="min-h-screen bg-gray-50 text-slate-900">
+                        {children}
+                    </div>
+                </ClientProvider>
             </body>
         </html>
     );

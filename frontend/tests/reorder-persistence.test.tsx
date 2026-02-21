@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import AppShell from "../components/Layout/AppShell";
+import ClientProvider from "../src/store/ClientProvider";
 import { createProjectFromType } from "../src/lib/models/project-creator";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -94,13 +95,15 @@ describe("Reorder persistence integration", () => {
             return { ok: true, status: 200 } as any;
         });
 
-        // render AppShell with project to ensure AppShell persists reorders
+        // render AppShell wrapped with Redux provider so dispatch works
         render(
-            <AppShell
-                showSidebars={true}
-                project={projectForUI}
-                resources={projectForUI.resources}
-            />,
+            <ClientProvider>
+                <AppShell
+                    showSidebars={true}
+                    project={projectForUI}
+                    resources={projectForUI.resources}
+                />
+            </ClientProvider>,
         );
 
         // Expand the first folder if present and locate treeitems
