@@ -39,10 +39,10 @@ export async function createAndAssertProject(
         specObj = specOrPath;
     }
 
-    console.log(
-        "createAndAssertProject: calling createProjectFromType with spec:",
-        specObj,
-    );
+    // console.log(
+    //     "createAndAssertProject: calling createProjectFromType with spec:",
+    //     specObj,
+    // );
     const { project, folders, resources } = await createProjectFromType({
         projectRoot,
         spec: specObj as unknown,

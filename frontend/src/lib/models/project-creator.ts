@@ -92,15 +92,15 @@ export async function createProjectFromType(options: {
     await fs.mkdir(foldersDir, { recursive: true });
     const folders: FolderType[] = [];
     // debug: ensure folders present
-    console.log(
-        "createProjectFromType: specObj.folders =",
-        JSON.stringify(specObj.folders),
-    );
+    // console.log(
+    //     "createProjectFromType: specObj.folders =",
+    //     JSON.stringify(specObj.folders),
+    // );
     for (const f of specObj.folders) {
-        console.log(
-            "createProjectFromType: processing folder:",
-            JSON.stringify(f),
-        );
+        // console.log(
+        //     "createProjectFromType: processing folder:",
+        //     JSON.stringify(f),
+        // );
         const id = generateUUID();
         const slug = slugify(String(f.name));
         const dir = path.join(foldersDir, slug);
@@ -129,10 +129,10 @@ export async function createProjectFromType(options: {
     await fs.mkdir(resourcesDir, { recursive: true });
 
     for (const r of specObj.defaultResources ?? []) {
-        console.log(
-            "createProjectFromType: processing defaultResource:",
-            JSON.stringify(r),
-        );
+        // console.log(
+        //     "createProjectFromType: processing defaultResource:",
+        //     JSON.stringify(r),
+        // );
         const folderSlug = r.folder
             ? slugify(String(r.folder))
             : folders[0].slug;
