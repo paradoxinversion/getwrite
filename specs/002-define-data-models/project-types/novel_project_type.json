@@ -1,0 +1,27 @@
+{
+    "id": "novel",
+    "name": "Novel",
+    "description": "Opinionated project type for novel-length creative writing",
+    "folders": [
+        { "name": "Workspace", "special": false },
+        { "name": "Front Matter", "special": true },
+        { "name": "Back Matter", "special": true },
+        { "name": "Characters", "special": true },
+        { "name": "Locations", "special": true },
+        { "name": "Items", "special": true }
+    ],
+    "defaultResources": [
+        {
+            "folder": "Front Matter",
+            "name": "Title Page",
+            "type": "text",
+            "template": "Title: \nAuthor: \n"
+        },
+        {
+            "folder": "Workspace",
+            "name": "Chapter 1",
+            "type": "text",
+            "template": ""
+        }
+    ]
+}

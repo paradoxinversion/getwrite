@@ -1,0 +1,7 @@
+{
+    "id": "default",
+    "name": "Default Project",
+    "description": "Minimal project type with a Workspace folder only",
+    "folders": [{ "name": "Workspace", "special": false }],
+    "defaultResources": []
+}

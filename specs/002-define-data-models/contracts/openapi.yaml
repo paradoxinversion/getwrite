@@ -1,0 +1,44 @@
+openapi: 3.0.0
+info:
+    title: GetWrite Data Model Contracts (draft)
+    version: "0.1.0"
+paths:
+    /projects:
+        get:
+            summary: List projects
+            responses:
+                "200":
+                    description: OK
+        post:
+            summary: Create project (local creation spec)
+            requestBody:
+                required: true
+            responses:
+                "201":
+                    description: Created
+    /projects/{projectId}/folders:
+        get:
+            summary: List folders in a project
+            responses:
+                "200":
+                    description: OK
+components:
+    schemas:
+        Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                createdAt:
+                    type: string
+        Resource:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string

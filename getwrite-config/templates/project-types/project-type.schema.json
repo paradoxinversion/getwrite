@@ -1,0 +1,85 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "GetWrite Project Type",
+    "type": "object",
+    "required": ["id", "name", "folders"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-_]+$",
+            "description": "Unique machine identifier for the project type (lowercase letters, digits, hyphen, underscore)."
+        },
+        "name": {
+            "type": "string",
+            "description": "Human-friendly project type name shown in the UI."
+        },
+        "description": {
+            "type": "string",
+            "description": "Optional longer description explaining the project type's intent and usage."
+        },
+        "folders": {
+            "type": "array",
+            "description": "An ordered list of folder definitions that will be created for projects of this type.",
+            "items": {
+                "type": "object",
+                "required": ["name"],
+                "description": "Definition of a single folder (name, special flag, and any default resources).",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Folder name (must be unique within this array)."
+                    },
+                    "special": {
+                        "type": "boolean",
+                        "description": "Marks that the folder has special application-level semantics (e.g. the Workspace)."
+                    },
+                    "defaultResources": {
+                        "type": "array",
+                        "description": "Optional resources to pre-populate inside this folder when a new project is created.",
+                        "items": {
+                            "type": "object",
+                            "required": ["name", "type"],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Resource display name."
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": ["text", "image", "audio"],
+                                    "description": "Resource content type."
+                                },
+                                "template": {
+                                    "type": "string",
+                                    "description": "Optional template content or template id to seed the resource."
+                                },
+                                "metadata": {
+                                    "type": "object",
+                                    "description": "Arbitrary metadata for the resource."
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "contains": {
+                "type": "object",
+                "description": "Enforces that at least one folder object in the array matches the given schema (used here to require a Workspace folder).",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "const": "Workspace",
+                        "description": "Exact folder name required to satisfy this constraint."
+                    }
+                }
+            }
+        },
+        "defaultResources": {
+            "type": "array",
+            "items": {
+                "$ref": "#/properties/folders/items/properties/defaultResources/items"
+            }
+        }
+    },
+    "additionalProperties": false
+}

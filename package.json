@@ -1,0 +1,13 @@
+{
+    "name": "getwrite",
+    "version": "0.1.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "pnpm --filter getwrite-frontend test:ci"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.28.0"
+}

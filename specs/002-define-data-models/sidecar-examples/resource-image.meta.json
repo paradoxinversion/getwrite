@@ -1,0 +1,21 @@
+{
+    "id": "e3b0c442-98fc-4b2f-8a1f-0a1c2d3e4f5a",
+    "slug": "cover-image",
+    "name": "Cover Image",
+    "notes": "Example image sidecar for project type assets",
+    "type": "image",
+    "width": 1200,
+    "height": 800,
+    "sizeBytes": 254321,
+    "exif": {
+        "camera": "ExampleCam 1.0",
+        "orientation": 1
+    },
+    "statuses": ["Draft"],
+    "metadata": {
+        "source": "illustration",
+        "author": "Artist Name"
+    },
+    "createdAt": "2026-02-20T00:00:00Z",
+    "updatedAt": "2026-02-20T00:00:00Z"
+}

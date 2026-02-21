@@ -17,3 +17,6 @@ node_modules/
 .DS_Store
 .vscode/
 .idea/
+
+tsconfig.tsbuildinfo
+dist-cli

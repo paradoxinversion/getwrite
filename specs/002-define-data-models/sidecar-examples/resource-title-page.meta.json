@@ -1,0 +1,13 @@
+{
+    "id": "b71c4516-06bf-4de2-8359-683fb78f6d7e",
+    "slug": "title-page",
+    "name": "Title Page",
+    "notes": "Template sidecar for Title Page resource",
+    "statuses": ["Draft"],
+    "metadata": {
+        "wordCount": 0,
+        "template": true
+    },
+    "createdAt": "2026-02-20T00:00:00Z",
+    "updatedAt": "2026-02-20T00:00:00Z"
+}

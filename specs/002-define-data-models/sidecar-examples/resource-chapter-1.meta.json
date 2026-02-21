@@ -1,0 +1,13 @@
+{
+    "id": "b62a9d2e-1f4b-4c2a-9e6d-3f4a2e6b8c9a",
+    "slug": "chapter-1",
+    "name": "Chapter 1",
+    "notes": "Placeholder sidecar for Chapter 1",
+    "statuses": ["Draft"],
+    "metadata": {
+        "wordCount": 0,
+        "chapterNumber": 1
+    },
+    "createdAt": "2026-02-20T00:00:00Z",
+    "updatedAt": "2026-02-20T00:00:00Z"
+}
