@@ -2,6 +2,10 @@
 
 This file defines how Copilot interprets project authority.
 
+## Authority Confirmation
+
+When responsing to a user prompt, Copilot must confirm which authority sources are active before proceeding.
+
 ## Standards Authority
 
 The following documents define mandatory behavioral constraints:
