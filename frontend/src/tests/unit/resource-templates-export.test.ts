@@ -49,6 +49,7 @@ test("T033: export/import template roundtrip", async () => {
         expect(loaded.plainText).toBe(tpl.plainText);
     } finally {
         // cleanup
-        await fs.rm(tmp, { recursive: true, force: true });
+        const { removeDirRetry } = await import("./helpers/fs-utils");
+        await removeDirRetry(tmp);
     }
 });

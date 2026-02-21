@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { createAndAssertProject } from "./helpers/project-creator";
 import { flushIndexer } from "../../lib/models/indexer-queue";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/project-creator", () => {
     it("creates project structure and resource placeholders from spec", async () => {
@@ -43,7 +44,7 @@ describe("models/project-creator", () => {
             // ensure background indexing finished before cleanup
             await flushIndexer();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

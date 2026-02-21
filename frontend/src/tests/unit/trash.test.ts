@@ -10,6 +10,7 @@ import {
     purgeResource,
 } from "../../lib/models/trash";
 import { readSidecar } from "../../lib/models/sidecar";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/trash (T026)", () => {
     it("soft-deletes, restores, and purges a resource", async () => {
@@ -60,7 +61,7 @@ describe("models/trash (T026)", () => {
             const final = await readSidecar(projectPath, res.id);
             expect(final).toBeNull();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

@@ -9,6 +9,7 @@ import {
 } from "../../../src/lib/models/sidecar";
 import { flushIndexer } from "../../../src/lib/models/indexer-queue";
 import { generateUUID } from "../../../src/lib/models/uuid";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/sidecar", () => {
     it("writes and reads a sidecar file in project meta folder", async () => {
@@ -38,7 +39,7 @@ describe("models/sidecar", () => {
         await flushIndexer();
 
         // cleanup
-        await fs.rm(tmp, { recursive: true, force: true });
+        await removeDirRetry(tmp);
     });
 
     it("returns null when sidecar is missing", async () => {
@@ -46,6 +47,6 @@ describe("models/sidecar", () => {
         const resourceId = generateUUID();
         const read = await readSidecar(tmp, resourceId);
         expect(read).toBeNull();
-        await fs.rm(tmp, { recursive: true, force: true });
+        await removeDirRetry(tmp);
     });
 });

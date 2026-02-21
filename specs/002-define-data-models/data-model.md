@@ -131,3 +131,21 @@ export interface TipTapDocument {
 Implementations should validate incoming TipTap JSON against this minimal shape and provide conversion helpers to/from `plainText`. Add unit tests for conversion helpers.
 
 - Use runtime validators (`zod`) in implementation to validate incoming data and sidecar files.
+
+## Implemented TypeScript files
+
+The following TypeScript implementations exist and map to the interfaces and concepts described above. See each file for implementation details and unit tests.
+
+- [frontend/src/lib/models/project.ts](frontend/src/lib/models/project.ts)
+- [frontend/src/lib/models/project-config.ts](frontend/src/lib/models/project-config.ts)
+- [frontend/src/lib/models/project-creator.ts](frontend/src/lib/models/project-creator.ts)
+- [frontend/src/lib/models/resource.ts](frontend/src/lib/models/resource.ts)
+- [frontend/src/lib/models/revision.ts](frontend/src/lib/models/revision.ts)
+- [frontend/src/lib/models/revision-manager.ts](frontend/src/lib/models/revision-manager.ts)
+- [frontend/src/lib/models/schemas.ts](frontend/src/lib/models/schemas.ts)
+- [frontend/src/lib/models/sidecar.ts](frontend/src/lib/models/sidecar.ts)
+- [frontend/src/lib/models/uuid.ts](frontend/src/lib/models/uuid.ts)
+- [frontend/src/lib/models/index.ts](frontend/src/lib/models/index.ts)
+- [frontend/lib/tiptap-utils.ts](frontend/lib/tiptap-utils.ts)
+
+If you want me to add or update line-numbered links to specific symbols inside these files, say which files and I'll add precise anchors.

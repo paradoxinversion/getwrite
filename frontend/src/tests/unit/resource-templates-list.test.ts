@@ -8,6 +8,7 @@ import {
     inspectResourceTemplate,
 } from "../../lib/models/resource-templates";
 import { createAndAssertProject } from "./helpers/project-creator";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("resource templates list & inspect (T032)", () => {
     it("lists templates and inspects details", async () => {
@@ -55,7 +56,7 @@ describe("resource templates list & inspect (T032)", () => {
             expect(info.placeholders).toContain("TITLE");
             expect(info.metadataKeys).toContain("foo");
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

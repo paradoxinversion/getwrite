@@ -5,6 +5,7 @@ import path from "node:path";
 import { generatePreview, loadPreview } from "../../../src/lib/models/previews";
 import { createAndAssertProject } from "./helpers/project-creator";
 import type { TextResource } from "../../../src/lib/models/types";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/previews (T028)", () => {
     it("generates and persists an image preview using custom generator", async () => {
@@ -43,7 +44,7 @@ describe("models/previews (T028)", () => {
             expect((saved as any).type).toBe("image");
             expect((saved as any).width).toBe(32);
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -77,7 +78,7 @@ describe("models/previews (T028)", () => {
             expect((saved as any).type).toBe("text");
             expect((saved as any).wordCount).toBeGreaterThan(0);
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

@@ -8,6 +8,7 @@ import {
     PROJECT_FILENAME,
 } from "../../../src/lib/models/project-config";
 import { generateUUID } from "../../../src/lib/models/uuid";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/project-config", () => {
     it("loads project.json and applies defaults to config", async () => {
@@ -32,7 +33,7 @@ describe("models/project-config", () => {
             const cfg = await loadProjectConfig(tmp);
             expect(cfg.maxRevisions).toBe(50);
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -46,7 +47,7 @@ describe("models/project-config", () => {
             );
             await expect(loadProject(tmp)).rejects.toThrow();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

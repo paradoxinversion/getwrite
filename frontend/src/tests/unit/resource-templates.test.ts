@@ -13,6 +13,7 @@ import { main as templatesMain } from "../../cli/templates";
 import { createAndAssertProject } from "./helpers/project-creator";
 import { flushIndexer } from "../../lib/models/indexer-queue";
 import { readSidecar } from "../../lib/models/sidecar";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/resource-templates (T027)", () => {
     // cleanup uses direct recursive removal now that meta writes are serialized
@@ -53,7 +54,7 @@ describe("models/resource-templates (T027)", () => {
             // wait for background indexing to finish before cleanup
             await flushIndexer();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -85,7 +86,7 @@ describe("models/resource-templates (T027)", () => {
             // wait for background indexing to finish before cleanup
             await flushIndexer();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -128,7 +129,7 @@ describe("models/resource-templates (T027)", () => {
             expect(parsed.name).toBe("From Helper");
             expect(parsed.type).toBe("text");
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -178,7 +179,7 @@ describe("models/resource-templates (T027)", () => {
             expect(parsed.id).toBe(tplId);
             expect(parsed.name).toBe("From CLI");
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -248,7 +249,7 @@ describe("models/resource-templates (T027)", () => {
             const parsed2 = JSON.parse(raw2);
             expect(parsed2.name).toBe("{{TITLE}}");
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 
@@ -318,7 +319,7 @@ describe("models/resource-templates (T027)", () => {
             const found = entries.find((e) => e.includes(result.id));
             expect(found).toBeTruthy();
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await removeDirRetry(tmp);
         }
     });
 });

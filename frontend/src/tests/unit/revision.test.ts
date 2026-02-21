@@ -9,6 +9,7 @@ import {
     revisionsBaseDir,
 } from "../../../src/lib/models/revision";
 import { generateUUID } from "../../../src/lib/models/uuid";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 describe("models/revision", () => {
     it("writes revisions and prunes oldest non-canonical", async () => {
@@ -34,7 +35,7 @@ describe("models/revision", () => {
         expect(remaining).toContain("v-3");
         expect(remaining).toContain("v-4");
 
-        await fs.rm(tmp, { recursive: true, force: true });
+        await removeDirRetry(tmp);
     });
 });
 
