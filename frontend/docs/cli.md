@@ -38,6 +38,67 @@ Common subcommands (dev loader usage shown):
 - `templates rollback <projectRoot> <templateId> <version>` — Restore a saved version into the main template file.
 - `templates changeset <projectRoot> <templateId> [--since <ISO-date>]` — Show compact change entries recorded when templates are saved (timestamps, action, changed keys).
 
+Examples for `templates` subcommands
+
+```bash
+# Capture an existing resource as a template
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates save-from-resource ./my/project <resourceId> my-template --name "My Template"
+
+# Create a minimal template file
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates save ./my/project my-template "My Template"
+
+# Instantiate a resource from a template (dry-run)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates create ./my/project my-template --vars '{"TITLE":"Hello"}' --dry-run
+
+# Instantiate a resource from a template (real)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates create ./my/project my-template --vars '{"TITLE":"Hello"}'
+
+# Duplicate an existing resource
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates duplicate ./my/project <resourceId>
+
+# List templates (optional query)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates list ./my/project --query "novel"
+
+# Inspect a template for placeholders and metadata keys
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates inspect ./my/project my-template
+
+# Replace literal values in a template with a placeholder
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates parametrize ./my/project my-template --placeholder "{{TITLE}}"
+
+# Export a template as zip
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates export ./my/project my-template out.zip
+
+# Import templates from a package
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates import ./my/project out.zip
+
+# Validate a template against the runtime schema
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates validate ./my/project my-template
+
+# Scaffold N resources from a template
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates scaffold ./my/project my-template 5
+
+# Create multiple resources from JSON/CSV input
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates apply-multiple ./my/project my-template ./rows.json
+
+# Preview a template rendered with variables (prints to stdout)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates preview ./my/project my-template --vars '{"TITLE":"Preview"}'
+
+# Preview and write to a file
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates preview ./my/project my-template --vars '{"TITLE":"Preview"}' --out preview.txt
+
+# Snapshot the current template version
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates version ./my/project my-template
+
+# List saved template versions
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates history ./my/project my-template
+
+# Rollback to a saved version (e.g., v1)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates rollback ./my/project my-template 1
+
+# Show compact changeset (optionally since an ISO date)
+pnpm dlx tsx ./frontend/bin/getwrite-cli.mjs templates changeset ./my/project my-template --since "2026-02-01T00:00:00Z"
+```
+
 - `getwrite-cli screenshots capture` — Capture Storybook screenshots (uses Playwright).
 
 Developer usage (no build)
