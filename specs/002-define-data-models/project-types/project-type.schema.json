@@ -32,6 +32,13 @@
                         }
                     }
                 }
+            },
+            "contains": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": { "const": "Workspace" }
+                }
             }
         },
         "defaultResources": {
