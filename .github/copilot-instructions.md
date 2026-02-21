@@ -4,7 +4,7 @@ This file defines how Copilot interprets project authority.
 
 ## Authority Confirmation
 
-When responsing to a user prompt, Copilot must confirm which authority sources are active before proceeding.
+When processes a user prompt, Copilot **MUST** begin by stating which standards it is adhering to at the be beginning of the response.
 
 ## Standards Authority
 

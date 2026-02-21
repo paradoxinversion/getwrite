@@ -105,6 +105,7 @@ function ChevronDown({ className = "w-3 h-3" }: { className?: string }) {
  * - Keyboard navigation is currently minimal; add arrow-key support in T030.
  */
 export default function ResourceTree({
+    project,
     resources,
     selectedId,
     onSelect,
@@ -114,7 +115,9 @@ export default function ResourceTree({
     onResourceAction,
 }: ResourceTreeProps) {
     // prefer project resources when provided
-    const resourcesList: Resource[] = project ? project.resources : resources ?? [];
+    const resourcesList: Resource[] = project
+        ? project.resources
+        : (resources ?? []);
 
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resourcesList.map((r) => r.id),
@@ -133,7 +136,9 @@ export default function ResourceTree({
 
     const nodes = useMemo(() => {
         const map = new Map<string, TreeNode>();
-        resourcesList.forEach((r) => map.set(r.id, { resource: r, children: [] }));
+        resourcesList.forEach((r) =>
+            map.set(r.id, { resource: r, children: [] }),
+        );
         const roots: TreeNode[] = [];
         const orderedIds = reorderable
             ? localOrder
