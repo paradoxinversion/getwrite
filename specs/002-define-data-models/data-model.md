@@ -109,6 +109,15 @@ Example `resource-<id>.meta.json`:
 }
 ```
 
+## Sidecar Examples
+
+Example sidecar JSON files demonstrating common metadata shapes are available in the `sidecar-examples` folder:
+
+- [Title Page example](specs/002-define-data-models/sidecar-examples/resource-title-page.meta.json)
+- [Chapter example](specs/002-define-data-models/sidecar-examples/resource-chapter-1.meta.json)
+- [Image example](specs/002-define-data-models/sidecar-examples/resource-image.meta.json)
+- [Audio example](specs/002-define-data-models/sidecar-examples/resource-audio.meta.json)
+
 ## Notes
 
 - Text resources SHOULD store both `plainText` (for exports and plain editing) and `tiptap` (for editor persistence). Conversion helpers will be provided in `frontend/src/lib/tiptap-utils.ts`.
