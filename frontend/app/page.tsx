@@ -8,11 +8,12 @@ import {
     findProjectById,
     createResource,
 } from "../lib/placeholders";
-import type { Project, Resource } from "../lib/types";
+import type { Project as DEPRECATEDProject, Resource } from "../lib/types";
+import type { Project } from "@/src/lib/models";
 
 /** Root page: render the application's start page inside the main shell. */
 export default function Home(): JSX.Element {
-    const [projects, setProjects] = useState<Project[]>(() =>
+    const [projects, setProjects] = useState<DEPRECATEDProject[]>(() =>
         sampleProjects(3),
     );
     const [selectedProject, setSelectedProject] = useState<Project | null>(
@@ -236,6 +237,7 @@ export default function Home(): JSX.Element {
         <AppShell
             showSidebars={Boolean(selectedProject)}
             resources={selectedProject?.resources}
+            project={selectedProject as any}
             onResourceSelect={handleResourceSelect}
             onResourceAction={handleResourceAction}
             selectedResourceId={selectedResourceId}

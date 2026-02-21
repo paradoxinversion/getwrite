@@ -24,9 +24,8 @@ describe("ResourceTree ordering and defaults", () => {
         });
 
         // Build a UI view from canonical project/folders/resources
-        const { buildProjectView } = await import(
-            "../src/lib/models/project-view"
-        );
+        const { buildProjectView } =
+            await import("../src/lib/models/project-view");
         const view = buildProjectView({
             project: created.project,
             folders: created.folders,

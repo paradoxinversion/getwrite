@@ -77,70 +77,72 @@ export default function StartPage({
                     const projName = view?.project?.name ?? p.name;
 
                     return (
-                    <article
-                        key={p.id}
-                        className="rounded bg-white p-4 shadow-card border flex items-start justify-between"
-                        aria-labelledby={`proj-${p.id}-title`}
-                    >
-                        <div>
-                            <h2
-                                id={`proj-${p.id}-title`}
-                                className="font-medium"
-                            >
-                                {projName}
-                            </h2>
-                            {p.description ? (
-                                <p className="text-sm text-slate-600 mt-1 truncate-2">
-                                    {p.description}
-                                </p>
-                            ) : null}
-                            <div className="text-xs text-slate-500 mt-2">
-                                {resourceList.length} resources
+                        <article
+                            key={p.id}
+                            className="rounded bg-white p-4 shadow-card border flex items-start justify-between"
+                            aria-labelledby={`proj-${p.id}-title`}
+                        >
+                            <div>
+                                <h2
+                                    id={`proj-${p.id}-title`}
+                                    className="font-medium"
+                                >
+                                    {projName}
+                                </h2>
+                                {p.description ? (
+                                    <p className="text-sm text-slate-600 mt-1 truncate-2">
+                                        {p.description}
+                                    </p>
+                                ) : null}
+                                <div className="text-xs text-slate-500 mt-2">
+                                    {resourceList.length} resources
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center gap-3">
-                            <ManageProjectMenu
-                                projectId={p.id}
-                                projectName={projName}
-                                onRename={(id, newName) => {
-                                    setLocalProjects((prev) =>
-                                        prev.map((proj) =>
-                                            proj.id === id
-                                                ? { ...proj, name: newName }
-                                                : proj,
-                                        ),
-                                    );
-                                }}
-                                onDelete={(id) => {
-                                    setLocalProjects((prev) =>
-                                        prev.filter((proj) => proj.id !== id),
-                                    );
-                                }}
-                                onPackage={(id, selectedIds) => {
-                                    // UI-only placeholder action — show selected ids if provided
-                                    const proj = localProjects.find(
-                                        (x) => x.id === id,
-                                    );
-                                    const selText = selectedIds
-                                        ? `\nSelected: ${selectedIds.join(", ")}`
-                                        : "";
-                                    window.alert(
-                                        `Package placeholder for ${proj?.name ?? id}${selText}`,
-                                    );
-                                }}
-                                resources={resourceList as any}
-                            />
+                            <div className="flex items-center gap-3">
+                                <ManageProjectMenu
+                                    projectId={p.id}
+                                    projectName={projName}
+                                    onRename={(id, newName) => {
+                                        setLocalProjects((prev) =>
+                                            prev.map((proj) =>
+                                                proj.id === id
+                                                    ? { ...proj, name: newName }
+                                                    : proj,
+                                            ),
+                                        );
+                                    }}
+                                    onDelete={(id) => {
+                                        setLocalProjects((prev) =>
+                                            prev.filter(
+                                                (proj) => proj.id !== id,
+                                            ),
+                                        );
+                                    }}
+                                    onPackage={(id, selectedIds) => {
+                                        // UI-only placeholder action — show selected ids if provided
+                                        const proj = localProjects.find(
+                                            (x) => x.id === id,
+                                        );
+                                        const selText = selectedIds
+                                            ? `\nSelected: ${selectedIds.join(", ")}`
+                                            : "";
+                                        window.alert(
+                                            `Package placeholder for ${proj?.name ?? id}${selText}`,
+                                        );
+                                    }}
+                                    resources={resourceList as any}
+                                />
 
-                            <button
-                                type="button"
-                                onClick={() => handleOpen(p.id)}
-                                className="px-3 py-1 rounded border text-sm bg-slate-50 hover:bg-slate-100"
-                            >
-                                Open
-                            </button>
-                        </div>
-                    </article>
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpen(p.id)}
+                                    className="px-3 py-1 rounded border text-sm bg-slate-50 hover:bg-slate-100"
+                                >
+                                    Open
+                                </button>
+                            </div>
+                        </article>
                     );
                 })}
             </div>

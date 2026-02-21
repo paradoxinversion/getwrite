@@ -37,7 +37,7 @@ export default function TimelineView({
         [view, project],
     );
     const resources = React.useMemo(
-        () => (view?.resources ?? effectiveProject.resources),
+        () => view?.resources ?? effectiveProject.resources,
         [view, effectiveProject],
     );
 

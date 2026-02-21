@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import type { Resource, ViewName } from "../../lib/types";
+import type { Project as CanonicalProject } from "../../src/lib/models/types";
+import { buildProjectView } from "../../src/lib/models/project-view";
 import ResourceTree from "../Tree/ResourceTree";
 import ConfirmDialog from "../common/ConfirmDialog";
 import CreateResourceModal from "../Tree/CreateResourceModal";
@@ -36,10 +38,12 @@ export default function AppShell({
     onChangeLocations,
     onChangeItems,
     onChangePOV,
+    project,
 }: {
     children?: React.ReactNode;
     showSidebars?: boolean;
     resources?: Resource[];
+    project?: CanonicalProject | null;
     onResourceSelect?: (id: string) => void;
     selectedResourceId?: string | null;
     onChangeNotes?: (text: string, resourceId: string) => void;
@@ -195,6 +199,50 @@ export default function AppShell({
         setExportModal({ open: false });
     };
 
+    // build an adapter view when a canonical project with folders/resources is provided
+    const adapterView = React.useMemo(() => {
+        if (!project) return undefined;
+        return buildProjectView({
+            project: project as any,
+            folders: (project as any).folders ?? [],
+            resources: (project as any).resources ?? [],
+        });
+    }, [project]);
+
+    const handlePersistReorder = async (nextIds: string[] | undefined) => {
+        if (!nextIds || !project) return;
+        // map id -> position
+        const pos = new Map<string, number>();
+        nextIds.forEach((id, i) => pos.set(id, i));
+
+        const folderOrder =
+            (project as any).folders?.map((f: any) => ({
+                id: f.id,
+                orderIndex: pos.has(f.id) ? pos.get(f.id) : (f.orderIndex ?? 0),
+            })) ?? [];
+
+        const resourceOrder =
+            (project as any).resources?.map((r: any) => ({
+                id: r.id,
+                orderIndex: pos.has(r.id)
+                    ? pos.get(r.id)
+                    : (r.metadata?.orderIndex ?? 0),
+            })) ?? [];
+
+        try {
+            await fetch(`/api/projects/${project.id}/reorder`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ folderOrder, resourceOrder }),
+            });
+        } catch (e) {
+            // ignore network errors for now; UI remains responsive
+            // In future show a toast to retry.
+            // eslint-disable-next-line no-console
+            console.error("persist reorder failed", e);
+        }
+    };
+
     return (
         <div className="min-h-screen flex bg-slate-50 text-slate-900">
             {showSidebars ? (
@@ -203,12 +251,22 @@ export default function AppShell({
                     style={{ width: leftWidth }}
                 >
                     <div className="mt-0">
-                        {resources ? (
+                        {resources || adapterView ? (
                             <ResourceTree
-                                resources={resources}
+                                resources={
+                                    adapterView
+                                        ? (adapterView.resources as any)
+                                        : resources
+                                }
+                                view={adapterView as any}
                                 selectedId={selectedResourceId ?? undefined}
                                 onSelect={onResourceSelect}
                                 onResourceAction={handleResourceAction}
+                                reorderable={true}
+                                onReorder={(ids) => {
+                                    // persist ordering when adapter view is present
+                                    handlePersistReorder(ids);
+                                }}
                             />
                         ) : (
                             <div className="space-y-2">

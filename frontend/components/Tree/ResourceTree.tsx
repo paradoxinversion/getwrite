@@ -129,8 +129,8 @@ export default function ResourceTree({
     const resourcesList: Resource[] = view
         ? (view.resources as unknown as Resource[])
         : project
-        ? project.resources
-        : (resources ?? []);
+          ? project.resources
+          : (resources ?? []);
 
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resourcesList.map((r) => r.id),

@@ -48,7 +48,7 @@ export function buildProjectView(options: {
     // Map resources into UI shape and attach to folders
     resources.forEach((r, idx) => {
         const order =
-            (r.metadata && typeof (r.metadata as any).orderIndex === "number")
+            r.metadata && typeof (r.metadata as any).orderIndex === "number"
                 ? (r.metadata as any).orderIndex
                 : idx;
         const ui: UIResource = {
