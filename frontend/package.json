@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-        "build:cli": "esbuild src/cli/prune-revisions.ts --bundle --platform=node --target=node16 --outfile=dist-cli/bin/prune-revisions.mjs --banner:js=\"#!/usr/bin/env node\" --format=esm",
+        "build:cli": "esbuild src/cli/getwrite-cli.ts --bundle --platform=node --target=node16 --outfile=dist-cli/bin/getwrite-cli.cjs --banner:js=\"#!/usr/bin/env node\" --format=cjs --external:playwright --external:playwright-core --external:chromium-bidi",
         "start": "next start",
         "typecheck": "tsc --noEmit",
         "lint": "next lint",
@@ -41,6 +41,8 @@
         "@vitest/browser-playwright": "4.0.18",
         "@vitest/coverage-v8": "4.0.18",
         "autoprefixer": "10.4.14",
+        "commander": "^14.0.3",
+        "esbuild": "0.27.3",
         "jsdom": "^28.1.0",
         "playwright": "^1.58.2",
         "postcss": "8.5.6",
@@ -48,11 +50,10 @@
         "storybook": "^10.2.8",
         "tailwindcss": "4.1.0",
         "typescript": "5.9.3",
-        "vitest": "4.0.18",
-        "esbuild": "0.27.3"
+        "vitest": "4.0.18"
     },
     "bin": {
-        "getwrite-prune": "dist-cli/bin/prune-revisions.mjs"
+        "getwrite-cli": "dist-cli/bin/getwrite-cli.cjs"
     },
     "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }
