@@ -168,13 +168,49 @@ async function main(argv: Argv): Promise<number> {
         }
 
         if (cmd === "list") {
+            const qIndex = args.indexOf("--query");
+            let query: string | undefined;
+            if (qIndex !== -1) {
+                query = args[qIndex + 1];
+                args.splice(qIndex, 2);
+            }
             const [_, projectRoot] = args;
             if (!projectRoot) {
                 console.error(usage());
                 return 1;
             }
-            await listTemplates(projectRoot);
+            const { listResourceTemplates } =
+                await import("../lib/models/resource-templates");
+            const list = await listResourceTemplates(projectRoot, query);
+            for (const t of list) console.log(`${t.id}\t${t.name}\t${t.type}`);
             return 0;
+        }
+
+        if (cmd === "inspect") {
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { inspectResourceTemplate } =
+                await import("../lib/models/resource-templates");
+            try {
+                const info = await inspectResourceTemplate(
+                    projectRoot,
+                    templateId,
+                );
+                console.log(`id: ${info.id}`);
+                console.log(`name: ${info.name}`);
+                console.log(`type: ${info.type}`);
+                console.log(`placeholders: ${info.placeholders.join(", ")}`);
+                console.log(`metadataKeys: ${info.metadataKeys.join(", ")}`);
+                return 0;
+            } catch (err) {
+                console.error(
+                    `Error inspecting template: ${err instanceof Error ? err.message : String(err)}`,
+                );
+                return 2;
+            }
         }
 
         console.error(usage());

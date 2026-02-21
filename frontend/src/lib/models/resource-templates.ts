@@ -58,6 +58,80 @@ export async function loadResourceTemplate(
     return JSON.parse(raw) as ResourceTemplate;
 }
 
+/**
+ * List saved templates with optional query filter against id/name/type.
+ */
+export async function listResourceTemplates(
+    projectRoot: string,
+    query?: string,
+): Promise<Array<{ id: string; name: string; type: ResourceType }>> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    const out: Array<{ id: string; name: string; type: ResourceType }> = [];
+    try {
+        const entries = await fs.readdir(dir);
+        for (const e of entries) {
+            if (!e.endsWith(".json")) continue;
+            const raw = await fs.readFile(path.join(dir, e), "utf8");
+            const parsed = JSON.parse(raw) as ResourceTemplate;
+            const candidate = {
+                id: parsed.id,
+                name: parsed.name,
+                type: parsed.type,
+            };
+            if (!query) out.push(candidate);
+            else {
+                const q = query.toLowerCase();
+                if (
+                    candidate.id.toLowerCase().includes(q) ||
+                    candidate.name.toLowerCase().includes(q) ||
+                    candidate.type.toLowerCase().includes(q)
+                ) {
+                    out.push(candidate);
+                }
+            }
+        }
+    } catch (_) {
+        // ignore missing dir
+    }
+    return out;
+}
+
+/**
+ * Inspect a saved template and extract simple info: placeholders and metadata keys.
+ */
+export async function inspectResourceTemplate(
+    projectRoot: string,
+    templateId: string,
+): Promise<{
+    id: string;
+    name: string;
+    type: ResourceType;
+    placeholders: string[];
+    metadataKeys: string[];
+}> {
+    const tpl = await loadResourceTemplate(projectRoot, templateId);
+    const placeholders = new Set<string>();
+    const placeholderRe = /{{\s*([A-Za-z0-9_]+)\s*}}/g;
+    function scan(v: unknown) {
+        if (typeof v === "string") {
+            let m: RegExpExecArray | null;
+            while ((m = placeholderRe.exec(v))) placeholders.add(m[1]);
+        } else if (Array.isArray(v)) v.forEach(scan);
+        else if (v && typeof v === "object")
+            Object.values(v).forEach(scan as any);
+    }
+    scan(tpl.name);
+    scan(tpl.plainText);
+    const metadataKeys = tpl.metadata ? Object.keys(tpl.metadata) : [];
+    return {
+        id: tpl.id,
+        name: tpl.name,
+        type: tpl.type,
+        placeholders: Array.from(placeholders),
+        metadataKeys,
+    };
+}
+
 /** Create a resource on disk from a saved template. Returns the created resource. */
 export async function createResourceFromTemplate(
     projectRoot: string,
