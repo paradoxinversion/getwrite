@@ -1,4 +1,5 @@
 import { z } from "zod";
+import fs from "node:fs/promises";
 import type {
     MetadataValue as MetadataValueType,
     TipTapNode as TipTapNodeType,
@@ -158,6 +159,56 @@ export const Schemas = {
     TipTapDocumentSchema,
     TipTapNodeSchema,
 };
+
+/** Project-type spec schemas (used to validate project-type JSON specs) */
+export const ProjectTypeResourceSchema = z.object({
+    name: z.string(),
+    type: ResourceTypeSchema,
+    template: z.string().optional(),
+    metadata: z.record(z.string(), MetadataValue).optional(),
+});
+
+export const ProjectTypeFolderSchema = z.object({
+    name: z.string(),
+    special: z.boolean().optional(),
+    defaultResources: z.array(ProjectTypeResourceSchema).optional(),
+});
+
+export const ProjectTypeSchema = z
+    .object({
+        id: z.string().regex(/^[a-z0-9-_]+$/),
+        name: z.string(),
+        description: z.string().optional(),
+        folders: z.array(ProjectTypeFolderSchema).min(1),
+        defaultResources: z.array(ProjectTypeResourceSchema).optional(),
+    })
+    .strict()
+    .refine((val) => val.folders.some((f) => f.name === "Workspace"), {
+        message: "project-type must include a folder with name 'Workspace'",
+        path: ["folders"],
+    });
+
+export type ProjectTypeSpec = z.infer<typeof ProjectTypeSchema>;
+
+export function validateProjectType(spec: unknown) {
+    const result = ProjectTypeSchema.safeParse(spec);
+    if (result.success) return { success: true, value: result.data };
+    return { success: false, errors: result.error.format() };
+}
+
+export async function validateProjectTypeFile(filePath: string) {
+    const raw = await fs.readFile(filePath, "utf8");
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (err) {
+        return {
+            success: false,
+            errors: [`Invalid JSON: ${(err as Error).message}`],
+        };
+    }
+    return validateProjectType(parsed);
+}
 
 export type Infer<T extends z.ZodTypeAny> = z.infer<T>;
 
