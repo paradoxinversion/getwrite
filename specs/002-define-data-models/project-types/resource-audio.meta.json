@@ -1,0 +1,17 @@
+{
+    "id": "f4a9d3c2-7b1e-44d9-9c8a-2b3e4f5a6d7b",
+    "slug": "theme-audio",
+    "name": "Theme Audio",
+    "notes": "Example audio sidecar for ambient or theme music",
+    "type": "audio",
+    "durationSeconds": 125.4,
+    "format": "mp3",
+    "sizeBytes": 3421123,
+    "statuses": ["Draft"],
+    "metadata": {
+        "artist": "Composer Name",
+        "license": "CC-BY"
+    },
+    "createdAt": "2026-02-20T00:00:00Z",
+    "updatedAt": "2026-02-20T00:00:00Z"
+}
