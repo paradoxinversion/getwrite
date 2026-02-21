@@ -1,0 +1,25 @@
+{
+    "id": "example_custom",
+    "name": "Example Custom",
+    "description": "A minimal custom project type used as an example (stored in getwrite-config).",
+    "folders": [
+        { "name": "Workspace", "special": false },
+        { "name": "Front Matter", "special": true },
+        { "name": "Back Matter", "special": true },
+        { "name": "Characters", "special": true }
+    ],
+    "defaultResources": [
+        {
+            "folder": "Front Matter",
+            "name": "Title Page",
+            "type": "text",
+            "template": "Title: \nAuthor: \n"
+        },
+        {
+            "folder": "Workspace",
+            "name": "Index",
+            "type": "text",
+            "template": "# Index\n"
+        }
+    ]
+}

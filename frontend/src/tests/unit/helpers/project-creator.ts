@@ -28,18 +28,21 @@ export async function createAndAssertProject(
         opts?.projectRoot ??
         (await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-helpers-")));
 
-    // Load spec when a path is provided
+    // Pass spec path through to createProjectFromType when given a string.
+    // This allows the implementation to read and validate the JSON file itself.
     let specObj: unknown;
     if (typeof specOrPath === "string") {
-        const resolved = path.isAbsolute(specOrPath)
+        specObj = path.isAbsolute(specOrPath)
             ? specOrPath
             : path.resolve(specOrPath);
-        const raw = await fs.readFile(resolved, "utf8");
-        specObj = JSON.parse(raw) as unknown;
     } else {
         specObj = specOrPath;
     }
 
+    console.log(
+        "createAndAssertProject: calling createProjectFromType with spec:",
+        specObj,
+    );
     const { project, folders, resources } = await createProjectFromType({
         projectRoot,
         spec: specObj as unknown,

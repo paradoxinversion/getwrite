@@ -3,6 +3,7 @@ import path from "node:path";
 import { createProject } from "./project";
 import { generateUUID } from "./uuid";
 import { writeSidecar } from "./sidecar";
+import { validateProjectTypeFile, validateProjectType } from "./schemas";
 import type {
     Project as ProjectType,
     Folder as FolderType,
@@ -52,13 +53,22 @@ export async function createProjectFromType(options: {
 }> {
     const { projectRoot, spec, name } = options;
 
-    // Load spec if a path was provided
+    // Load and validate spec (file path or object)
     let specObj: ProjectTypeSpec;
     if (typeof spec === "string") {
-        const raw = await fs.readFile(spec, "utf8");
-        specObj = JSON.parse(raw) as ProjectTypeSpec;
+        const res = await validateProjectTypeFile(spec);
+        if (!res.success)
+            throw new Error(
+                `Invalid project-type spec file: ${JSON.stringify(res.errors)}`,
+            );
+        specObj = res.value as ProjectTypeSpec;
     } else {
-        specObj = spec;
+        const res = validateProjectType(spec);
+        if (!res.success)
+            throw new Error(
+                `Invalid project-type spec object: ${JSON.stringify(res.errors)}`,
+            );
+        specObj = res.value as ProjectTypeSpec;
     }
 
     // Ensure project root exists
@@ -81,9 +91,18 @@ export async function createProjectFromType(options: {
     const foldersDir = path.join(projectRoot, "folders");
     await fs.mkdir(foldersDir, { recursive: true });
     const folders: FolderType[] = [];
+    // debug: ensure folders present
+    console.log(
+        "createProjectFromType: specObj.folders =",
+        JSON.stringify(specObj.folders),
+    );
     for (const f of specObj.folders) {
+        console.log(
+            "createProjectFromType: processing folder:",
+            JSON.stringify(f),
+        );
         const id = generateUUID();
-        const slug = slugify(f.name);
+        const slug = slugify(String(f.name));
         const dir = path.join(foldersDir, slug);
         await fs.mkdir(dir, { recursive: true });
         const now = new Date().toISOString();
@@ -110,7 +129,13 @@ export async function createProjectFromType(options: {
     await fs.mkdir(resourcesDir, { recursive: true });
 
     for (const r of specObj.defaultResources ?? []) {
-        const folderSlug = slugify(r.folder);
+        console.log(
+            "createProjectFromType: processing defaultResource:",
+            JSON.stringify(r),
+        );
+        const folderSlug = r.folder
+            ? slugify(String(r.folder))
+            : folders[0].slug;
         const folder =
             folders.find((ff) => ff.slug === folderSlug) ?? folders[0];
         const id = generateUUID();
@@ -118,14 +143,14 @@ export async function createProjectFromType(options: {
 
         // For MVP, only support text resource templates
         if (r.type === "text") {
-            const filename = `${slugify(r.name)}-${id}.txt`;
+            const filename = `${slugify(String(r.name))}-${id}.txt`;
             const filePath = path.join(resourcesDir, filename);
             await fs.writeFile(filePath, r.template ?? "", "utf8");
 
             const res: TextResource = {
                 id,
                 name: r.name,
-                slug: slugify(r.name),
+                slug: slugify(String(r.name)),
                 type: "text",
                 folderId: folder.id,
                 createdAt: now,
