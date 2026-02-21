@@ -1,6 +1,9 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import ResourceTree from "../../components/Tree/ResourceTree";
+import ClientProvider from "../../src/store/ClientProvider";
+import store from "../../src/store/store";
+import { setProject } from "../../src/store/projectsSlice";
 import { createProject, createResource } from "../../lib/placeholders";
 
 const project = createProject("Storybook Project");
@@ -21,16 +24,37 @@ export default meta;
 type Story = StoryObj<typeof ResourceTree>;
 
 export const Default: Story = {
+    render: (args) => {
+        store.dispatch(
+            setProject({ id: project.id, name: project.name, resources }),
+        );
+        return (
+            <ClientProvider>
+                <ResourceTree projectId={project.id} onSelect={args.onSelect} />
+            </ClientProvider>
+        );
+    },
     args: {
-        resources,
         onSelect: (id: string) => console.log("selected", id),
     },
 };
 
 export const Reorderable: Story = {
+    render: (args) => {
+        store.dispatch(
+            setProject({ id: project.id, name: project.name, resources }),
+        );
+        return (
+            <ClientProvider>
+                <ResourceTree
+                    projectId={project.id}
+                    reorderable
+                    onReorder={args.onReorder}
+                />
+            </ClientProvider>
+        );
+    },
     args: {
-        resources,
-        reorderable: true,
         onReorder: (ids: string[]) => console.log("reordered", ids),
     },
 };

@@ -2,6 +2,9 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import ResourceTree from "../components/Tree/ResourceTree";
+import ClientProvider from "../src/store/ClientProvider";
+import { setProject } from "../src/store/projectsSlice";
+import store from "../src/store/store";
 import { createProject, createResource } from "../lib/placeholders";
 
 describe("ResourceTree", () => {
@@ -17,7 +20,15 @@ describe("ResourceTree", () => {
         const resources = [folder, ...project.resources, item];
 
         const onSelect = vi.fn();
-        render(<ResourceTree resources={resources} onSelect={onSelect} />);
+        // register project in store and render with Provider
+        store.dispatch(
+            setProject({ id: project.id, name: project.name, resources }),
+        );
+        render(
+            <ClientProvider>
+                <ResourceTree projectId={project.id} onSelect={onSelect} />
+            </ClientProvider>,
+        );
 
         // folder title should be in the document
         const folderNode = screen.getByText("Folder A");

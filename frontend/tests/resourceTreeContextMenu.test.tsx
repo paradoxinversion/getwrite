@@ -2,6 +2,9 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ResourceTree from "../components/Tree/ResourceTree";
+import ClientProvider from "../src/store/ClientProvider";
+import { setProject } from "../src/store/projectsSlice";
+import store from "../src/store/store";
 import type { Resource } from "../lib/types";
 
 describe("ResourceTree context menu", () => {
@@ -31,12 +34,14 @@ describe("ResourceTree context menu", () => {
         ];
 
         const onResourceAction = vi.fn();
-
+        store.dispatch(setProject({ id: "proj_1", name: "proj_1", resources }));
         render(
-            <ResourceTree
-                resources={resources}
-                onResourceAction={onResourceAction}
-            />,
+            <ClientProvider>
+                <ResourceTree
+                    projectId="proj_1"
+                    onResourceAction={onResourceAction}
+                />
+            </ClientProvider>,
         );
 
         // Expand the root so child nodes are rendered, then right-click the resource title to open the context menu

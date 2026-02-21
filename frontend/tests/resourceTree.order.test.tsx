@@ -7,6 +7,9 @@ import { createProjectFromType } from "../src/lib/models/project-creator";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import store from "../src/store/store";
+import { setProject } from "../src/store/projectsSlice";
+import ClientProvider from "../src/store/ClientProvider";
 
 describe("ResourceTree ordering and defaults", () => {
     it("renders top-level children in resources order and exposes the first visible node", async () => {
@@ -41,8 +44,13 @@ describe("ResourceTree ordering and defaults", () => {
             resources: view.resources,
         };
 
-        // render using `project` prop (preferred) and expand the first folder
-        render(<ResourceTree project={project as any} />);
+        // register project in store and render using `projectId`
+        store.dispatch(setProject(project as any));
+        render(
+            <ClientProvider>
+                <ResourceTree projectId={project.id} />
+            </ClientProvider>,
+        );
 
         // The scaffolder creates top-level folders (e.g. "Workspace"); expand the first folder
         const rootNode = screen.getByText(project.resources[0].title);
