@@ -13,6 +13,7 @@ export type ProjectTypeEntry = {
 };
 
 const TEMPLATES_DIR = path.join(
+    "..",
     "getwrite-config",
     "templates",
     "project-types",
