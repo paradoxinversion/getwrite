@@ -114,4 +114,22 @@ export function enqueueIndex(
     });
 }
 
-export default { enqueueIndex };
+export default { enqueueIndex, flushIndexer };
+
+/** Wait until the queue is drained (or timeout) — useful for tests. */
+export function flushIndexer(timeout = 5000): Promise<void> {
+    return new Promise((resolve) => {
+        const start = Date.now();
+        const iv = setInterval(() => {
+            if (queue.length === 0 && !running) {
+                clearInterval(iv);
+                resolve();
+                return;
+            }
+            if (Date.now() - start > timeout) {
+                clearInterval(iv);
+                resolve();
+            }
+        }, 25);
+    });
+}

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { UUID, MetadataValue } from "./types";
+import { withMetaLock } from "./meta-locks";
 
 /**
  * Compute the canonical sidecar filename for a resource id.
@@ -71,9 +72,24 @@ export async function writeSidecar(
 ): Promise<void> {
     const dir = path.join(projectRoot, "meta");
     const filePath = sidecarPathForProject(projectRoot, resourceId);
-    await ensureDir(dir);
     const json = JSON.stringify(metadata, null, 2);
-    await fs.writeFile(filePath, json, "utf8");
+    await withMetaLock(projectRoot, async () => {
+        await ensureDir(dir);
+        await fs.writeFile(filePath, json, "utf8");
+    });
+    // Enqueue background indexing after sidecar update. Use dynamic import
+    // to avoid circular static imports between sidecar and the indexer queue.
+    try {
+        setImmediate(() => {
+            import("./indexer-queue")
+                .then((m) => m.enqueueIndex(projectRoot, resourceId))
+                .catch(() => {
+                    /* ignore enqueue errors */
+                });
+        });
+    } catch (_) {
+        // ignore
+    }
 }
 
 export default {

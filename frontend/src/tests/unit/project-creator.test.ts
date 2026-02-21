@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { createAndAssertProject } from "./helpers/project-creator";
+import { flushIndexer } from "../../lib/models/indexer-queue";
 
 describe("models/project-creator", () => {
     it("creates project structure and resource placeholders from spec", async () => {
@@ -39,6 +40,8 @@ describe("models/project-creator", () => {
             // resources dir exists and resources have sidecars
             const meta = await fs.readdir(path.join(projectPath, "meta"));
             expect(meta.length).toBeGreaterThanOrEqual(resources.length);
+            // ensure background indexing finished before cleanup
+            await flushIndexer();
         } finally {
             await fs.rm(tmp, { recursive: true, force: true });
         }

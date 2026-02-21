@@ -1,5 +1,6 @@
 import path from "node:path";
 import { mkdir, readFile, writeFile } from "./io";
+import { withMetaLock } from "./meta-locks";
 import type { TextResource } from "./types";
 import { tiptapToPlainText, loadResourceContent } from "../tiptap-utils";
 
@@ -32,7 +33,9 @@ async function loadIndex(projectRoot: string): Promise<InvertedIndex> {
 async function saveIndex(projectRoot: string, index: InvertedIndex) {
     await ensureIndexDir(projectRoot);
     const p = path.join(projectRoot, INDEX_DIR, INDEX_FILE);
-    await writeFile(p, JSON.stringify(index, null, 2), "utf8");
+    await withMetaLock(projectRoot, async () => {
+        await writeFile(p, JSON.stringify(index, null, 2), "utf8");
+    });
 }
 
 /** Remove any existing occurrences of resourceId from the index (helper). */

@@ -7,6 +7,7 @@ import {
     createAudioResource,
 } from "./resource";
 import { writeSidecar, readSidecar } from "./sidecar";
+import { withMetaLock } from "./meta-locks";
 import type {
     UUID,
     TextResource,
@@ -42,7 +43,9 @@ export async function saveResourceTemplate(
     const dir = TEMPLATES_DIR(projectRoot);
     await ensureDir(dir);
     const file = path.join(dir, `${template.id}.json`);
-    await fs.writeFile(file, JSON.stringify(template, null, 2), "utf8");
+    await withMetaLock(projectRoot, async () => {
+        await fs.writeFile(file, JSON.stringify(template, null, 2), "utf8");
+    });
 }
 
 /** Load a resource template by id. */

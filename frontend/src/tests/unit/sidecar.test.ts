@@ -7,6 +7,7 @@ import {
     readSidecar,
     writeSidecar,
 } from "../../../src/lib/models/sidecar";
+import { flushIndexer } from "../../../src/lib/models/indexer-queue";
 import { generateUUID } from "../../../src/lib/models/uuid";
 
 describe("models/sidecar", () => {
@@ -32,6 +33,9 @@ describe("models/sidecar", () => {
         const read = await readSidecar(tmp, resourceId);
         expect(read).not.toBeNull();
         expect((read as any).title).toBe("Sample");
+
+        // ensure background indexing finished before cleanup
+        await flushIndexer();
 
         // cleanup
         await fs.rm(tmp, { recursive: true, force: true });

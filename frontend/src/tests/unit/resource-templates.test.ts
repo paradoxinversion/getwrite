@@ -9,9 +9,11 @@ import {
     duplicateResource,
 } from "../../lib/models/resource-templates";
 import { createAndAssertProject } from "./helpers/project-creator";
+import { flushIndexer } from "../../lib/models/indexer-queue";
 import { readSidecar } from "../../lib/models/sidecar";
 
 describe("models/resource-templates (T027)", () => {
+    // cleanup uses direct recursive removal now that meta writes are serialized
     it("saves a template and creates a resource from it", async () => {
         const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-rt-"));
         try {
@@ -46,6 +48,8 @@ describe("models/resource-templates (T027)", () => {
             // sidecar exists for created resource
             const meta = await readSidecar(projectPath, created.id);
             expect(meta).not.toBeNull();
+            // wait for background indexing to finish before cleanup
+            await flushIndexer();
         } finally {
             await fs.rm(tmp, { recursive: true, force: true });
         }
@@ -76,6 +80,8 @@ describe("models/resource-templates (T027)", () => {
 
             const meta = await readSidecar(projectPath, result.newId);
             expect(meta).not.toBeNull();
+            // wait for background indexing to finish before cleanup
+            await flushIndexer();
         } finally {
             await fs.rm(tmp, { recursive: true, force: true });
         }

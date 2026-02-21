@@ -54,6 +54,19 @@ export async function persistResourceContent(
     await writeFile(tiptapPath, JSON.stringify(doc, null, 2), "utf8");
     const plain = tiptapToPlainText(doc);
     await writeFile(plainPath, plain, "utf8");
+    // Enqueue background indexing without creating a static dependency cycle.
+    // Use dynamic import so module graphs remain acyclic at load time.
+    try {
+        setImmediate(() => {
+            import("./models/indexer-queue")
+                .then((m) => m.enqueueIndex(projectRoot, resourceId))
+                .catch(() => {
+                    /* ignore enqueue errors */
+                });
+        });
+    } catch (_) {
+        // ignore
+    }
 }
 
 /**

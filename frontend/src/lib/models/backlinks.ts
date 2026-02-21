@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { readFile, writeFile, readdir, mkdir } from "./io";
+import { withMetaLock } from "./meta-locks";
 import { loadResourceContent } from "../tiptap-utils";
 import { readSidecar } from "./sidecar";
 import type { UUID } from "./types";
@@ -167,7 +168,9 @@ export async function persistBacklinks(
         // ignore
     }
     const out = path.join(metaDir, "backlinks.json");
-    await writeFile(out, JSON.stringify(index, null, 2), "utf8");
+    await withMetaLock(projectRoot, async () => {
+        await writeFile(out, JSON.stringify(index, null, 2), "utf8");
+    });
 }
 
 /** Load persisted backlinks if present. */
