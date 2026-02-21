@@ -2,6 +2,7 @@ import { Command } from "commander";
 import registerPrune from "./commands/prune";
 import registerTemplates from "./commands/templates";
 import registerScreenshots from "./commands/screenshots";
+import registerProject from "./commands/project";
 
 const program = new Command("getwrite-cli");
 
@@ -11,6 +12,7 @@ program.version("0.1.0");
 registerPrune(program);
 registerTemplates(program);
 registerScreenshots(program);
+registerProject(program);
 
 export async function main(argv: string[]): Promise<number> {
     // commander expects process.argv-like array

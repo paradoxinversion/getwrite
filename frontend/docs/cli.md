@@ -53,4 +53,10 @@ node ./frontend/dist-cli/bin/getwrite-cli.cjs --help
 node ./frontend/dist-cli/bin/getwrite-cli.cjs prune --help
 ```
 
+- Create a new project from a spec JSON (built):
+
+```bash
+node ./frontend/dist-cli/bin/getwrite-cli.cjs project create ./my/new-project --spec ../specs/001-ui-getwrite-skeleton/project-type.json --name "My Project"
+```
+
 If you want me to also remove the dev loader (`frontend/bin/getwrite-cli.mjs`) or change the package `bin` mapping, say the word and I will update these files and CI accordingly.
