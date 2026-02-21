@@ -45,7 +45,26 @@ export async function saveResourceTemplate(
     await ensureDir(dir);
     const file = path.join(dir, `${template.id}.json`);
     await withMetaLock(projectRoot, async () => {
+        // read previous content if exists for change tracking
+        let prevRaw: string | null = null;
+        try {
+            prevRaw = await fs.readFile(file, "utf8");
+        } catch (_) {
+            prevRaw = null;
+        }
         await fs.writeFile(file, JSON.stringify(template, null, 2), "utf8");
+        // record a compact change entry
+        try {
+            const prev = prevRaw ? JSON.parse(prevRaw) : null;
+            await recordTemplateChange(
+                projectRoot,
+                template.id,
+                prev,
+                template,
+            );
+        } catch (_) {
+            // non-fatal: don't block save on change recording errors
+        }
     });
 }
 
@@ -545,6 +564,59 @@ export async function rollbackTemplateVersion(
     await withMetaLock(projectRoot, async () => {
         await fs.writeFile(mainFile, raw, "utf8");
     });
+}
+
+/** Record a compact change entry for a template. Stored as JSONL at <template>.changes.jsonl */
+export async function recordTemplateChange(
+    projectRoot: string,
+    templateId: string,
+    prev: ResourceTemplate | null,
+    next: ResourceTemplate,
+): Promise<void> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    await ensureDir(dir);
+    const changesFile = path.join(dir, `${templateId}.changes.jsonl`);
+    const ts = new Date().toISOString();
+    const changedKeys: string[] = [];
+    if (!prev) changedKeys.push("created");
+    else {
+        const keys = new Set<string>([
+            ...Object.keys(prev),
+            ...Object.keys(next),
+        ]);
+        for (const k of keys) {
+            const pv = (prev as any)[k];
+            const nv = (next as any)[k];
+            if (JSON.stringify(pv) !== JSON.stringify(nv)) changedKeys.push(k);
+        }
+    }
+    const entry = { ts, action: prev ? "edit" : "create", keys: changedKeys };
+    await fs.appendFile(changesFile, JSON.stringify(entry) + "\n", "utf8");
+}
+
+export async function getTemplateChanges(
+    projectRoot: string,
+    templateId: string,
+    since?: Date,
+): Promise<Array<{ ts: string; action: string; keys: string[] }>> {
+    const dir = TEMPLATES_DIR(projectRoot);
+    const changesFile = path.join(dir, `${templateId}.changes.jsonl`);
+    try {
+        const raw = await fs.readFile(changesFile, "utf8");
+        const lines = raw.split(/\r?\n/).filter((l) => l.trim());
+        const out: Array<{ ts: string; action: string; keys: string[] }> = [];
+        for (const l of lines) {
+            try {
+                const p = JSON.parse(l);
+                if (!since || new Date(p.ts) >= since) out.push(p);
+            } catch (_) {
+                // skip invalid line
+            }
+        }
+        return out;
+    } catch (err) {
+        return [];
+    }
 }
 
 // --- Minimal ZIP writer/reader for single/multiple file packages ---

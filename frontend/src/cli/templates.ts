@@ -284,6 +284,31 @@ async function main(argv: Argv): Promise<number> {
             return 0;
         }
 
+        if (cmd === "changeset") {
+            // changeset <projectRoot> <templateId> --since <ISO date>
+            const sinceIndex = args.indexOf("--since");
+            let since: Date | undefined;
+            if (sinceIndex !== -1) {
+                const s = args[sinceIndex + 1];
+                since = s ? new Date(s) : undefined;
+            }
+            const [_, projectRoot, templateId] = args;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const { getTemplateChanges } =
+                await import("../lib/models/resource-templates");
+            const list = await getTemplateChanges(
+                projectRoot,
+                templateId,
+                since,
+            );
+            for (const e of list)
+                console.log(`${e.ts}\t${e.action}\t${e.keys.join(",")}`);
+            return 0;
+        }
+
         if (cmd === "preview") {
             // preview <projectRoot> <templateId> [--vars '{}'] [--out <file>]
             const varsIndex = args.indexOf("--vars");
