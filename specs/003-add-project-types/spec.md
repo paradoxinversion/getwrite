@@ -104,6 +104,8 @@ As a user, I can see human-friendly names and descriptions for Project Types in 
 - `createProjectFromType` exists or will be implemented at `frontend/src/lib/models/project-creator.ts` and returns a shape the UI can render (folder/resource tree structure).
 - This work is frontend-focused: file-system persistence and CLI scaffolding behavior are handled by existing or downstream model code invoked by `createProjectFromType`.
 
+- The canonical data model for Projects/Folders/Resources is defined in `specs/002-define-data-models/data-model.md` and will be used by `createProjectFromType` and the Resource Tree rendering.
+
 ## Out Of Scope
 
 - Elaborate Project Type editors — only reading and validating templates for creation is required.
