@@ -1,5 +1,4 @@
 {
-    "$schema": "./project-type.schema.json",
     "id": "article",
     "name": "Article",
     "description": "Short-form article project type with drafts and references.",

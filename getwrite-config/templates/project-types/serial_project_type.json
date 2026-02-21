@@ -1,5 +1,4 @@
 {
-    "$schema": "./project-type.schema.json",
     "id": "serial",
     "name": "Serial",
     "description": "Serialized fiction project type for episodes or installments.",

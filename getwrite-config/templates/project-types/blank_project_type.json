@@ -1,5 +1,4 @@
 {
-    "$schema": "./project-type.schema.json",
     "id": "blank",
     "name": "Blank",
     "description": "Minimal project type with only a Workspace folder.",

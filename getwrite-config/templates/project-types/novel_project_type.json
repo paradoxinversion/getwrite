@@ -1,5 +1,4 @@
 {
-    "$schema": "./project-type.schema.json",
     "id": "novel",
     "name": "Novel",
     "description": "Project type optimized for long-form fiction. Includes drafts, research, and assets.",
