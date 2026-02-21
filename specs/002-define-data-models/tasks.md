@@ -36,7 +36,7 @@ Phase 3: User Story Implementation (priority order)
 
 **User Story: Modify or create Project Types (Priority: P2)**
 
-- [ ] T016 [US3] Add project-type validator `specs/002-define-data-models/project-types/validate.ts` (validate `folders`, `defaultResources` schema)
+- [ ] T016 [US3] Add project-type validator `frontend/src/lib/models/schemas.ts` (add `projectType` schema and validation for `folders` / `defaultResources`)
 - [ ] T017 [P] [US3] Add unit tests for project-type validation `frontend/src/tests/unit/project-type.test.ts`
 - [ ] T018 [US3] Add example custom project-type `specs/002-define-data-models/project-types/example_custom.json`
 
@@ -45,7 +45,6 @@ Final Phase: Polish & Cross-Cutting Concerns
 - [x] T019 Update `specs/002-define-data-models/data-model.md` with links to implemented TypeScript files (docs)
 - [x] T020 Add example sidecar metadata files under `specs/002-define-data-models/project-types/` to demonstrate `resource-<id>.meta.json`
 - [x] T021 Add integration notes to `specs/002-define-data-models/quickstart.md` explaining how to run tests and validate models
-- [ ] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
 - [x] T022 Audit and remove remaining `any` types: ensure `data-model.md` and TypeScript model stubs use concrete types (e.g., `MetadataValue`, `TipTapDocument`) and add unit tests for TipTap conversion helpers
 
 Additional Resource Features (proposed)
