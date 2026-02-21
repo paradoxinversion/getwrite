@@ -4,7 +4,12 @@ import type { Resource, ViewName } from "../../lib/types";
 import type { Project as CanonicalProject } from "../../src/lib/models/types";
 import { buildProjectView } from "../../src/lib/models/project-view";
 import { useDispatch } from "react-redux";
-import { persistReorder, setProject } from "../../src/store/projectsSlice";
+import {
+    persistReorder,
+    setProject,
+    addResource,
+    removeResource,
+} from "../../src/store/projectsSlice";
 import type { AppDispatch } from "../../src/store/store";
 import ResourceTree from "../Tree/ResourceTree";
 import ConfirmDialog from "../common/ConfirmDialog";
@@ -263,6 +268,7 @@ export default function AppShell({
                     <div className="mt-0">
                         {resources || adapterView ? (
                             <ResourceTree
+                                projectId={project?.id}
                                 resources={
                                     adapterView
                                         ? (adapterView.resources as any)
@@ -309,6 +315,15 @@ export default function AppShell({
                 cancelLabel="Cancel"
                 onConfirm={() => {
                     if (contextAction.resourceId) {
+                        // dispatch removeResource optimistically in store
+                        if (project) {
+                            dispatch(
+                                removeResource({
+                                    projectId: project.id,
+                                    resourceId: contextAction.resourceId,
+                                }),
+                            );
+                        }
                         onResourceAction?.("delete", contextAction.resourceId);
                     }
                     setContextAction({ open: false });

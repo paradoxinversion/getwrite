@@ -51,6 +51,34 @@ const projectsSlice = createSlice({
         setSelectedProjectId(state, action: PayloadAction<string | null>) {
             state.selectedProjectId = action.payload;
         },
+        addResource(
+            state,
+            action: PayloadAction<{
+                projectId: string;
+                resource: ResourceMeta;
+            }>,
+        ) {
+            const { projectId, resource } = action.payload;
+            const proj = state.projects[projectId] ?? {
+                id: projectId,
+                folders: [],
+                resources: [],
+            };
+            proj.resources = proj.resources
+                ? [...proj.resources, resource]
+                : [resource];
+            state.projects[projectId] = proj;
+        },
+        removeResource(
+            state,
+            action: PayloadAction<{ projectId: string; resourceId: string }>,
+        ) {
+            const { projectId, resourceId } = action.payload;
+            const proj = state.projects[projectId];
+            if (!proj || !proj.resources) return;
+            proj.resources = proj.resources.filter((r) => r.id !== resourceId);
+            state.projects[projectId] = proj;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(persistReorder.fulfilled, (state, action) => {
@@ -90,5 +118,18 @@ const projectsSlice = createSlice({
     },
 });
 
-export const { setProject, setSelectedProjectId } = projectsSlice.actions;
+export const { setProject, setSelectedProjectId, addResource, removeResource } =
+    projectsSlice.actions;
 export default projectsSlice.reducer;
+
+// Selectors (simple helpers; avoid importing RootState here to prevent circular imports)
+export const selectProject = (
+    state: any,
+    projectId: string,
+): StoredProject | null => {
+    return state?.projects?.projects?.[projectId] ?? null;
+};
+
+export const selectSelectedProjectId = (state: any): string | null => {
+    return state?.projects?.selectedProjectId ?? null;
+};

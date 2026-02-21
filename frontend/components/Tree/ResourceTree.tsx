@@ -4,12 +4,16 @@ import type {
     UIResource,
     FolderWithResources,
 } from "../../src/lib/models/project-view";
+import { useAppSelector } from "../../src/store/hooks";
+import { selectProject } from "../../src/store/projectsSlice";
 import ResourceContextMenu, {
     type ResourceContextAction,
 } from "./ResourceContextMenu";
 
 export interface ResourceTreeProps {
-    /** Either pass a `project` object (preferred) or a raw `resources` array. */
+    /** Prefer passing `projectId` to drive the tree from Redux state. */
+    projectId?: string;
+    /** Either pass a `project` object (legacy) or a raw `resources` array. */
     project?: Project;
     /** Optional adapter view from `buildProjectView` (canonical models). */
     view?: {
@@ -115,6 +119,7 @@ function ChevronDown({ className = "w-3 h-3" }: { className?: string }) {
  * - Keyboard navigation is currently minimal; add arrow-key support in T030.
  */
 export default function ResourceTree({
+    projectId,
     project,
     view,
     resources,
@@ -125,12 +130,18 @@ export default function ResourceTree({
     onReorder,
     onResourceAction,
 }: ResourceTreeProps) {
-    // prefer adapter view resources when provided, then project.resources fallback
+    // If a projectId is provided prefer reading the project from Redux state.
+    const projectFromStore = projectId
+        ? useAppSelector((s) => selectProject(s, projectId))
+        : null;
+    // prefer adapter view resources when provided, then redux project, then prop project.resources
     const resourcesList: Resource[] = view
         ? (view.resources as unknown as Resource[])
-        : project
-          ? project.resources
-          : (resources ?? []);
+        : projectFromStore
+          ? (projectFromStore.resources as unknown as Resource[])
+          : project
+            ? project.resources
+            : (resources ?? []);
 
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resourcesList.map((r) => r.id),

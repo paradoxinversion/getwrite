@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import { useAppDispatch } from "../src/store/hooks";
+import { addResource, removeResource } from "../src/store/projectsSlice";
 import AppShell from "../components/Layout/AppShell";
 import StartPage from "../components/Start/StartPage";
 import {
@@ -22,6 +24,8 @@ export default function Home(): JSX.Element {
     const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
         null,
     );
+
+    const dispatch = useAppDispatch();
 
     const handleCreate = (name: string) => {
         const p = createProject(name);
@@ -149,6 +153,17 @@ export default function Home(): JSX.Element {
                     : prev,
             );
             setSelectedResourceId(res.id);
+            // update redux store
+            dispatch(
+                addResource({
+                    projectId: selectedProject.id,
+                    resource: {
+                        id: res.id,
+                        metadata: res.metadata,
+                        name: res.title,
+                    } as any,
+                }),
+            );
             return;
         }
 
@@ -188,6 +203,16 @@ export default function Home(): JSX.Element {
                     : prev,
             );
             setSelectedResourceId(copy.id);
+            dispatch(
+                addResource({
+                    projectId: selectedProject.id,
+                    resource: {
+                        id: copy.id,
+                        metadata: copy.metadata,
+                        name: copy.title,
+                    } as any,
+                }),
+            );
             return;
         }
 
@@ -218,6 +243,10 @@ export default function Home(): JSX.Element {
                     : prev,
             );
             if (selectedResourceId === resourceId) setSelectedResourceId(null);
+            // update redux store
+            dispatch(
+                removeResource({ projectId: selectedProject.id, resourceId }),
+            );
             return;
         }
 
