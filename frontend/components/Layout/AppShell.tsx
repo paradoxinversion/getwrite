@@ -266,15 +266,9 @@ export default function AppShell({
                     style={{ width: leftWidth }}
                 >
                     <div className="mt-0">
-                        {resources || adapterView ? (
+                        {project ? (
                             <ResourceTree
-                                projectId={project?.id}
-                                resources={
-                                    adapterView
-                                        ? (adapterView.resources as any)
-                                        : resources
-                                }
-                                view={adapterView as any}
+                                projectId={project.id}
                                 selectedId={selectedResourceId ?? undefined}
                                 onSelect={onResourceSelect}
                                 onResourceAction={handleResourceAction}

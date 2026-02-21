@@ -1,9 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import type { Resource, Project } from "../../lib/types";
-import type {
-    UIResource,
-    FolderWithResources,
-} from "../../src/lib/models/project-view";
+import type { Resource } from "../../lib/types";
 import { useAppSelector } from "../../src/store/hooks";
 import { selectProject } from "../../src/store/projectsSlice";
 import ResourceContextMenu, {
@@ -11,17 +7,8 @@ import ResourceContextMenu, {
 } from "./ResourceContextMenu";
 
 export interface ResourceTreeProps {
-    /** Prefer passing `projectId` to drive the tree from Redux state. */
-    projectId?: string;
-    /** Either pass a `project` object (legacy) or a raw `resources` array. */
-    project?: Project;
-    /** Optional adapter view from `buildProjectView` (canonical models). */
-    view?: {
-        project: any;
-        folders: FolderWithResources[];
-        resources: UIResource[];
-    };
-    resources?: Resource[];
+    /** Drive the tree from Redux by `projectId`. */
+    projectId: string;
     selectedId?: string | null;
     onSelect?: (id: string) => void;
     className?: string;
@@ -120,9 +107,6 @@ function ChevronDown({ className = "w-3 h-3" }: { className?: string }) {
  */
 export default function ResourceTree({
     projectId,
-    project,
-    view,
-    resources,
     selectedId,
     onSelect,
     className = "",
@@ -130,18 +114,10 @@ export default function ResourceTree({
     onReorder,
     onResourceAction,
 }: ResourceTreeProps) {
-    // If a projectId is provided prefer reading the project from Redux state.
-    const projectFromStore = projectId
-        ? useAppSelector((s) => selectProject(s, projectId))
-        : null;
-    // prefer adapter view resources when provided, then redux project, then prop project.resources
-    const resourcesList: Resource[] = view
-        ? (view.resources as unknown as Resource[])
-        : projectFromStore
-          ? (projectFromStore.resources as unknown as Resource[])
-          : project
-            ? project.resources
-            : (resources ?? []);
+    // Read canonical project from Redux; enforce Redux-only source of truth.
+    const projectFromStore = useAppSelector((s) => selectProject(s, projectId));
+    const resourcesList: Resource[] =
+        (projectFromStore?.resources as unknown as Resource[]) ?? [];
 
     const [localOrder, setLocalOrder] = useState<string[]>(() =>
         resourcesList.map((r) => r.id),
@@ -183,7 +159,7 @@ export default function ResourceTree({
         }
         sortRec(roots);
         return roots;
-    }, [resources, localOrder, reorderable]);
+    }, [resourcesList, localOrder, reorderable]);
 
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 

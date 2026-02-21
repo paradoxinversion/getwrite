@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import AppShell from "../components/Layout/AppShell";
 import ClientProvider from "../src/store/ClientProvider";
+import store from "../src/store/store";
+import { setProject } from "../src/store/projectsSlice";
 import { createProjectFromType } from "../src/lib/models/project-creator";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -19,11 +21,15 @@ describe("Reorder persistence integration", () => {
             "../specs/002-define-data-models/project-types/novel_project_type.json",
         );
 
+        console.log("[test] creating project from type...");
+
         const created = await createProjectFromType({
             projectRoot: tmp,
             spec: specPath,
             name: "Reorder Persistence Project",
         });
+
+        console.log("[test] created project", created.project.id);
 
         const view = buildProjectView({
             project: created.project,
@@ -37,6 +43,7 @@ describe("Reorder persistence integration", () => {
             resources: view.resources,
         } as any;
 
+        console.log("[test] stubbing global fetch");
         // stub global fetch so AppShell's persistence call writes into our tmp project
         const originalFetch = globalThis.fetch;
         globalThis.fetch = vi.fn(async (url: string, opts?: any) => {
@@ -95,7 +102,17 @@ describe("Reorder persistence integration", () => {
             return { ok: true, status: 200 } as any;
         });
 
-        // render AppShell wrapped with Redux provider so dispatch works
+        console.log("[test] seeding store and rendering AppShell");
+        // seed the Redux store with the created project and render AppShell
+        store.dispatch(
+            setProject({
+                id: projectForUI.id,
+                name: projectForUI.name,
+                folders: projectForUI.folders,
+                resources: projectForUI.resources,
+            } as any),
+        );
+
         render(
             <ClientProvider>
                 <AppShell
@@ -106,8 +123,12 @@ describe("Reorder persistence integration", () => {
             </ClientProvider>,
         );
 
+        console.log("[test] AppShell rendered");
+
         // Expand the first folder if present and locate treeitems
+        console.log("[test] waiting for Resource tree");
         const tree = await screen.findByLabelText("Resource tree");
+        console.log("[test] found Resource tree");
         const treeItems = Array.from(
             tree.querySelectorAll('[role="treeitem"]'),
         ) as HTMLElement[];
@@ -132,7 +153,9 @@ describe("Reorder persistence integration", () => {
         fireEvent.drop(target, { dataTransfer });
 
         // allow async persistence stub to complete
-        await new Promise((r) => setTimeout(r, 50));
+        console.log("[test] waiting for persistence stub to complete");
+        await new Promise((r) => setTimeout(r, 100));
+        console.log("[test] waiting complete");
 
         // verify that at least one resource sidecar was updated with orderIndex
         const sampleRes = created.resources[0];

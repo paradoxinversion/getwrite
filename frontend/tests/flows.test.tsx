@@ -3,6 +3,9 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import StartPage from "../components/Start/StartPage";
 import ResourceTree from "../components/Tree/ResourceTree";
+import ClientProvider from "../src/store/ClientProvider";
+import store from "../src/store/store";
+import { setProject } from "../src/store/projectsSlice";
 import EditView from "../components/WorkArea/EditView";
 import { sampleProjects } from "../lib/placeholders";
 
@@ -36,6 +39,18 @@ describe("Core flow: Start → Open Project → Open Resource → Edit", () => {
                     (r) => r.id === currentResourceId,
                 ) ?? null;
 
+            React.useEffect(() => {
+                if (currentProject) {
+                    store.dispatch(
+                        setProject({
+                            id: currentProject.id,
+                            name: currentProject.name,
+                            resources: currentProject.resources,
+                        }),
+                    );
+                }
+            }, [currentProject]);
+
             return (
                 <div>
                     {!currentProject ? (
@@ -43,10 +58,14 @@ describe("Core flow: Start → Open Project → Open Resource → Edit", () => {
                     ) : (
                         <div>
                             <h2>Project: {currentProject.name}</h2>
-                            <ResourceTree
-                                resources={currentProject.resources}
-                                onSelect={handleSelect}
-                            />
+                            {/* register project in store and render ResourceTree via projectId */}
+                            {/* project registered in store via effect above */}
+                            <ClientProvider>
+                                <ResourceTree
+                                    projectId={currentProject.id}
+                                    onSelect={handleSelect}
+                                />
+                            </ClientProvider>
 
                             <div data-testid="editor-area">
                                 {currentResource ? (
