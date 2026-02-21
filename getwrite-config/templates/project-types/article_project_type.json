@@ -1,0 +1,19 @@
+{
+    "$schema": "./project-type.schema.json",
+    "id": "article",
+    "name": "Article",
+    "description": "Short-form article project type with drafts and references.",
+    "folders": [
+        { "name": "Workspace", "special": true },
+        { "name": "Drafts" },
+        { "name": "References" },
+        { "name": "Assets" }
+    ],
+    "defaultResources": [
+        {
+            "name": "Article Outline",
+            "type": "text",
+            "template": "# Headline\n\n- Intro\n- Points\n- Conclusion\n"
+        }
+    ]
+}

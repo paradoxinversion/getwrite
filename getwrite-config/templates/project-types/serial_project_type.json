@@ -1,0 +1,19 @@
+{
+    "$schema": "./project-type.schema.json",
+    "id": "serial",
+    "name": "Serial",
+    "description": "Serialized fiction project type for episodes or installments.",
+    "folders": [
+        { "name": "Workspace", "special": true },
+        { "name": "Episodes" },
+        { "name": "Characters" },
+        { "name": "Assets" }
+    ],
+    "defaultResources": [
+        {
+            "name": "Episode Template",
+            "type": "text",
+            "template": "# Episode Title\n\n"
+        }
+    ]
+}
