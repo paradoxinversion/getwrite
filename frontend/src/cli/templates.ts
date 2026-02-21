@@ -6,6 +6,8 @@ import {
     loadResourceTemplate,
     createResourceFromTemplate,
     duplicateResource,
+    scaffoldResourcesFromTemplate,
+    applyMultipleFromTemplate,
 } from "../lib/models/resource-templates";
 
 type Argv = string[];
@@ -203,6 +205,37 @@ async function main(argv: Argv): Promise<number> {
                 packPath,
             );
             console.log(`Imported templates: ${imported.join(", ")}`);
+            return 0;
+        }
+
+        if (cmd === "scaffold") {
+            const [_, projectRoot, templateId, countStr] = args;
+            const count = countStr ? parseInt(countStr, 10) : 1;
+            if (!projectRoot || !templateId) {
+                console.error(usage());
+                return 1;
+            }
+            const created = await scaffoldResourcesFromTemplate(
+                projectRoot,
+                templateId,
+                count,
+            );
+            console.log(`Created ${created.length} resources`);
+            return 0;
+        }
+
+        if (cmd === "apply-multiple") {
+            const [_, projectRoot, templateId, inputPath] = args;
+            if (!projectRoot || !templateId || !inputPath) {
+                console.error(usage());
+                return 1;
+            }
+            const created = await applyMultipleFromTemplate(
+                projectRoot,
+                templateId,
+                inputPath,
+            );
+            console.log(`Created ${created.length} resources`);
             return 0;
         }
 

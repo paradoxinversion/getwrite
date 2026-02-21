@@ -84,7 +84,7 @@ Additional Template CLI Features (proposed)
 - [x] T033 `templates export` / `templates import`: Package templates for sharing
     - Acceptance: `export <projectRoot> <templateId> <out.zip>` bundles template JSON (and optional sample resources); `import <projectRoot> <pack.zip>` restores templates into `meta/templates/`; unit tests validate export/import roundtrip.
 
-- [ ] T034 `templates validate`: Validate template against zod schema
+- [x] T034 `templates validate`: Validate template against zod schema
     - Acceptance: `validate <projectRoot> <templateId>` runs schema validation and reports errors; unit tests verify validation catches missing required fields and accepts valid templates.
 
 - [ ] T035 `templates scaffold` / `templates bulk-apply`: Generate multiple resources from a template

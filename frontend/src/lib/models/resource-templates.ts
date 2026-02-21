@@ -415,6 +415,76 @@ export async function validateResourceTemplate(
     return { valid: false, errors };
 }
 
+/** Create multiple resources from a template, generating sequential names. */
+export async function scaffoldResourcesFromTemplate(
+    projectRoot: string,
+    templateId: string,
+    count: number,
+): Promise<string[]> {
+    if (count <= 0) return [];
+    const tpl = await loadResourceTemplate(projectRoot, templateId);
+    const created: string[] = [];
+    for (let i = 0; i < count; i++) {
+        const name = `${tpl.name} ${i + 1}`;
+        const res = await createResourceFromTemplate(projectRoot, templateId, {
+            name,
+        });
+        // createResourceFromTemplate returns resource object for real creations
+        // or plannedWrites object for dry-run; ensure we captured id
+        if ((res as any).id) created.push((res as any).id as string);
+        else if (
+            (res as any).resourcePreview &&
+            (res as any).resourcePreview.id
+        )
+            created.push((res as any).resourcePreview.id as string);
+    }
+    return created;
+}
+
+/** Apply multiple variable sets to create multiple resources from a template.
+ * Accepts a JSON array file or a simple CSV file (first row headers).
+ */
+export async function applyMultipleFromTemplate(
+    projectRoot: string,
+    templateId: string,
+    inputPath: string,
+): Promise<string[]> {
+    const raw = await fs.readFile(inputPath, "utf8");
+    let entries: Array<Record<string, string>> = [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) entries = parsed as any;
+        else throw new Error("JSON input must be an array");
+    } catch (err) {
+        // fallback to CSV
+        const lines = raw.split(/\r?\n/).filter((l) => l.trim());
+        if (lines.length < 2)
+            throw new Error("CSV input requires header and rows");
+        const headers = lines[0].split(",").map((h) => h.trim());
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(",").map((c) => c.trim());
+            const obj: Record<string, string> = {};
+            for (let j = 0; j < headers.length; j++)
+                obj[headers[j]] = cols[j] ?? "";
+            entries.push(obj);
+        }
+    }
+
+    const created: string[] = [];
+    for (const vars of entries) {
+        const res = await createResourceFromTemplate(projectRoot, templateId, {
+            vars,
+        });
+        if ((res as any).id) created.push((res as any).id as string);
+        else if (
+            (res as any).resourcePreview &&
+            (res as any).resourcePreview.id
+        )
+            created.push((res as any).resourcePreview.id as string);
+    }
+    return created;
+}
+
 // --- Minimal ZIP writer/reader for single/multiple file packages ---
 
 function crc32(buf: Buffer): number {
