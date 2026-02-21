@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import type { ResourceType } from "../../lib/types";
 
 export interface CreateProjectPayload {
@@ -41,8 +41,30 @@ export default function CreateProjectModal({
         | null
     >(null);
     const [loadingTypes, setLoadingTypes] = useState(false);
+    const [typesError, setTypesError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const nameRef = useRef<HTMLInputElement | null>(null);
+
+    const loadTypes = useCallback(async () => {
+        setLoadingTypes(true);
+        setTypesError(null);
+        try {
+            const res = await fetch("/api/project-types");
+            if (!res.ok) {
+                const body = await res.text();
+                throw new Error(body || `Status ${res.status}`);
+            }
+            const list: { id: string; name: string; description?: string }[] =
+                await res.json();
+            setTypes(list);
+            if (!defaultType && list.length > 0) setProjectType(list[0].id);
+        } catch (err) {
+            setTypes([]);
+            setTypesError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setLoadingTypes(false);
+        }
+    }, [defaultType]);
 
     useEffect(() => {
         if (isOpen) {
@@ -50,24 +72,7 @@ export default function CreateProjectModal({
             setProjectType(defaultType);
             setError(null);
             // load project types when modal opens via API
-            setLoadingTypes(true);
-            fetch("/api/project-types")
-                .then((r) => r.json())
-                .then(
-                    (
-                        list: {
-                            id: string;
-                            name: string;
-                            description?: string;
-                        }[],
-                    ) => {
-                        setTypes(list);
-                        if (!defaultType && list.length > 0)
-                            setProjectType(list[0].id);
-                    },
-                )
-                .catch(() => setTypes([]))
-                .finally(() => setLoadingTypes(false));
+            void loadTypes();
             // focus the name input when opening
             setTimeout(() => nameRef.current?.focus(), 50);
             // basic focus trap: keep focus inside the form while modal is open
@@ -187,6 +192,18 @@ export default function CreateProjectModal({
                                 types.find((t) => t.id === projectType)
                                     ?.description
                             }
+                        </div>
+                    )}
+                    {typesError && (
+                        <div className="text-sm text-red-600 mt-3">
+                            Failed to load project types: {typesError}
+                            <button
+                                type="button"
+                                onClick={() => void loadTypes()}
+                                className="ml-3 underline"
+                            >
+                                Retry
+                            </button>
                         </div>
                     )}
                 </label>
