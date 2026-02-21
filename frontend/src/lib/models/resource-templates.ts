@@ -240,5 +240,3 @@ export async function saveResourceTemplateFromResource(
 
     await saveResourceTemplate(projectRoot, tpl);
 }
-
-export { saveResourceTemplateFromResource };
