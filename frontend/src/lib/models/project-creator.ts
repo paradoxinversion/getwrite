@@ -96,7 +96,8 @@ export async function createProjectFromType(options: {
     //     "createProjectFromType: specObj.folders =",
     //     JSON.stringify(specObj.folders),
     // );
-    for (const f of specObj.folders) {
+    for (let i = 0; i < specObj.folders.length; i += 1) {
+        const f = specObj.folders[i];
         // console.log(
         //     "createProjectFromType: processing folder:",
         //     JSON.stringify(f),
@@ -111,7 +112,7 @@ export async function createProjectFromType(options: {
             slug,
             name: f.name,
             parentId: null,
-            orderIndex: undefined,
+            orderIndex: i,
             createdAt: now,
         };
         folders.push(folderObj);
