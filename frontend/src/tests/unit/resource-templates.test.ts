@@ -8,6 +8,8 @@ import {
     createResourceFromTemplate,
     duplicateResource,
 } from "../../lib/models/resource-templates";
+import { saveResourceTemplateFromResource } from "../../lib/models/resource-templates";
+import { main as templatesMain } from "../../cli/templates";
 import { createAndAssertProject } from "./helpers/project-creator";
 import { flushIndexer } from "../../lib/models/indexer-queue";
 import { readSidecar } from "../../lib/models/sidecar";
@@ -82,6 +84,99 @@ describe("models/resource-templates (T027)", () => {
             expect(meta).not.toBeNull();
             // wait for background indexing to finish before cleanup
             await flushIndexer();
+        } finally {
+            await fs.rm(tmp, { recursive: true, force: true });
+        }
+    });
+
+    it("captures a resource as a template via helper", async () => {
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-rt-"));
+        try {
+            const specPath = path.join(
+                process.cwd(),
+                "..",
+                "specs",
+                "002-define-data-models",
+                "project-types",
+                "novel_project_type.json",
+            );
+
+            const { projectPath, resources } = await createAndAssertProject(
+                specPath,
+                { projectRoot: tmp, name: "Capture Template Test" },
+            );
+            if (resources.length === 0) return;
+
+            const original = resources[0];
+            const tplId = "from-helper";
+            await saveResourceTemplateFromResource(
+                projectPath,
+                original.id,
+                tplId,
+                { name: "From Helper" },
+            );
+
+            const tplPath = path.join(
+                projectPath,
+                "meta",
+                "templates",
+                `${tplId}.json`,
+            );
+            const raw = await fs.readFile(tplPath, "utf8");
+            const parsed = JSON.parse(raw);
+            expect(parsed.id).toBe(tplId);
+            expect(parsed.name).toBe("From Helper");
+            expect(parsed.type).toBe("text");
+        } finally {
+            await fs.rm(tmp, { recursive: true, force: true });
+        }
+    });
+
+    it("captures a resource as a template via CLI", async () => {
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-rt-"));
+        try {
+            const specPath = path.join(
+                process.cwd(),
+                "..",
+                "specs",
+                "002-define-data-models",
+                "project-types",
+                "novel_project_type.json",
+            );
+
+            const { projectPath, resources } = await createAndAssertProject(
+                specPath,
+                { projectRoot: tmp, name: "CLI Capture Test" },
+            );
+            if (resources.length === 0) return;
+
+            const original = resources[0];
+            const tplId = "from-cli";
+
+            const argv = [
+                "node",
+                "templates",
+                "save-from-resource",
+                projectPath,
+                original.id,
+                tplId,
+                "--name",
+                "From CLI",
+            ];
+
+            const code = await templatesMain(argv);
+            expect(code).toBe(0);
+
+            const tplPath = path.join(
+                projectPath,
+                "meta",
+                "templates",
+                `${tplId}.json`,
+            );
+            const raw = await fs.readFile(tplPath, "utf8");
+            const parsed = JSON.parse(raw);
+            expect(parsed.id).toBe(tplId);
+            expect(parsed.name).toBe("From CLI");
         } finally {
             await fs.rm(tmp, { recursive: true, force: true });
         }
