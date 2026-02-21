@@ -11,9 +11,9 @@ Phase 1 — Setup
 Phase 2 — Foundational
 
 - [x] T003 [P] [FOUND] Add Zod schema for Project Type templates in `frontend/src/lib/models/schemas.ts`
-- [ ] T004 Implement Project Type loader utility in `frontend/src/lib/projectTypes.ts` with exports `listProjectTypes()` and `getProjectType(id)`
-- [ ] T005 [P] Add unit tests for loader & schema in `frontend/tests/unit/project-types.spec.ts`
-- [ ] T006 Add contract test ensuring `createProjectFromType(name, projectTypeId)` returns a `Project` shape (`frontend/tests/contract/project-creator.spec.ts`)
+- [x] T004 Implement Project Type loader utility in `frontend/src/lib/projectTypes.ts` with exports `listProjectTypes()` and `getProjectType(id)`
+- [x] T005 [P] Add unit tests for loader & schema in `frontend/tests/unit/project-types.spec.ts`
+- [x] T006 Add contract test ensuring `createProjectFromType(name, projectTypeId)` returns a `Project` shape — satisfied by `frontend/src/tests/unit/project-creator.test.ts` (uses helper `createAndAssertProject` which calls `createProjectFromType` and validates the returned `project` via `validateProject`).
 
 Phase 3 — User Stories (priority order)
 
