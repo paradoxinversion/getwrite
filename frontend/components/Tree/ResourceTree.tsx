@@ -131,7 +131,16 @@ export default function ResourceTree({
     }>({ open: false, x: 0, y: 0 });
 
     useEffect(() => {
-        setLocalOrder(resourcesList.map((r) => r.id));
+        const ids = resourcesList.map((r) => r.id);
+        setLocalOrder((prev) => {
+            if (
+                prev.length === ids.length &&
+                prev.every((v, i) => v === ids[i])
+            ) {
+                return prev;
+            }
+            return ids;
+        });
     }, [resourcesList]);
 
     const nodes = useMemo(() => {
