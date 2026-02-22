@@ -12,12 +12,37 @@ export type ProjectTypeEntry = {
     fileName: string;
 };
 
-// May need to add '..' to the front segment at runtime so creating projects does't break
-const TEMPLATES_DIR = path.join(
+// Candidate template directories. Some runtime contexts (tests vs. app) resolve
+// the workspace root differently — prefer the local `getwrite-config/...`
+// path but fall back to `../getwrite-config/...` when necessary.
+const DEFAULT_TEMPLATES_DIR = path.join(
     "getwrite-config",
     "templates",
     "project-types",
 );
+const ALT_TEMPLATES_DIR = path.join(
+    "..",
+    "getwrite-config",
+    "templates",
+    "project-types",
+);
+
+async function resolveTemplatesDir(): Promise<string> {
+    // Try the default first, then the alt. Use the same `readdir` helper
+    // to preserve any virtual/fs semantics used in tests.
+    try {
+        await readdir(DEFAULT_TEMPLATES_DIR, { withFileTypes: true });
+        return DEFAULT_TEMPLATES_DIR;
+    } catch (_) {
+        try {
+            await readdir(ALT_TEMPLATES_DIR, { withFileTypes: true });
+            return ALT_TEMPLATES_DIR;
+        } catch (_) {
+            // neither exists — return default so caller will get empty list
+            return DEFAULT_TEMPLATES_DIR;
+        }
+    }
+}
 
 let _cache: ProjectTypeEntry[] | null = null;
 
@@ -27,7 +52,8 @@ export async function listProjectTypes(
     if (_cache && !forceRefresh) return _cache;
 
     try {
-        const entries = (await readdir(TEMPLATES_DIR, {
+        const dir = await resolveTemplatesDir();
+        const entries = (await readdir(dir, {
             withFileTypes: true,
         })) as string[] | import("node:fs").Dirent[];
         const filenames = (entries as any[]).map((e) =>
@@ -36,7 +62,7 @@ export async function listProjectTypes(
         const results: ProjectTypeEntry[] = [];
         for (const e of filenames) {
             if (!e.endsWith(".json")) continue;
-            const fp = path.join(TEMPLATES_DIR, e);
+            const fp = path.join(dir, e);
             try {
                 const raw = await readFile(fp, "utf8");
                 const parsed = JSON.parse(raw);
