@@ -1,7 +1,12 @@
 "use client";
 import React, { useState } from "react";
 import { useAppDispatch } from "../src/store/hooks";
-import { addResource, removeResource } from "../src/store/projectsSlice";
+import {
+    setProject,
+    setSelectedProjectId,
+    addResource,
+    removeResource,
+} from "../src/store/projectsSlice";
 import AppShell from "../components/Layout/AppShell";
 import StartPage from "../components/Start/StartPage";
 import {
@@ -36,6 +41,21 @@ export default function Home(): JSX.Element {
             name,
         });
         setProjects((prev) => [p, ...prev]);
+        // persist project in redux store and mark selected
+        dispatch(
+            setProject({
+                id: p.id,
+                name: p.name,
+                folders: (p as any).folders ?? [],
+                resources: (p as any).resources
+                    ? (p as any).resources.map((r: any) => ({
+                          id: r.id,
+                          metadata: r.metadata ?? {},
+                      }))
+                    : [],
+            }),
+        );
+        dispatch(setSelectedProjectId(p.id));
         // eslint-disable-next-line no-console
         console.debug("[INST] Home.handleCreate - setSelectedProject", {
             id: p.id,
@@ -46,6 +66,21 @@ export default function Home(): JSX.Element {
     const handleOpen = (id: string) => {
         const p = findProjectById(projects, id);
         if (p) {
+            // ensure project exists in redux and mark selected
+            dispatch(
+                setProject({
+                    id: p.id,
+                    name: p.name,
+                    folders: (p as any).folders ?? [],
+                    resources: (p as any).resources
+                        ? (p as any).resources.map((r: any) => ({
+                              id: r.id,
+                              metadata: r.metadata ?? {},
+                          }))
+                        : [],
+                }),
+            );
+            dispatch(setSelectedProjectId(p.id));
             // eslint-disable-next-line no-console
             console.debug("[INST] Home.handleOpen - setSelectedProject", {
                 id,
