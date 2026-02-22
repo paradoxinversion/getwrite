@@ -29,13 +29,29 @@ export default function Home(): JSX.Element {
 
     const handleCreate = (name: string) => {
         const p = createProject(name);
+        // instrumentation: log creation/open events
+        // eslint-disable-next-line no-console
+        console.debug("[INST] Home.handleCreate - creating project", {
+            id: p.id,
+            name,
+        });
         setProjects((prev) => [p, ...prev]);
+        // eslint-disable-next-line no-console
+        console.debug("[INST] Home.handleCreate - setSelectedProject", {
+            id: p.id,
+        });
         setSelectedProject(p);
     };
 
     const handleOpen = (id: string) => {
         const p = findProjectById(projects, id);
-        if (p) setSelectedProject(p);
+        if (p) {
+            // eslint-disable-next-line no-console
+            console.debug("[INST] Home.handleOpen - setSelectedProject", {
+                id,
+            });
+            setSelectedProject(p);
+        }
     };
 
     const handleResourceSelect = (id: string) => {

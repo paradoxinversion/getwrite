@@ -216,6 +216,28 @@ export default function AppShell({
             resources: (project as any).resources ?? [],
         });
     }, [project]);
+    // Instrumentation: track render counts and project changes to help diagnose
+    // unexpected render loops. Logged to console so dev can inspect call sites.
+    const _renderCount = React.useRef(0);
+    _renderCount.current += 1;
+    // lightweight per-render log (useful in dev only)
+    // eslint-disable-next-line no-console
+    console.debug(`[INST] AppShell render #${_renderCount.current}`, {
+        projectId: project?.id,
+    });
+
+    const _prevProjectId = React.useRef<string | undefined | null>(undefined);
+    useEffect(() => {
+        if (_prevProjectId.current !== project?.id) {
+            // eslint-disable-next-line no-console
+            console.debug("[INST] AppShell project changed", {
+                from: _prevProjectId.current,
+                to: project?.id,
+                at: new Date().toISOString(),
+            });
+            _prevProjectId.current = project?.id;
+        }
+    }, [project?.id]);
     const dispatch = useDispatch<AppDispatch>();
 
     const handlePersistReorder = (nextIds: string[] | undefined) => {
@@ -238,13 +260,52 @@ export default function AppShell({
                     : (r.metadata?.orderIndex ?? 0),
             })) ?? [];
 
+        // Only perform optimistic update + persist if ordering actually changed.
+        const existingFolders: any[] = (project as any).folders ?? [];
+        const existingResources: any[] = (project as any).resources ?? [];
+
+        const folderChanged = folderOrder.some((fo) => {
+            const ex = existingFolders.find((f) => f.id === fo.id);
+            if (!ex) return false;
+            return (ex.orderIndex ?? 0) !== (fo.orderIndex ?? 0);
+        });
+
+        const resourceChanged = resourceOrder.some((ro) => {
+            const ex = existingResources.find((r) => r.id === ro.id);
+            if (!ex) return false;
+            const exIdx = ex.metadata?.orderIndex ?? 0;
+            return exIdx !== (ro.orderIndex ?? 0);
+        });
+
+        if (!folderChanged && !resourceChanged) return;
+
+        // Build optimistic project with updated order indexes
+        const optimisticFolders = existingFolders.map((f) => ({
+            ...f,
+            orderIndex:
+                folderOrder.find((x) => x.id === f.id)?.orderIndex ??
+                f.orderIndex ??
+                0,
+        }));
+
+        const optimisticResources = existingResources.map((r) => ({
+            ...r,
+            metadata: {
+                ...(r.metadata ?? {}),
+                orderIndex:
+                    resourceOrder.find((x) => x.id === r.id)?.orderIndex ??
+                    r.metadata?.orderIndex ??
+                    0,
+            },
+        }));
+
         // optimistic update
         dispatch(
             setProject({
                 id: project.id,
                 name: project.name,
-                folders: project.folders ?? [],
-                resources: project.resources ?? [],
+                folders: optimisticFolders,
+                resources: optimisticResources,
             }),
         );
 

@@ -130,23 +130,29 @@ export default function CreateProjectModal({
 
         setCreating(true);
         setError(null);
-            try {
-                const res = await fetch("/api/projects", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name: payload.name,
-                        projectType: payload.projectType,
-                    }),
-                });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => null);
-                    throw new Error(body?.error || `Status ${res.status}`);
-                }
+        try {
+            const res = await fetch("/api/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: payload.name,
+                    projectType: payload.projectType,
+                }),
+            });
+            if (!res.ok) {
                 const body = await res.json().catch(() => null);
-                const createdProject: Project | undefined = body?.project;
-                onCreate(payload, createdProject);
-                onClose();
+                throw new Error(body?.error || `Status ${res.status}`);
+            }
+            const body = await res.json().catch(() => null);
+            const createdProject: Project | undefined = body?.project;
+            // instrumentation: surface created project info to help trace
+            // eslint-disable-next-line no-console
+            console.debug("[INST] CreateProjectModal.onCreate", {
+                payload,
+                createdProjectId: createdProject?.id,
+            });
+            onCreate(payload, createdProject);
+            onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {

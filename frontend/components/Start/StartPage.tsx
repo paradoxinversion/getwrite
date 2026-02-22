@@ -38,8 +38,22 @@ export default function StartPage({
 
     const handleModalCreate = (payload: CreateProjectPayload): void => {
         const newProject: Project = createProject(payload.name);
+        // instrumentation: log local project creation (UI path)
+        // eslint-disable-next-line no-console
+        console.debug("[INST] StartPage.handleModalCreate - newProject", {
+            id: newProject.id,
+            name: payload.name,
+            payload,
+        });
         setLocalProjects((prev) => [newProject, ...prev]);
-        if (onCreate) onCreate(payload.name);
+        if (onCreate) {
+            // eslint-disable-next-line no-console
+            console.debug(
+                "[INST] StartPage.handleModalCreate - invoking onCreate",
+                { name: payload.name },
+            );
+            onCreate(payload.name);
+        }
         setIsModalOpen(false);
     };
 
