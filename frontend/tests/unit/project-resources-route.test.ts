@@ -9,6 +9,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { removeDirRetry } from "./helpers/fs-utils";
 import { describe, it, expect } from "vitest";
 import { createProject } from "../../src/lib/models/project";
 import { PROJECT_FILENAME } from "../../src/lib/models/project-config";
@@ -44,7 +45,7 @@ async function withProjectsDirEnv<T>(
     return await fn();
   } finally {
     process.env.GETWRITE_PROJECTS_DIR = originalEnv;
-    await fs.rm(projectsDir, { recursive: true, force: true });
+    await removeDirRetry(projectsDir);
   }
 }
 

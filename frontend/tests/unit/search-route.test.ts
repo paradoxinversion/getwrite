@@ -7,6 +7,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { removeDirRetry } from "./helpers/fs-utils";
 import { describe, it, expect, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { createProject } from "../../src/lib/models/project";
@@ -113,7 +114,7 @@ async function addTestResource(
 
 afterEach(async () => {
   for (const dir of tmpDirs.splice(0)) {
-    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+    await removeDirRetry(dir);
   }
 });
 

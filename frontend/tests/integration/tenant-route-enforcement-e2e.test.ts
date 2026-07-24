@@ -42,13 +42,19 @@ import { createProject } from "../../src/lib/models/project";
 import { PROJECT_FILENAME } from "../../src/lib/models/project-config";
 import { generateUUID } from "../../src/lib/models/uuid";
 import type { MetadataSchema } from "../../src/lib/models/types";
+import { removeDirRetry } from "../unit/helpers/fs-utils";
 
 const tmpDirs: string[] = [];
 
+// Creating resources through the route handlers starts the fire-and-forget
+// indexer/backlinks watcher; removeDirRetry() resets it before deleting so a
+// late write can't race the cleanup (ENOTEMPTY) — the same helper the
+// resource-route tests use. A raw fs.rm here was the source of a flaky
+// ENOTEMPTY on `meta/` in CI.
 afterEach(async () => {
   while (tmpDirs.length > 0) {
     const dir = tmpDirs.pop();
-    if (dir) await fs.rm(dir, { recursive: true, force: true });
+    if (dir) await removeDirRetry(dir);
   }
 });
 

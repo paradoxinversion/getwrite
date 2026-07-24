@@ -14,6 +14,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { removeDirRetry } from "./helpers/fs-utils";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -26,7 +27,7 @@ const tmpDirs: string[] = [];
 afterEach(async () => {
   while (tmpDirs.length > 0) {
     const dir = tmpDirs.pop();
-    if (dir) await fs.rm(dir, { recursive: true, force: true });
+    if (dir) await removeDirRetry(dir);
   }
 });
 
