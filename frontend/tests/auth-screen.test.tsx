@@ -20,8 +20,14 @@ describe("AuthScreen", () => {
   it("toggling to signup mode changes the form", () => {
     render(<AuthScreen />);
     fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
-    expect(screen.getByText("Name")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign up" })).toBeTruthy();
+  });
+
+  it("does not ask for a name at signup (collect the least personal info)", () => {
+    render(<AuthScreen />);
+    fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
+    expect(screen.queryByText("Name")).toBeNull();
+    expect(screen.queryByLabelText("Name", { exact: false })).toBeNull();
   });
 
   it("submits login with entered credentials and redirects on success", async () => {
@@ -56,9 +62,6 @@ describe("AuthScreen", () => {
     render(<AuthScreen signUpEmail={signUpEmail} />);
     fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
 
-    fireEvent.change(screen.getByLabelText("Name", { exact: false }), {
-      target: { value: "Ada" },
-    });
     fireEvent.change(screen.getByLabelText("Email", { exact: false }), {
       target: { value: "ada@example.com" },
     });
@@ -67,11 +70,18 @@ describe("AuthScreen", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
 
+    // Signs up with an empty name — the UI collects none (better-auth still
+    // requires the field to be present).
     await waitFor(() =>
-      expect(
-        screen.getByText(/check your email to verify your account/i),
-      ).toBeTruthy(),
+      expect(signUpEmail).toHaveBeenCalledWith({
+        name: "",
+        email: "ada@example.com",
+        password: "correct-horse",
+      }),
     );
+    expect(
+      screen.getByText(/check your email to verify your account/i),
+    ).toBeTruthy();
   });
 
   it("shows the same uniform message for an existing-email signup response", async () => {
@@ -82,9 +92,6 @@ describe("AuthScreen", () => {
     render(<AuthScreen signUpEmail={signUpEmail} />);
     fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
 
-    fireEvent.change(screen.getByLabelText("Name", { exact: false }), {
-      target: { value: "Ada" },
-    });
     fireEvent.change(screen.getByLabelText("Email", { exact: false }), {
       target: { value: "existing@example.com" },
     });

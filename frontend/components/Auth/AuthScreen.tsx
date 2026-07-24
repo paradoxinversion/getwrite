@@ -121,7 +121,6 @@ export default function AuthScreen({
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -159,7 +158,12 @@ export default function AuthScreen({
     setErrorMessage(null);
     setInfoMessage(null);
     try {
-      const result = await signUpEmail({ name, email, password });
+      // We intentionally collect no name at signup — capture the least personal
+      // information possible. better-auth's schema requires the `name` field to
+      // be present (and the column is NOT NULL), so send an empty string rather
+      // than prompting for one. How/whether to capture a display name later is
+      // an open product decision.
+      const result = await signUpEmail({ name: "", email, password });
       if (result.error) {
         setErrorMessage(SIGNUP_UNAVAILABLE_ERROR);
         return;
@@ -295,18 +299,6 @@ export default function AuthScreen({
 
         {mode === "signup" ? (
           <form onSubmit={handleSignup} aria-busy={isSubmitting}>
-            <label className="mb-3 block">
-              <div className="mb-1 font-mono text-[10px] uppercase tracking-label-wide text-gw-secondary">
-                Name
-              </div>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full"
-                disabled={isSubmitting}
-              />
-            </label>
             <label className="mb-3 block">
               <div className="mb-1 font-mono text-[10px] uppercase tracking-label-wide text-gw-secondary">
                 Email
