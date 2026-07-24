@@ -1,0 +1,57 @@
+# Live-infra harness for the hosted-auth smoke test (auth-provider plan, Task 8).
+#
+# GetWrite's automated gate mocks better-auth and Postgres by design, so nothing
+# in `pnpm test:ci` ever proves the hosted path works against real infrastructure.
+# This file provides the two services that path actually needs — a PostgreSQL
+# database for better-auth's Kysely adapter (ADR-020) and an SMTP sink to catch
+# the verification / password-reset mail (FR14) — so the end-to-end flow can be
+# driven for real by `scripts/hosted-smoke/smoke.mjs`.
+#
+# Ephemeral by design: no named volumes. `docker compose down` throws the
+# database away, which is what you want for a repeatable smoke run.
+#
+# Host ports are deliberately non-default so this never collides with a
+# developer's own Postgres (5432) or a local mail tool.
+#
+#   docker compose -f scripts/hosted-smoke/compose.yml up -d
+#   docker compose -f scripts/hosted-smoke/compose.yml down
+#
+# See scripts/hosted-smoke/README.md for the full run book.
+
+name: getwrite-hosted-smoke
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: getwrite
+      POSTGRES_PASSWORD: getwrite
+      POSTGRES_DB: getwrite_auth
+    ports:
+      # DATABASE_URL=postgres://getwrite:getwrite@localhost:55432/getwrite_auth
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getwrite -d getwrite_auth"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    # Mailpit rather than MailHog: MailHog is unmaintained and ships no arm64
+    # image, and Mailpit exposes a JSON message API the smoke script scrapes the
+    # verification link out of.
+    image: axllent/mailpit:v1.30.5
+    environment:
+      # The smoke's SMTP_USER/SMTP_PASS are throwaway values; accept them.
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      # SMTP_HOST=localhost SMTP_PORT=51025
+      - "51025:1025"
+      # Message API + web UI: http://localhost:58025
+      - "58025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

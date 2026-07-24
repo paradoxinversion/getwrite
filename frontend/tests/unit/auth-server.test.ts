@@ -42,29 +42,30 @@ import {
 } from "../../src/lib/auth/auth-server";
 
 describe("getAuthServer", () => {
-  let savedDatabaseUrl: string | undefined;
-  let savedSecret: string | undefined;
-  let savedBaseUrl: string | undefined;
+  const ENV_KEYS = [
+    "DATABASE_URL",
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "AUTH_TRUSTED_PROXIES",
+    "AUTH_IP_ADDRESS_HEADERS",
+  ] as const;
+  const saved: Record<string, string | undefined> = {};
 
   beforeEach(() => {
-    savedDatabaseUrl = process.env.DATABASE_URL;
-    savedSecret = process.env.BETTER_AUTH_SECRET;
-    savedBaseUrl = process.env.BETTER_AUTH_URL;
-    delete process.env.DATABASE_URL;
-    delete process.env.BETTER_AUTH_SECRET;
-    delete process.env.BETTER_AUTH_URL;
+    for (const key of ENV_KEYS) {
+      saved[key] = process.env[key];
+      delete process.env[key];
+    }
     betterAuthMock.mockClear();
     poolMock.mockClear();
     __resetAuthServerForTests();
   });
 
   afterEach(() => {
-    if (savedDatabaseUrl === undefined) delete process.env.DATABASE_URL;
-    else process.env.DATABASE_URL = savedDatabaseUrl;
-    if (savedSecret === undefined) delete process.env.BETTER_AUTH_SECRET;
-    else process.env.BETTER_AUTH_SECRET = savedSecret;
-    if (savedBaseUrl === undefined) delete process.env.BETTER_AUTH_URL;
-    else process.env.BETTER_AUTH_URL = savedBaseUrl;
+    for (const key of ENV_KEYS) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
     __resetAuthServerForTests();
   });
 
@@ -120,6 +121,121 @@ describe("getAuthServer", () => {
       expect(options.rateLimit.storage).toBe("database");
       expect(options.session.cookieCache.enabled).toBe(true);
       expect(options.secret).toBe("test-secret");
+    });
+
+    it("pins a short session cookie-cache maxAge so revocation isn't masked (FR17/M1)", () => {
+      getAuthServer();
+      const options = betterAuthMock.mock.calls[0]![0] as {
+        session: { cookieCache: { maxAge?: number } };
+      };
+      // Must be well under better-auth's 5-minute (300s) default, or "log out
+      // everywhere" is delayed by the stale cookie snapshot (FR26 finding M1).
+      const maxAge = options.session.cookieCache.maxAge;
+      expect(typeof maxAge).toBe("number");
+      expect(maxAge).toBeGreaterThan(0);
+      expect(maxAge).toBeLessThanOrEqual(30);
+    });
+
+    it("warns and omits advanced.ipAddress when no IP-trust env is set (FR16/H2)", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        getAuthServer();
+        const options = betterAuthMock.mock.calls[0]![0] as {
+          advanced: { ipAddress?: unknown };
+        };
+        expect(options.advanced.ipAddress).toBeUndefined();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("AUTH_TRUSTED_PROXIES"),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("configures advanced.ipAddress.trustedProxies from AUTH_TRUSTED_PROXIES and does not warn (FR16/H2)", () => {
+      process.env.AUTH_TRUSTED_PROXIES = "10.0.0.1, 192.168.0.0/16";
+      // https base URL so the M2 insecure-cookie warning doesn't fire either.
+      process.env.BETTER_AUTH_URL = "https://getwrite.example.com";
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        getAuthServer();
+        const options = betterAuthMock.mock.calls[0]![0] as {
+          advanced: {
+            ipAddress?: {
+              trustedProxies?: string[];
+              ipAddressHeaders?: string[];
+            };
+          };
+        };
+        expect(options.advanced.ipAddress?.trustedProxies).toEqual([
+          "10.0.0.1",
+          "192.168.0.0/16",
+        ]);
+        expect(options.advanced.ipAddress?.ipAddressHeaders).toBeUndefined();
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("configures advanced.ipAddress.ipAddressHeaders from AUTH_IP_ADDRESS_HEADERS (FR16/H2)", () => {
+      process.env.AUTH_IP_ADDRESS_HEADERS = "cf-connecting-ip";
+      process.env.BETTER_AUTH_URL = "https://getwrite.example.com";
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        getAuthServer();
+        const options = betterAuthMock.mock.calls[0]![0] as {
+          advanced: { ipAddress?: { ipAddressHeaders?: string[] } };
+        };
+        expect(options.advanced.ipAddress?.ipAddressHeaders).toEqual([
+          "cf-connecting-ip",
+        ]);
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("pins an explicit password-length policy (FR26/L3)", () => {
+      getAuthServer();
+      const options = betterAuthMock.mock.calls[0]![0] as {
+        emailAndPassword: {
+          minPasswordLength?: number;
+          maxPasswordLength?: number;
+        };
+      };
+      expect(options.emailAndPassword.minPasswordLength).toBeGreaterThanOrEqual(
+        12,
+      );
+      expect(options.emailAndPassword.maxPasswordLength).toBeGreaterThan(
+        options.emailAndPassword.minPasswordLength ?? 0,
+      );
+    });
+
+    it("warns when BETTER_AUTH_URL is not https (FR26/M2)", () => {
+      process.env.BETTER_AUTH_URL = "http://getwrite.example.com";
+      process.env.AUTH_TRUSTED_PROXIES = "10.0.0.1"; // silence the H2 warning
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        getAuthServer();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("is not https"),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("does not warn about the base URL when BETTER_AUTH_URL is https (FR26/M2)", () => {
+      process.env.BETTER_AUTH_URL = "https://getwrite.example.com";
+      process.env.AUTH_TRUSTED_PROXIES = "10.0.0.1";
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        getAuthServer();
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
     });
 
     it("wires the real nodemailer-backed email.ts callbacks (FR14), not a placeholder", () => {

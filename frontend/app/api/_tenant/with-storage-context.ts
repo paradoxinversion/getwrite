@@ -108,7 +108,11 @@ function resolveAllowedOrigin(): string {
       ? configured
       : "http://localhost:3000";
   const url = new URL(base);
-  return `${url.protocol}//${url.hostname}`;
+  // `host` (not `hostname`) so the port is part of the comparison — a same-host
+  // different-port origin is a distinct origin to the browser and must not pass
+  // (FR26 review, finding L2). `host` omits the port only when it's the default
+  // for the scheme, matching what browsers put in the Origin header.
+  return `${url.protocol}//${url.host}`;
 }
 
 /** Extracts the scheme+hostname from a header value, or `null` if it isn't a parseable URL. */
@@ -116,7 +120,9 @@ function extractOrigin(headerValue: string | null): string | null {
   if (!headerValue) return null;
   try {
     const url = new URL(headerValue);
-    return `${url.protocol}//${url.hostname}`;
+    // Include the port (`host`, not `hostname`) to match resolveAllowedOrigin —
+    // see finding L2.
+    return `${url.protocol}//${url.host}`;
   } catch {
     return null;
   }

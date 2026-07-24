@@ -235,4 +235,27 @@ describe("withStorageContext", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(200);
   });
+
+  it("rejects a same-host Origin on a different port (FR26/L2: port is part of the origin)", async () => {
+    isHostedAuthActiveMock.mockReturnValue(true);
+    resolveTenantMock.mockResolvedValue({
+      userId: "u-1",
+      dataRoot: "/tenants/u-1",
+      adapter: fakeAdapter,
+    });
+    const { handler } = buildHandler();
+    const wrapped = withStorageContext(handler);
+
+    // Allowed origin is https://app.getwrite.example (default :443); a different
+    // port is a distinct browser origin and must not pass the CSRF check.
+    const response = await wrapped(
+      new Request("http://localhost/api/x", {
+        method: "POST",
+        headers: { origin: "https://app.getwrite.example:8443" },
+      }),
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+  });
 });

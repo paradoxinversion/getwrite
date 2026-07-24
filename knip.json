@@ -3,6 +3,7 @@
   "tags": [
     "-lintignore"
   ],
+  "ignore": ["scripts/hosted-smoke/smoke.mjs"],
   "workspaces": {
     ".": {},
     "cli": {

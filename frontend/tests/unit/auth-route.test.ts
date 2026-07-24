@@ -55,6 +55,14 @@ function req(method: string) {
   });
 }
 
+function signupReq(body: Record<string, unknown>) {
+  return new Request("https://getwrite.example.com/api/auth/sign-up/email", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 beforeEach(() => {
   isHostedAuthActiveMock.mockReset();
   getAuthServerMock.mockClear();
@@ -123,5 +131,79 @@ describe("when hosted auth is active", () => {
     expect(mountedHandlers.PATCH).toHaveBeenCalledOnce();
     expect(mountedHandlers.PUT).toHaveBeenCalledOnce();
     expect(mountedHandlers.DELETE).toHaveBeenCalledOnce();
+  });
+
+  describe("signup anti-enumeration (FR26/L1)", () => {
+    it("masks a non-allowlisted rejection (400 FAILED_TO_CREATE_USER) as a generic 200", async () => {
+      mountedHandlers.POST.mockResolvedValueOnce(
+        Response.json(
+          { code: "FAILED_TO_CREATE_USER", message: "failed" },
+          { status: 400 },
+        ),
+      );
+      const res = await POST(
+        signupReq({
+          email: "NOPE@Blocked.test",
+          name: "N",
+          password: "x".repeat(12),
+        }),
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        token: unknown;
+        user: Record<string, unknown>;
+      };
+      expect(body.token).toBeNull();
+      // Same shape better-auth returns for an already-registered email, so the
+      // two are indistinguishable; email is normalized like a real signup.
+      expect(body.user.email).toBe("nope@blocked.test");
+      expect(body.user.emailVerified).toBe(false);
+      expect(Object.keys(body.user).sort()).toEqual([
+        "createdAt",
+        "email",
+        "emailVerified",
+        "id",
+        "image",
+        "name",
+        "updatedAt",
+      ]);
+    });
+
+    it("does NOT mask other signup 400s (e.g. password too short)", async () => {
+      mountedHandlers.POST.mockResolvedValueOnce(
+        Response.json({ code: "PASSWORD_TOO_SHORT" }, { status: 400 }),
+      );
+      const res = await POST(
+        signupReq({ email: "a@allowed.test", password: "short" }),
+      );
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { code: string }).code).toBe(
+        "PASSWORD_TOO_SHORT",
+      );
+    });
+
+    it("passes a successful signup through unchanged", async () => {
+      mountedHandlers.POST.mockResolvedValueOnce(
+        Response.json(
+          { token: null, user: { id: "real-user" } },
+          { status: 200 },
+        ),
+      );
+      const res = await POST(
+        signupReq({ email: "a@allowed.test", password: "x".repeat(12) }),
+      );
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { user: { id: string } }).user.id).toBe(
+        "real-user",
+      );
+    });
+
+    it("only masks the signup path — a 400 FAILED_TO_CREATE_USER elsewhere is untouched", async () => {
+      mountedHandlers.POST.mockResolvedValueOnce(
+        Response.json({ code: "FAILED_TO_CREATE_USER" }, { status: 400 }),
+      );
+      const res = await POST(req("POST")); // sign-in path, not sign-up
+      expect(res.status).toBe(400);
+    });
   });
 });

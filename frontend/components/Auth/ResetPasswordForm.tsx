@@ -9,7 +9,7 @@ import { resetPassword as defaultResetPassword } from "../../src/lib/auth/auth-c
 /**
  * @module Auth/ResetPasswordForm
  *
- * The "set a new password" form behind `app/reset-password/[token]/page.tsx`
+ * The "set a new password" form behind `app/reset-password/page.tsx`
  * (Slice 6, FR21/FR13). Unlike `/verify-email`, the token here isn't
  * consumed on page load — better-auth's `/reset-password` endpoint is a
  * `POST` that needs a new password from the user, so this is necessarily a
@@ -38,7 +38,7 @@ type ResetPasswordEmailAction = (params: {
 }) => Promise<{ data?: unknown; error?: unknown }>;
 
 export interface ResetPasswordFormProps {
-  /** The single-use token from the `/reset-password/:token` URL. */
+  /** The single-use token from the `/reset-password?token=…` URL. */
   token: string;
   resetPasswordEmail?: ResetPasswordEmailAction;
 }
