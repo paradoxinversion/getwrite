@@ -86,26 +86,26 @@ describe("native-device-harness", () => {
     expect(throughput.roundTripIntegrityOk).toBe(true);
   });
 
-  it("FR7b: the rename-on-collision check runs against the fake and reports its actual (merge, non-throwing) behavior", async () => {
+  it("FR7b: the rename-on-collision check runs against the fake and reports its throwing behavior (now matching real Android)", async () => {
     const { runNativeDeviceHarness } =
       await import("../../src/lib/models/native-device-harness");
 
     const report = await runNativeDeviceHarness();
     const { renameCollision } = report;
 
-    // Locks in the in-memory fake's documented behavior as a regression
-    // guard: it silently merges a directory rename onto a pre-existing,
-    // non-empty destination rather than throwing. A real physical device
-    // (Task 7) may or may not match this — that mismatch, if any, is
-    // precisely the unknown Phase 0 exists to surface manually.
-    expect(renameCollision.threw).toBe(false);
-    expect(renameCollision.errorMessage).toBeNull();
-    expect(renameCollision.sourceStillExistsAfter).toBe(false);
+    // The fake now throws on a directory rename onto a pre-existing, non-empty
+    // destination, faithfully modeling the real @capacitor/filesystem plugin's
+    // on-device behavior (confirmed by the Pixel 7 Pro Phase 0 gate). This is
+    // also the behavior revision.ts's writeRevision assumes — so the fake, the
+    // real device, and the production code now agree.
+    expect(renameCollision.threw).toBe(true);
+    expect(renameCollision.errorMessage).toMatch(/already exists/i);
+    expect(renameCollision.sourceStillExistsAfter).toBe(true);
+    // The merge never happened: only the pre-existing entry remains in dst.
     expect(renameCollision.destinationEntriesAfter.sort()).toEqual([
-      "from-src.txt",
       "pre-existing.txt",
     ]);
-    expect(renameCollision.observedBehavior).toBe("overwrote-merged");
+    expect(renameCollision.observedBehavior).toBe("threw");
     expect(typeof renameCollision.scenario).toBe("string");
     expect(renameCollision.scenario.length).toBeGreaterThan(0);
   });

@@ -162,9 +162,12 @@ export function runStorageAdapterConformance(
     });
 
     // Note: the stronger "directory rename fails if the destination already
-    // exists" guarantee is NOT asserted here — the reference in-memory fs-tree
-    // adapter permissively overwrites, and the model layer self-guards that
-    // case (revision.ts stat pre-check) rather than relying on the adapter. The
-    // object store's fail-if-exists behavior is covered in its own test.
+    // exists" guarantee is NOT asserted cross-adapter here, because the backends
+    // genuinely diverge — the reference in-memory fs-tree (memoryAdapter)
+    // permissively overwrites, whereas the Capacitor fake now throws to match
+    // the real @capacitor/filesystem plugin's on-device behavior (ADR-021 Phase
+    // 0 gate). The model layer self-guards the case regardless (revision.ts stat
+    // pre-check), and the object store's fail-if-exists behavior is covered in
+    // its own test.
   });
 }

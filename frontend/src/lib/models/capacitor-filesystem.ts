@@ -83,6 +83,21 @@ function notFound(path: string): Error {
   return new Error(`File does not exist: ${path}`);
 }
 
+/**
+ * The plugin's "already exists" error, mirroring the real message observed on a
+ * physical device (ADR-021 Phase 0 gate). Like {@link notFound}, it is a plain
+ * message with no `code` field — the exact shape `capacitorFsAdapter`'s
+ * `isAlreadyExists` must classify by message. Modeling this (rather than the
+ * silent idempotency the fake originally had) is what makes the conformance
+ * fake faithful to the real plugin, so the divergence the device surfaced can't
+ * regress unseen.
+ */
+function alreadyExists(path: string): Error {
+  return new Error(
+    `Directory at '${path}' already exists, cannot be overwritten.`,
+  );
+}
+
 /** Normalizes a plugin path to a canonical key (no leading/trailing slashes). */
 function norm(p: string): string {
   return p.replace(/^\/+/, "").replace(/\/+$/, "");
@@ -155,6 +170,12 @@ export function createFakeCapacitorFilesystem(): CapacitorFilesystemLike {
 
     mkdir: async ({ path, recursive }) => {
       const key = norm(path);
+      // The real plugin throws if the target already exists, even with
+      // `recursive: true` (confirmed on-device) — unlike Node's idempotent
+      // fs.mkdir. capacitorFsAdapter absorbs this for recursive calls to
+      // restore Node semantics, so faithfully throwing here is what exercises
+      // that adapter branch.
+      if (isDir(key) || isFile(key)) throw alreadyExists(path);
       const parent = parentOf(key);
       if (parent !== "" && !isDir(parent) && !recursive) {
         throw new Error(`Parent directory does not exist: ${path}`);
@@ -233,6 +254,13 @@ export function createFakeCapacitorFilesystem(): CapacitorFilesystemLike {
         return;
       }
       if (isDir(src)) {
+        // The real plugin throws when renaming a directory onto an existing
+        // destination (confirmed on-device) rather than merging — the exact
+        // behavior revision.ts's writeRevision temp-dir -> v-<N> rename relies
+        // on. (writeRevision never actually collides, since version numbers are
+        // fresh under the per-resource lock.) File rename is left overwriting,
+        // as atomicWriteFile depends on it and the device gate did not test it.
+        if (isDir(dst) || isFile(dst)) throw alreadyExists(to);
         const prefix = `${src}/`;
         for (const k of [...files.keys()]) {
           if (k === src || k.startsWith(prefix)) {
