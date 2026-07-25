@@ -17,10 +17,13 @@
  *
  * The `deps` seam exists so the spike test can inject the in-memory Capacitor
  * fake and a fixture projects dir. In a real native build, `deps` is omitted and
- * `nativeFilesystem()` resolves the actual `@capacitor/filesystem` plugin — that
- * one wiring line is the only piece deferred behind the dependency sign-off.
+ * `nativeFilesystem()` resolves the real `@capacitor/filesystem` plugin via
+ * {@link createRealCapacitorFilesystem} (ADR-021 Phase 0, Task 3) — `deps.fs`
+ * remains the test-injection seam for exercising this transport without a
+ * device.
  */
 import type { CapacitorFilesystemLike } from "../../lib/models/capacitor-filesystem";
+import { createRealCapacitorFilesystem } from "../../lib/models/capacitor-filesystem-real";
 import { capacitorFsAdapter } from "../../lib/models/capacitorFsAdapter";
 import { runInStorageContext } from "../../lib/models/storage-context";
 import {
@@ -44,14 +47,12 @@ export interface NativeSearchDeps {
 }
 
 /**
- * Resolves the real Capacitor Filesystem plugin. Deferred behind the
- * dependency sign-off (ADR-021): the native build supplies it, the spike does
- * not need it.
+ * Resolves the real Capacitor Filesystem plugin, scoped to the default
+ * `Directory.Data` root. This is the production path: the native runtime
+ * never supplies `deps.fs`, so every real device call flows through here.
  */
 function nativeFilesystem(): CapacitorFilesystemLike {
-  throw new Error(
-    "Native filesystem not wired: pass deps.fs, or adopt @capacitor/filesystem for the native build (ADR-021).",
-  );
+  return createRealCapacitorFilesystem();
 }
 
 /**
