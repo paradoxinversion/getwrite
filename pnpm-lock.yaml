@@ -45,6 +45,9 @@ importers:
       '@capacitor/filesystem':
         specifier: ^8.1.2
         version: 8.1.2(@capacitor/core@8.4.2)
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.0
 
   cli:
     dependencies:
