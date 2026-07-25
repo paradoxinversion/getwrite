@@ -8,11 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Workspace Layout
 
-This is a pnpm workspace (pnpm@10.28.0, pinned). `pnpm-workspace.yaml` lists three packages:
+This is a pnpm workspace (pnpm@10.28.0, pinned). `pnpm-workspace.yaml` lists four packages:
 
 - `frontend/` — `getwrite-frontend`. The Next.js app, Redux store, Zod models, Storybook, and all UI tests.
 - `electron/` — `getwrite-electron`. Desktop shell that spawns the Next.js standalone server and opens a `BrowserWindow`.
 - `cli/` — `getwrite-cli`. Standalone CLI tools bundled separately with esbuild.
+- `android/` — `getwrite-android`. Capacitor Android sibling shell (ADR-021, Phase 0 walking skeleton); `pnpm --filter getwrite-android build` is currently a scaffold placeholder, not a real Gradle build.
 
 Additional repo-root directories that are **not** workspace packages but are referenced at runtime:
 
@@ -118,9 +119,10 @@ All paths relative to `frontend/src/`. Use these as orientation; open the files 
 - *Metadata & tags*: `metadata-schema.ts`, `default-metadata-schema.ts`, `tags.ts`
 - *Query pipeline*: `query-ast.ts`, `query-evaluator.ts`, `query-cache.ts`, `query-intrinsics.ts`, `saved-queries.ts`
 - *Index & search*: `indexer-queue.ts`, `inverted-index.ts`, `backlinks.ts`, `backlinks-watcher.ts`, `field-values.ts`, `field-value-keys.ts`, `field-dedup.ts`, `previews.ts`, `search-scoring.ts`, `search-snippet.ts`
-- *I/O*: `io.ts` (StorageAdapter over `fs/promises`), `memoryAdapter.ts` (in-memory adapter for tests), `object-store.ts` + `objectStoreAdapter.ts` (flat object-store backend selectable per request via `app/api/_tenant/storage-backend.ts`; ADR-019), `storage-context.ts` (`AsyncLocalStorage`-backed request/task-scoped `{ tenantRoot, adapter }`; see `docs/standards/storage-context.md`)
+- *I/O*: `io.ts` (StorageAdapter over `fs/promises`), `memoryAdapter.ts` (in-memory adapter for tests), `object-store.ts` + `objectStoreAdapter.ts` (flat object-store backend selectable per request via `app/api/_tenant/storage-backend.ts`; ADR-019), `storage-context.ts` (`AsyncLocalStorage`-backed request/task-scoped `{ tenantRoot, adapter }`, plus a module-scoped default fallback for the native build; see `docs/standards/storage-context.md`)
 - *Update check*: `update-check.ts` (compares running version to latest GitHub release)
 - *Concurrency*: `locks.ts`, `meta-locks.ts`
+- *Native (Android, ADR-021 Phase 0)*: `capacitor-filesystem.ts` (in-memory fake `CapacitorFilesystemLike`), `capacitor-filesystem-real.ts` (real `@capacitor/filesystem` bridge to the same contract; native-only, dynamic-import-only), `capacitorFsAdapter.ts` (`StorageAdapter` over either), `native-bootstrap.ts` (`bootstrapNativeStorageContext()` — one-time app-startup binding of the real bridge as the default `StorageContext`), `native-device-harness.ts` (manual, code-only on-device verification harness; not wired into any UI)
 
 **Auth (`lib/auth/`)** — server-only hosted-authentication path (better-auth + PostgreSQL; opt-in, hosted-only; see [ADR-020](docs/architecture/ADRs/adr-020-hybrid-auth-postgres-better-auth.md)). `auth-config.ts` (`isHostedAuthActive()` — single source of truth for whether `DATABASE_URL` + `BETTER_AUTH_SECRET` are both set), `auth-server.ts` (lazily-built, memoized `betterAuth(...)` instance), `email.ts` (`nodemailer` SMTP transport wired into verification/reset callbacks), `signup-allowlist.ts` (`AUTH_SIGNUP_ALLOWLIST` gate consulted by a `databaseHooks.user.create.before` hook, not `disableSignUp`), `session-guard.ts` (`shouldRedirectToLogin` — the decision core behind the `(app)` route-group layout's page redirect), `verify-email-core.ts` (server-side `/verify-email` token consumption). `auth-client.ts` (client-side `better-auth/react` wrapper) and `use-auth-session.ts` (`useAuthSession()` — the combined hosted-active + authenticated signal UI components read) are the client-safe counterparts in the same directory. Desktop/local never configures the hosted-auth env, so none of this runs and no Postgres connection is ever attempted (`GETWRITE_ENABLE_DEV_IDENTITY` remains the mechanism for exercising tenant resolution locally without hosted auth — see the Store's `auth-status-transport-service` note and `docs/standards/storage-context.md`).
 
@@ -152,6 +154,15 @@ Bundled to `cli/dist/bin/getwrite-cli.cjs` via `pnpm cli:build` (esbuild, Node t
 - `getwrite-cli doctor [projectRoot]` — Check a project for broken folder associations (orphaned resources/folders). Logic in `cli/src/commands/doctor.ts`.
 
 Set `GETWRITE_CLI_TESTING=1` to suppress `process.exit` when invoking commands from tests.
+
+### Android Shell (`android/`) — ADR-021, Phase 0
+
+Capacitor Android sibling to `electron/`, currently a walking-skeleton scaffold — see [ADR-021](docs/architecture/ADRs/adr-021-native-android-via-capacitor-in-process.md).
+
+- `capacitor.config.ts` points `webDir` at a placeholder (`android/www/`); the real Next.js standalone build output isn't wired in yet (full WebView wiring is a later phase).
+- `pnpm --filter getwrite-android build` currently just logs a placeholder message — there is no real Gradle build wired up yet.
+- CI: `.github/workflows/build-android.yml` runs that placeholder build on every push/PR to `main` as a non-launch build-health check.
+- On the frontend side, the native runtime path (`NEXT_PUBLIC_GETWRITE_RUNTIME === "native"`) is served by `frontend/src/lib/models/native-bootstrap.ts` + `capacitor-filesystem-real.ts` (see Code Map above); `frontend/next.config.mjs`'s `turbopack.resolveAlias` substitutes a `node:*`-free stub for the native search transport so it never enters the web/desktop build.
 
 ## Glossary
 
