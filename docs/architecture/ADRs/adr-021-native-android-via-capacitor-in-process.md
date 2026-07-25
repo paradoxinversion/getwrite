@@ -304,23 +304,70 @@ operation (search), passing in the normal Vitest gate (4 cases,
    `capacitorFsAdapter` translates the plugin's message-only errors. Phase 1 and
    phase 2 are genuinely coupled.
 
-**Still unproven (what remains before promotion to Accepted):**
+### Phase 3 — Write path over the Capacitor adapter (2026-07-25): ✅ the riskier half holds
 
-- **Breadth.** Only search is collapsed. The other six transport services (and
-  all write paths — create/save/rename/revisions) must get the same core
-  extraction. Writes are the harder half: they touch locks, revisions, and the
-  index, and are only exercised here transitively.
+Phase 2 collapsed a read path; the write mechanics were the flagged unknown.
+Phase 3 drives the real revision write path — `createRevision` — in-process over
+`capacitorFsAdapter`, passing in the normal gate (3 cases,
+`frontend/tests/unit/write-path.spike.test.ts`). One `createRevision` call
+exercises every risk at once: per-resource lock → `nextVersionNumber` → temp-dir
+stage → **directory `rename` onto `v-<N>`** → `setCanonicalRevision` → prune.
+
+**Findings:**
+
+1. **Directory rename commits cleanly and leaves no temp dir.** `writeRevision`
+   stages into `.tmp-<uuid>` and renames it onto `v-1`; over the Capacitor
+   adapter the content lands at the final path and the staging dir is gone. The
+   adapter's directory-rename (already conformance-proven as "move to a fresh
+   destination") is exactly what this path needs.
+2. **The fail-if-exists concern from Phase 1 is a non-issue for revisions.**
+   `writeRevision` self-guards with a `stat` pre-check before renaming, so it
+   never relies on the adapter's rename rejecting an existing destination —
+   whatever Android's native rename does on collision, this path is already
+   defended. (The pre-check is also what makes the concurrency test below fail
+   loudly if the lock were absent.)
+3. **The single-canonical invariant survives the multi-file rewrite.** A second
+   canonical save flips the prior revision's `isCanonical` off through the
+   adapter; `listRevisions` shows exactly one canonical (the latest). The
+   metadata rewrite that enforces the invariant works unchanged.
+4. **In-process locks serialize concurrent writes correctly.** Two concurrent
+   `createRevision` calls yield distinct sequential versions (`v-1`, `v-2`), not
+   a `v-1` collision — the per-resource in-memory mutex (`locks.ts`) behaves
+   identically in the WebView's single JS context. This is actually a
+   _simplification_ versus hosted: no cross-instance coordination exists or is
+   needed on a single-user device (cf. ADR-019's cross-instance-locking caveat).
+5. **Fire-and-forget background work must run inside an app-lifetime storage
+   context.** `createRevision` kicks off `enqueueIndex` un-awaited. It is gated
+   off under `VITEST`, so the spike is deterministic — but the code shows that if
+   the storage context were established _per operation_, escaped background work
+   (indexer, `backlinks-watcher`) would resolve the default adapter after the
+   scope unwinds. **Design consequence for the native build: bind the
+   `StorageContext` once at app startup (app-lifetime), not per call** — which is
+   natural on device (one user, one root) and unlike the hosted per-request
+   scope.
+
+**Verdict:** the write half runs over the Capacitor adapter with the revision,
+canonical, and locking guarantees intact. The mechanics feared to be hard are in
+fact well-defended by existing self-guards, and the single-instance model makes
+locking simpler, not harder.
+
+**Still unproven (execution, not architecture):**
+
+- **Breadth of the transport collapse.** Only search is wired end-to-end through
+  the seam. Phase 3 proved the write _mechanics_ over the adapter, but each
+  write route's core still needs lifting out of its handler (as search was) and a
+  native transport backend, following the Phase-2 pattern.
 - **On-device reality.** The in-memory fake proves plugin _semantics_, not real
   Android I/O, the `@capacitor/filesystem` dependency sign-off, scoped-storage
   rooting, or the `nativeFilesystem()` wiring line the spike leaves as a
-  deliberate stub.
+  deliberate stub. Directory-rename-on-collision and large-file base64
+  performance are the specific things to check on a real device.
 - **The Capacitor app shell itself** (build target, WebView bootstrap, asset
-  bundling) is entirely out of scope of these two spikes.
+  bundling, app-lifetime context binding) is out of scope of these spikes.
 
-**Overall verdict:** both load-bearing risks Option 2 rested on — (1) can a
-`StorageAdapter` sit over a device filesystem, and (2) can the transport layer
-collapse HTTP into in-process calls without disturbing the server build — are
-now answered **yes**, in the normal gate, with zero new shipping dependencies.
-The path is de-risked at the architecture level. Decision remains `Proposed`
-pending the _breadth_ and _on-device_ work above, which are execution, not
-open architectural questions.
+**Overall verdict:** all three load-bearing risks Option 2 rested on —
+(1) a `StorageAdapter` over a device filesystem, (2) collapsing HTTP into
+in-process calls without disturbing the server build, and (3) the write path's
+revision/canonical/lock guarantees surviving that adapter — are answered **yes**
+in the normal gate, with zero new shipping dependencies. The architecture is
+de-risked; what remains is execution (breadth + on-device), tracked separately.
