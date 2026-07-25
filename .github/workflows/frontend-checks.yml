@@ -57,6 +57,10 @@ jobs:
               working-directory: frontend
               run: pnpm lint
 
+            - name: Build (production)
+              working-directory: frontend
+              run: pnpm build
+
             - name: Unit & integration tests
               working-directory: frontend
               run: pnpm test:ci
