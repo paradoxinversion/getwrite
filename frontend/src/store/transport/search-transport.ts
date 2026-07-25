@@ -20,6 +20,7 @@
  * platforms with no branching of its own.
  */
 import type { SearchFilters, SearchResult } from "../search-transport-service";
+import { resolveRuntime } from "./runtime";
 
 /** The single operation both platforms implement. */
 export interface SearchTransport {
@@ -77,7 +78,10 @@ export const httpSearchTransport: SearchTransport = {
  * bundle's module graph.
  */
 export async function resolveSearchTransport(): Promise<SearchTransport> {
-  const { resolveRuntime } = await import("./runtime");
+  // The runtime resolver is a tiny, client-safe env read, imported statically so
+  // the web path adds no async module-load hop. Only the native backend — which
+  // pulls in server-only code — is imported lazily, and only under the native
+  // runtime, so it never enters the web bundle's module graph.
   if (resolveRuntime() === "native") {
     const { createNativeSearchTransport } =
       await import("./native-search-backend");
