@@ -81,6 +81,8 @@
     },
     "devDependencies": {
         "@better-auth/cli": "1.4.21",
+        "@capacitor/core": "^8.4.2",
+        "@capacitor/filesystem": "^8.1.2",
         "@eslint/eslintrc": "^3.3.5",
         "@playwright/test": "^1.60.0",
         "@storybook/addon-a11y": "^10.4.0",
