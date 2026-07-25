@@ -1,4 +1,5 @@
 import type { RootState } from "./store";
+import { resolveSearchTransport } from "./transport/search-transport";
 
 export interface SearchResult {
   resourceId: string;
@@ -30,44 +31,24 @@ export function resolveSearchRequestContext(
   return { projectId: selectedProjectId };
 }
 
-function getApiErrorMessage(errorBody: unknown, fallback: string): string {
-  if (
-    errorBody &&
-    typeof errorBody === "object" &&
-    "error" in errorBody &&
-    typeof (errorBody as { error: unknown }).error === "string"
-  ) {
-    return (errorBody as { error: string }).error;
-  }
-
-  return fallback;
-}
-
 export interface SearchFilters {
   folder?: string;
   status?: string;
   tags?: string[];
 }
 
+/**
+ * Executes a search for the resolved project. The actual carriage — HTTP to
+ * `/api/*` (hosted/desktop) versus an in-process call to the shared search core
+ * (native Capacitor build) — is chosen by the transport seam, so this service
+ * is identical on both platforms. See {@link resolveSearchTransport} and
+ * ADR-021.
+ */
 export async function executeSearchRequest(
   context: SearchRequestContext,
   query: string,
   filters?: SearchFilters,
 ): Promise<SearchResult[]> {
-  const params = new URLSearchParams({ q: query });
-  if (filters?.folder) params.set("folder", filters.folder);
-  if (filters?.status) params.set("status", filters.status);
-  if (filters?.tags && filters.tags.length > 0) {
-    params.set("tags", filters.tags.join(","));
-  }
-  const response = await fetch(
-    `/api/project/${context.projectId}/search?${params.toString()}`,
-  );
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(errorBody, "Unable to perform search."));
-  }
-
-  return (await response.json()) as SearchResult[];
+  const transport = await resolveSearchTransport();
+  return transport.search(context.projectId, query, filters);
 }
