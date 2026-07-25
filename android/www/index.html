@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GetWrite (native shell placeholder)</title>
+  </head>
+  <body>
+    <!--
+      Placeholder webDir content for Phase 0 (ADR-021).
+
+      GetWrite's `frontend` package builds via `next build` with
+      `output: "standalone"` — a Node server bundle served over HTTP, not a
+      static asset export. Capacitor's `webDir` model expects a directory of
+      static web assets it can copy into the native project, which doesn't
+      map onto that standalone server output.
+
+      Phase 0's goal is proving the storage/transport spike (search) against
+      the real @capacitor/filesystem plugin on-device via a minimal harness,
+      not shipping the full app UI in a WebView (that's Phase 2, per the
+      spec's non-goals). This file is a trivial stand-in so
+      capacitor.config.ts has a real, existing webDir to satisfy the
+      Capacitor CLI schema. It will be replaced once full webview wiring
+      lands in a later phase.
+    -->
+    <p>GetWrite native shell placeholder.</p>
+  </body>
+</html>
