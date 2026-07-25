@@ -42,10 +42,41 @@ function coded(code: string, message: string): Error {
  * one-line change.
  */
 function isNotFound(err: unknown): boolean {
-  if (err && typeof err === "object" && "code" in err) {
-    return (err as { code?: string }).code === "ENOENT";
+  if (err && typeof err === "object") {
+    // A Node-style ENOENT wins outright. But the real plugin wraps failures in a
+    // CapacitorException that carries a *Capacitor* `code` (not a Node one), so
+    // we must NOT short-circuit to false just because some `code` is present —
+    // fall through to the message match instead.
+    if ((err as { code?: string }).code === "ENOENT") return true;
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string") return /does not exist/i.test(message);
   }
-  return err instanceof Error && /does not exist/i.test(err.message);
+  return false;
+}
+
+/**
+ * Detects the plugin's "already exists" failure from `mkdir`. Node's
+ * `fs.mkdir(recursive: true)` is idempotent — it never throws when the target
+ * already exists — and the model layer relies on that. The real Capacitor
+ * plugin instead throws (message "Directory exists" on Android; "already
+ * exists" on other platforms) even with `recursive: true`, so the adapter must
+ * absorb it to preserve Node semantics. Excludes the "does not exist" message
+ * so a not-found is never misread as an already-exists. (The in-memory fake
+ * never throws here, so this branch is device-only and the conformance suite is
+ * unaffected.)
+ */
+function isAlreadyExists(err: unknown): boolean {
+  if (err && typeof err === "object") {
+    // As in isNotFound: honor a Node EEXIST, but don't let the plugin's
+    // Capacitor `code` short-circuit the message match. Exclude "does not
+    // exist" so a not-found is never misread as an already-exists.
+    if ((err as { code?: string }).code === "EEXIST") return true;
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string") {
+      return /exist/i.test(message) && !/not\s+exist/i.test(message);
+    }
+  }
+  return false;
 }
 
 /** Runs a plugin call, re-throwing its "not found" as a coded `ENOENT`. */
@@ -85,7 +116,15 @@ export function capacitorFsAdapter(
 ): StorageAdapter {
   return {
     mkdir: async (p, opts) => {
-      await fs.mkdir({ path: toPluginPath(p), recursive: opts?.recursive });
+      try {
+        await fs.mkdir({ path: toPluginPath(p), recursive: opts?.recursive });
+      } catch (err) {
+        // Match Node's idempotent `mkdir(recursive: true)`: swallow the real
+        // plugin's "already exists" throw. Non-recursive mkdir keeps throwing,
+        // as `node:fs` does. See isAlreadyExists.
+        if (opts?.recursive && isAlreadyExists(err)) return;
+        throw err;
+      }
     },
 
     writeFile: async (p, data) => {

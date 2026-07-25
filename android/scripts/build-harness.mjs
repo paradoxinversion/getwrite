@@ -42,6 +42,10 @@ await build({
     "process.env.NEXT_PUBLIC_GETWRITE_RUNTIME": '"native"',
     "process.env.NODE_ENV": '"production"',
   },
+  // Node's global `Buffer` doesn't exist in a WebView; the storage adapter uses
+  // it for all base64 read/write. Inject a dependency-free Buffer polyfill as
+  // the free `Buffer` identifier across every bundled module. See buffer-inject.mjs.
+  inject: [shimPath("buffer-inject.mjs")],
   // A minimal `process` so any stray `process.env.X` read returns undefined
   // rather than throwing a ReferenceError in the WebView.
   banner: {
