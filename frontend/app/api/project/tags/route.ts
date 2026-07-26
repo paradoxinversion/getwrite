@@ -16,12 +16,14 @@
  * - `{ action: "assignments", projectId: string, resourceId: string }`
  */
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "../../../../src/lib/models/io";
-import path from "node:path";
-import { listTags, createTag } from "../../../../src/lib/models/tags";
-import { PROJECT_FILENAME } from "../../../../src/lib/models/project-config";
-import type { Project } from "../../../../src/lib/models/types";
-import { resolveProjectPath } from "../../../../src/lib/models/project-path";
+import {
+  InvalidProjectIdCoreError,
+  createTagCore,
+  listTagAssignmentsCore,
+  listTagsCore,
+  resolveTagsProjectRootOrThrow,
+} from "../../../../src/lib/models/tags-crud-core";
+import { respondInvalidProjectId } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
 
 interface ListTagsRequest {
@@ -55,28 +57,35 @@ async function handlePost(req: NextRequest): Promise<Response> {
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath } = resolved;
+  // Resolve/validate projectId up front, matching the pre-lift route's
+  // order: an invalid projectId is reported even when `action` is also
+  // unrecognized (the per-action core calls below re-resolve internally;
+  // this call exists purely to preserve that ordering).
+  try {
+    resolveTagsProjectRootOrThrow(body.projectId);
+  } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
+    throw error;
+  }
 
   try {
     if (body.action === "list") {
-      const tags = await listTags(projectPath);
+      const tags = await listTagsCore(body.projectId);
       return NextResponse.json({ tags });
     }
 
     if (body.action === "create") {
-      const tag = await createTag(projectPath, body.name, body.color);
+      const tag = await createTagCore(body.projectId, body.name, body.color);
       return NextResponse.json({ tag });
     }
 
     if (body.action === "assignments") {
-      const raw = await readFile(
-        path.join(projectPath, PROJECT_FILENAME),
-        "utf8",
+      const tagIds = await listTagAssignmentsCore(
+        body.projectId,
+        body.resourceId,
       );
-      const project = JSON.parse(raw) as Project;
-      const tagIds = project.config?.tagAssignments?.[body.resourceId] ?? [];
       return NextResponse.json({ tagIds });
     }
 

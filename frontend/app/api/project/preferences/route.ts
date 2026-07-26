@@ -5,14 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFile, writeFile } from "../../../../src/lib/models/io";
-import path from "node:path";
 import {
-  mergeUserPreferencesIntoProjectMetadata,
-  type ProjectUserPreferences,
-} from "../../../../src/lib/user-preferences";
-import type { MetadataValue } from "../../../../src/lib/models/types";
-import { resolveProjectPath } from "../../../../src/lib/models/project-path";
+  InvalidProjectIdCoreError,
+  saveProjectPreferencesCore,
+} from "../../../../src/lib/models/project-preferences-core";
+import type { ProjectUserPreferences } from "../../../../src/lib/user-preferences";
+import { respondInvalidProjectId } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
 
 interface UpdateProjectPreferencesBody {
@@ -40,36 +38,12 @@ async function handlePost(req: NextRequest): Promise<Response> {
       );
     }
 
-    const resolved = resolveProjectPath(projectId);
-    if (resolved instanceof Response) return resolved;
-
-    const { projectPath } = resolved;
-    const projectFilePath = path.join(projectPath, "project.json");
-    const parsedProject = JSON.parse(
-      await readFile(projectFilePath, "utf-8"),
-    ) as { metadata?: Record<string, MetadataValue>; updatedAt?: string };
-
-    const updatedMetadata = mergeUserPreferencesIntoProjectMetadata(
-      parsedProject.metadata,
-      preferences,
-    );
-
-    await writeFile(
-      projectFilePath,
-      JSON.stringify(
-        {
-          ...parsedProject,
-          metadata: updatedMetadata,
-          updatedAt: new Date().toISOString(),
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-
-    return NextResponse.json({ metadata: updatedMetadata });
+    const result = await saveProjectPreferencesCore(projectId, preferences);
+    return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     const message =
       error instanceof Error ? error.message : "Failed to update preferences";
     return NextResponse.json({ error: message }, { status: 500 });

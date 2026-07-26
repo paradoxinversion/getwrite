@@ -11,10 +11,10 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
-  assignTagToResource,
-  unassignTagFromResource,
-} from "../../../../../src/lib/models/tags";
-import { resolveProjectPath } from "../../../../../src/lib/models/project-path";
+  InvalidProjectIdCoreError,
+  assignTagCore,
+} from "../../../../../src/lib/models/tags-crud-core";
+import { respondInvalidProjectId } from "../../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../../_tenant/with-storage-context";
 
 interface AssignTagRequestBody {
@@ -35,18 +35,18 @@ async function handlePost(req: NextRequest): Promise<Response> {
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath } = resolved;
-
   try {
-    if (body.assign) {
-      await assignTagToResource(projectPath, body.resourceId, body.tagId);
-    } else {
-      await unassignTagFromResource(projectPath, body.resourceId, body.tagId);
-    }
+    await assignTagCore(
+      body.projectId,
+      body.resourceId,
+      body.tagId,
+      body.assign,
+    );
     return NextResponse.json({});
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     return NextResponse.json(
       {
         error: "Failed to update tag assignment",

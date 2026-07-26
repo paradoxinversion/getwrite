@@ -112,6 +112,23 @@ const nextConfig = {
       // rule as above.
       "../../store/transport/native-resource-excerpts-backend":
         "./src/store/transport/native-resource-excerpts-backend.web-stub",
+      // ADR-021 Phase 2 (Task 4): lib/api/tags.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-tags-backend" — same rule as above.
+      "../../store/transport/native-tags-backend":
+        "./src/store/transport/native-tags-backend.web-stub",
+      // ADR-021 Phase 2 (Task 4): lib/api/preferences.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-preferences-backend" — same rule as
+      // above.
+      "../../store/transport/native-preferences-backend":
+        "./src/store/transport/native-preferences-backend.web-stub",
+      // ADR-021 Phase 2 (Task 4): lib/api/editor-config.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-editor-config-backend" — same rule as
+      // above.
+      "../../store/transport/native-editor-config-backend":
+        "./src/store/transport/native-editor-config-backend.web-stub",
     },
   },
 };
