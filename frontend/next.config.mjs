@@ -55,6 +55,11 @@ const nextConfig = {
       // "./transport/native-metadata-schema-backend" — same rule as above.
       "./transport/native-metadata-schema-backend":
         "./src/store/transport/native-metadata-schema-backend.web-stub",
+      // feature-config-transport-service.ts lives in src/store/ as well, so
+      // its dynamic import's literal specifier is
+      // "./transport/native-feature-config-backend" — same rule as above.
+      "./transport/native-feature-config-backend":
+        "./src/store/transport/native-feature-config-backend.web-stub",
     },
   },
 };
