@@ -45,6 +45,11 @@ const nextConfig = {
       // — the alias key below must match that exact request string.
       "./transport/native-revision-backend":
         "./src/store/transport/native-revision-backend.web-stub",
+      // query-transport-service.ts lives in src/store/ as well, so its
+      // dynamic import's literal specifier is
+      // "./transport/native-query-backend" — same rule as above.
+      "./transport/native-query-backend":
+        "./src/store/transport/native-query-backend.web-stub",
     },
   },
 };

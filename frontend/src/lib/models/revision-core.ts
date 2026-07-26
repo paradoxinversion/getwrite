@@ -29,8 +29,7 @@ import { readSidecar, writeSidecar } from "./sidecar";
 import type { Revision } from "./types";
 import { persistResourceContent } from "../tiptap-utils";
 import type { TipTapDocument } from "../models";
-import { resolveProjectsDir } from "./projects-dir";
-import { InvalidProjectIdError, validateProjectId } from "./project-path";
+import { resolveProjectRoot } from "./project-root-resolver";
 
 /**
  * When `content` is omitted, {@link createRevision} reads the resource's
@@ -61,17 +60,7 @@ export interface CreateRevisionOptions {
  * @returns The resolved on-disk project directory, or `null` when
  *   `projectId` is not a well-formed UUID.
  */
-export function resolveRevisionProjectRoot(
-  projectId: string | null | undefined,
-): string | null {
-  try {
-    const validatedProjectId = validateProjectId(projectId ?? "");
-    return path.join(resolveProjectsDir(), validatedProjectId);
-  } catch (err) {
-    if (err instanceof InvalidProjectIdError) return null;
-    throw err;
-  }
-}
+export const resolveRevisionProjectRoot = resolveProjectRoot;
 
 // ---------------------------------------------------------------------------
 // Private helpers (lifted verbatim from the route)

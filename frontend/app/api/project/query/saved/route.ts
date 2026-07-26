@@ -14,15 +14,18 @@
  * - `delete` `{ action: "delete", projectId, id }` → `{ deleted: boolean }`
  *
  * Pattern follows `POST /api/project/metadata-schema`.
+ *
+ * The dispatch logic itself lives in the transport-agnostic
+ * `lib/models/saved-query-dispatch-core.ts` (ADR-021 Phase 1, Task 3),
+ * reused unmodified by both this route and the native in-process transport
+ * (`store/transport/native-query-backend.ts`).
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
-  listQueries,
-  readQuery,
-  writeQuery,
-  deleteQuery,
-  SavedQuerySchema,
-} from "../../../../../src/lib/models/saved-queries";
+  dispatchSavedQueryAction,
+  InvalidSavedQueryError,
+  UnknownSavedQueryActionError,
+} from "../../../../../src/lib/models/saved-query-dispatch-core";
 import { resolveProjectPath } from "../../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../../_tenant/with-storage-context";
 
@@ -75,47 +78,24 @@ async function handlePost(req: NextRequest): Promise<Response> {
   const { projectPath } = resolved;
 
   try {
-    switch (body.action) {
-      case "list": {
-        const queries = await listQueries(projectPath);
-        return NextResponse.json({ queries });
-      }
-
-      case "read": {
-        const query = await readQuery(projectPath, body.id);
-        return NextResponse.json({ query });
-      }
-
-      case "write": {
-        const parseResult = SavedQuerySchema.safeParse(body.query);
-        if (!parseResult.success) {
-          return NextResponse.json(
-            {
-              error: "Invalid saved query",
-              details: parseResult.error.message,
-            },
-            { status: 400 },
-          );
-        }
-        await writeQuery(projectPath, parseResult.data);
-        return NextResponse.json({ query: parseResult.data });
-      }
-
-      case "delete": {
-        const didDelete = await deleteQuery(projectPath, body.id);
-        return NextResponse.json({ deleted: didDelete });
-      }
-
-      default:
-        return NextResponse.json(
-          {
-            error: "Invalid action",
-            details: "Expected one of: list, read, write, delete",
-          },
-          { status: 400 },
-        );
-    }
+    const result = await dispatchSavedQueryAction(projectPath, body);
+    return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof UnknownSavedQueryActionError) {
+      return NextResponse.json(
+        {
+          error: "Invalid action",
+          details: "Expected one of: list, read, write, delete",
+        },
+        { status: 400 },
+      );
+    }
+    if (error instanceof InvalidSavedQueryError) {
+      return NextResponse.json(
+        { error: "Invalid saved query", details: error.message },
+        { status: 400 },
+      );
+    }
     const message = error instanceof Error ? error.message : "Operation failed";
     return NextResponse.json(
       { error: "Saved query operation failed", details: message },
