@@ -19,6 +19,7 @@
  * identify the project for local UI callbacks (`onRename`/`onDelete`) and
  * dispatch. It is never sent over the wire — only `projectId` is.
  */
+import { createTransport } from "./transport/create-transport";
 
 interface BaseProjectAction {
   storeProjectId: string;
@@ -60,6 +61,90 @@ async function parseErrorBody(response: Response): Promise<unknown> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Transport collapse (ADR-021 Phase 2, Task 2)
+//
+// One ProjectActionsTransport contract with two implementations selected by
+// the build-time runtime, mirroring revision-transport-service.ts:
+//
+// - Web/hosted/desktop -> httpProjectActionsTransport, which carries the
+//   original `fetch(...)` calls byte-for-byte.
+// - Native (Capacitor) -> an in-process backend
+//   (`./transport/native-project-actions-backend`), dynamically imported
+//   only when `runtime === "native"`, reusing the shared project CRUD core
+//   (`../lib/models/project-crud-core.ts`) instead of HTTP.
+//
+// `createTransport` centralizes the runtime branch and dispatch (see
+// `./transport/create-transport`). Only the internal `fetch(...)` call is
+// replaced by the transport swap — the surrounding orchestration below
+// (callback firing order, error wrapping) is unchanged.
+// ---------------------------------------------------------------------------
+
+/**
+ * The two wire operations `renameProject`/`deleteProject` delegate to.
+ * Shared with `./transport/native-project-actions-backend`, which imports
+ * this type rather than duplicating it.
+ */
+export interface ProjectActionsTransport {
+  /** Renames a project by its on-disk directory id. */
+  rename(projectId: string, newName: string): Promise<void>;
+  /** Deletes a project by its on-disk directory id. */
+  delete(projectId: string): Promise<void>;
+}
+
+/**
+ * HTTP transport — the hosted/desktop path. Every method body below is the
+ * original inline `fetch` call verbatim; preserving it exactly is what keeps
+ * the server build unchanged.
+ */
+export const httpProjectActionsTransport: ProjectActionsTransport = {
+  async rename(projectId, newName) {
+    const response = await fetch("/api/project/rename", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId, newName }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await parseErrorBody(response);
+      throw new Error(
+        getApiErrorMessage(errorBody, "Failed to rename project."),
+      );
+    }
+  },
+
+  async delete(projectId) {
+    const response = await fetch("/api/project/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await parseErrorBody(response);
+      throw new Error(
+        getApiErrorMessage(errorBody, "Failed to delete project."),
+      );
+    }
+  },
+};
+
+/**
+ * Resolves the transport for the active runtime. On native, the in-process
+ * backend is imported lazily so it forms its own chunk and never enters the
+ * web bundle's module graph. The thunk carries the literal
+ * `import("./transport/native-project-actions-backend")` specifier so
+ * Turbopack's `resolveAlias` (`next.config.mjs`) can substitute a
+ * `node:*`-free web-stub for it at build time.
+ */
+export const resolveProjectActionsTransport: () => Promise<ProjectActionsTransport> =
+  createTransport(httpProjectActionsTransport, () =>
+    import("./transport/native-project-actions-backend").then(
+      ({ createNativeProjectActionsTransport }) =>
+        createNativeProjectActionsTransport(),
+    ),
+  );
+
 export const projectActionsController = {
   async renameProject({
     storeProjectId,
@@ -74,18 +159,8 @@ export const projectActionsController = {
 
     onRename?.(storeProjectId, newName);
 
-    const response = await fetch("/api/project/rename", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: resolvedProjectId, newName }),
-    });
-
-    if (!response.ok) {
-      const errorBody = await parseErrorBody(response);
-      throw new Error(
-        getApiErrorMessage(errorBody, "Failed to rename project."),
-      );
-    }
+    const transport = await resolveProjectActionsTransport();
+    await transport.rename(resolvedProjectId, newName);
   },
 
   async deleteProject({
@@ -100,17 +175,7 @@ export const projectActionsController = {
 
     onDelete?.(storeProjectId);
 
-    const response = await fetch("/api/project/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: resolvedProjectId }),
-    });
-
-    if (!response.ok) {
-      const errorBody = await parseErrorBody(response);
-      throw new Error(
-        getApiErrorMessage(errorBody, "Failed to delete project."),
-      );
-    }
+    const transport = await resolveProjectActionsTransport();
+    await transport.delete(resolvedProjectId);
   },
 };

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import path from "node:path";
-import { getProjectType } from "../../../src/lib/projectTypes";
-import { createProjectFromType } from "../../../src/lib/models/project-creator";
-import { generateUUID } from "../../../src/lib/models/uuid";
-import { readFile, readdir } from "../../../src/lib/models/io";
-import { getLocalResources } from "../../../src/lib/models";
-import { readFolderTree } from "../../../src/lib/models/folder-utils";
-import { resolveProjectsDir } from "../../../src/lib/models/projects-dir";
+import {
+  createProjectCore,
+  listProjectsCore,
+  MissingProjectFieldsError,
+  ProjectTypeNotFoundError,
+} from "../../../src/lib/models/project-crud-core";
 import { withStorageContext } from "../_tenant/with-storage-context";
 
 /**
@@ -14,24 +12,7 @@ import { withStorageContext } from "../_tenant/with-storage-context";
  */
 async function getProjects() {
   try {
-    const projectsDir = resolveProjectsDir();
-    const projectIds = (await readdir(projectsDir)).filter(
-      (file) => file !== ".DS_Store",
-    );
-    const projects = await Promise.all(
-      projectIds.map(async (id) => {
-        const projectPath = path.join(projectsDir, id, "project.json");
-        const projectData = await readFile(projectPath, "utf-8");
-        const project = JSON.parse(projectData);
-
-        const foldersPath = path.join(projectsDir, id, "folders");
-        const folders = await readFolderTree(foldersPath);
-
-        const resources = await getLocalResources(path.join(projectsDir, id));
-        return { project, resources, folders };
-      }),
-    );
-
+    const projects = await listProjectsCore();
     return NextResponse.json(projects);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -47,35 +28,16 @@ async function createProject(req: Request) {
       projectType?: string;
     };
 
-    if (!name || !projectType) {
-      return NextResponse.json(
-        { error: "Missing name or projectType" },
-        { status: 400 },
-      );
-    }
-    const entry = await getProjectType(projectType);
-    if (!entry) {
-      return NextResponse.json(
-        { error: "Project type not found" },
-        { status: 404 },
-      );
-    }
+    const result = await createProjectCore(name, projectType);
 
-    const id = generateUUID();
-    const projectRoot = path.join(resolveProjectsDir(), id);
-
-    const result = await createProjectFromType({
-      projectRoot,
-      spec: entry.filePath,
-      name,
-    });
-
-    return NextResponse.json({
-      project: result.project,
-      folders: result.folders,
-      resources: result.resources,
-    });
+    return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof MissingProjectFieldsError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    if (err instanceof ProjectTypeNotFoundError) {
+      return NextResponse.json({ error: err.message }, { status: 404 });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }

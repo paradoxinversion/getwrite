@@ -86,6 +86,20 @@ const nextConfig = {
       // on that call site's exact literal specifier.
       "../../src/lib/models/native-bootstrap":
         "./src/lib/models/native-bootstrap.web-stub",
+      // ADR-021 Phase 2 (Task 2): project-actions-controller.ts lives in
+      // src/store/ (like revision-transport-service.ts), so its dynamic
+      // import's literal specifier is
+      // "./transport/native-project-actions-backend" — same rule as above.
+      "./transport/native-project-actions-backend":
+        "./src/store/transport/native-project-actions-backend.web-stub",
+      // ADR-021 Phase 2 (Task 2): lib/api/projects.ts lives in src/lib/api/
+      // (not src/store/, unlike every other transport service so far), so
+      // its dynamic import's literal specifier is
+      // "../../store/transport/native-project-backend" — the alias key
+      // below must match that exact relative request string, not the
+      // "./transport/..." shape the src/store/-rooted services use.
+      "../../store/transport/native-project-backend":
+        "./src/store/transport/native-project-backend.web-stub",
     },
   },
 };
