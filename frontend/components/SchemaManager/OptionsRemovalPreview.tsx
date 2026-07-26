@@ -11,7 +11,7 @@ import {
 } from "../../src/lib/models/field-value-keys";
 import type { MetadataFieldType } from "../../src/lib/models/types";
 import type { OptionsMigrationEntry } from "../../src/lib/models/metadata-schema";
-import type { FieldValueEntry } from "../../app/api/project/metadata-schema/route";
+import type { FieldValueEntry } from "../../src/lib/models/metadata-schema-dispatch-core";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -41,6 +41,16 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }): Promise<React.ReactNode> {
+  // ADR-021: the native (Capacitor) build has no hosted auth and no server /
+  // request to read — and it is a static export, where `headers()` is not
+  // available at all. Short-circuit the session gate before touching any
+  // request-time API so the layout renders statically. The check is a
+  // build-time-inlined env literal, so on web/desktop this branch compiles out
+  // and the original auth gate below is unchanged.
+  if (process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native") {
+    return children;
+  }
+
   const requestHeaders = await headers();
 
   if (await shouldRedirectToLogin(requestHeaders)) {

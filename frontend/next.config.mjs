@@ -7,10 +7,16 @@ const { version } = JSON.parse(
   readFileSync(join(__dirname, "package.json"), "utf8"),
 );
 
+// ADR-021 Phase 2 SPIKE: a native build target produces a STATIC EXPORT
+// (`output: "export"` → an `out/` dir of assets Capacitor's webDir can serve),
+// instead of the standalone Node server bundle web/desktop use. Gated behind an
+// opt-in env var so web/desktop builds are completely unaffected when unset.
+const isNativeTarget = process.env.GETWRITE_BUILD_TARGET === "native";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  output: isNativeTarget ? "export" : "standalone",
   // The app doesn't use next/image, so disable image optimization. This stops
   // Next from ever loading the native `sharp` binary at runtime — it's required
   // only lazily by the image optimizer, which is now never invoked. That matters

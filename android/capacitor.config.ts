@@ -18,7 +18,10 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "works.saboteur.getwrite",
   appName: "GetWrite",
-  webDir: "www",
+  // ADR-021 Phase 2 SPIKE: point at the native static export of the real app
+  // (frontend/out, produced by scripts/build-native-static.spike.mjs) to prove
+  // the app loads in the WebView. (Reverts to the harness "www" after the spike.)
+  webDir: "../frontend/out",
 };
 
 export default config;

@@ -8,7 +8,7 @@ import type {
   TypeMigrationEntry,
   OptionsMigrationEntry,
 } from "../lib/models/metadata-schema";
-import type { FieldValueEntry } from "../../app/api/project/metadata-schema/route";
+import type { FieldValueEntry } from "../lib/models/metadata-schema-dispatch-core";
 import { getProjectDirectoryId } from "./projectsSlice";
 import { createTransport } from "./transport/create-transport";
 
