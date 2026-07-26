@@ -39,6 +39,12 @@ const nextConfig = {
   turbopack: {
     resolveAlias: {
       "./native-search-backend": "./src/store/transport/native-search-backend.web-stub",
+      // revision-transport-service.ts lives in src/store/ (not
+      // src/store/transport/, unlike search-transport.ts), so its dynamic
+      // import's literal specifier is "./transport/native-revision-backend"
+      // — the alias key below must match that exact request string.
+      "./transport/native-revision-backend":
+        "./src/store/transport/native-revision-backend.web-stub",
     },
   },
 };
