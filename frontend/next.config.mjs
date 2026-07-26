@@ -50,6 +50,11 @@ const nextConfig = {
       // "./transport/native-query-backend" — same rule as above.
       "./transport/native-query-backend":
         "./src/store/transport/native-query-backend.web-stub",
+      // metadata-schema-transport-service.ts lives in src/store/ as well, so
+      // its dynamic import's literal specifier is
+      // "./transport/native-metadata-schema-backend" — same rule as above.
+      "./transport/native-metadata-schema-backend":
+        "./src/store/transport/native-metadata-schema-backend.web-stub",
     },
   },
 };
