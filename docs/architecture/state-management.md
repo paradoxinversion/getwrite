@@ -187,7 +187,7 @@ Translates raw API revision data into `RevisionEntry` objects:
 - `resolveCurrentRevisionId(entries)` — finds the canonical entry ID
 
 ### `revision-transport-service.ts`
-HTTP-level operations for revisions. Resolves the project context from Redux state and calls the revision API routes:
+Transport-level operations for revisions. Resolves the project context from Redux state and, on web/desktop, calls the revision API routes; as of ADR-021 Phase 1 the same public functions resolve to an in-process native backend instead of `fetch` when running as a native Capacitor build (see `store/transport/create-transport.ts`):
 - `resolveRevisionRequestContext(state, resourceId)` — extracts `projectId` (via `selectActiveProjectDirectoryId`, the active project's on-disk directory basename — not `project.id`) and `resourceId`
 - `fetchRevisionList(context)` — `GET /api/resource/revision/[id]`
 - `fetchRevisionContent(context, revisionId)` — `GET /api/resource/revision/[id]?revisionId=...`
