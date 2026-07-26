@@ -100,6 +100,18 @@ const nextConfig = {
       // "./transport/..." shape the src/store/-rooted services use.
       "../../store/transport/native-project-backend":
         "./src/store/transport/native-project-backend.web-stub",
+      // ADR-021 Phase 2 (Task 3): lib/api/resources.ts lives in
+      // src/lib/api/ (like lib/api/projects.ts), so its dynamic import's
+      // literal specifier is "../../store/transport/native-resource-backend"
+      // — same rule as the projects backend above.
+      "../../store/transport/native-resource-backend":
+        "./src/store/transport/native-resource-backend.web-stub",
+      // ADR-021 Phase 2 (Task 3): lib/api/resource-excerpts.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-resource-excerpts-backend" — same
+      // rule as above.
+      "../../store/transport/native-resource-excerpts-backend":
+        "./src/store/transport/native-resource-excerpts-backend.web-stub",
     },
   },
 };
