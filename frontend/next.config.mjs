@@ -7,10 +7,29 @@ const { version } = JSON.parse(
   readFileSync(join(__dirname, "package.json"), "utf8"),
 );
 
+// ADR-021 Phase 2: a native build target produces a STATIC EXPORT
+// (`output: "export"` -> an `out/` dir of assets Capacitor's webDir can serve),
+// instead of the standalone Node server bundle web/desktop use. Gated behind an
+// opt-in env var so web/desktop builds are completely unaffected when unset.
+const isNativeTarget = process.env.GETWRITE_BUILD_TARGET === "native";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  output: isNativeTarget ? "export" : "standalone",
+  // ADR-021 Phase 2: when `output: "export"` is paired with a non-default
+  // `distDir`, Next treats that custom `distDir` as the export output
+  // directory itself (see `hasCustomExportOutput` in Next's build source) —
+  // internally it still builds into `.next` under the project root, but
+  // writes the final static export to `path.join(<project root>, distDir)`.
+  // `frontend/scripts/build-native-static.mjs` always runs `next build` with
+  // `cwd` set to its generated build directory (`frontend/.native-build/`),
+  // so `"../out"` here resolves to `frontend/out/` — landing the export
+  // directly where `android/capacitor.config.ts`'s `webDir` expects it,
+  // with no separate copy-back step. This branch is unreachable for
+  // web/desktop (`isNativeTarget` is false), so `distDir` stays unset
+  // there and standalone builds are unaffected.
+  ...(isNativeTarget ? { distDir: "../out" } : {}),
   // The app doesn't use next/image, so disable image optimization. This stops
   // Next from ever loading the native `sharp` binary at runtime — it's required
   // only lazily by the image optimizer, which is now never invoked. That matters
@@ -60,6 +79,13 @@ const nextConfig = {
       // "./transport/native-feature-config-backend" — same rule as above.
       "./transport/native-feature-config-backend":
         "./src/store/transport/native-feature-config-backend.web-stub",
+      // ADR-021 Phase 2: components/native/NativeBootstrap.tsx dynamically
+      // imports native-bootstrap.ts (root-layout call site for
+      // bootstrapNativeStorageContext(), FR6) only when
+      // NEXT_PUBLIC_GETWRITE_RUNTIME === "native" — same rule as above, keyed
+      // on that call site's exact literal specifier.
+      "../../src/lib/models/native-bootstrap":
+        "./src/lib/models/native-bootstrap.web-stub",
     },
   },
 };

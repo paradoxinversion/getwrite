@@ -1,0 +1,11 @@
+# ADR-021 Phase 2 (FR8): pins the Next/SWC build target to the effective
+# runtime floor Phase 0 established for the native Android WebView —
+# System WebView >= ~Chrome 67 (independent of `minSdk`; below Chrome 67,
+# zod v4's BigInt usage and Capacitor 8's bridge don't run at all).
+#
+# This is a repo-wide browserslist config (Next reads it for every build,
+# web/desktop included), but Chrome 67 is comfortably older than any browser
+# web/desktop realistically ships to, so pinning it here is a no-op widening
+# for those targets and only matters for the native export's transpile
+# target (see FR8, `frontend/scripts/build-native-static.mjs`).
+Chrome >= 67

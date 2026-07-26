@@ -35,12 +35,27 @@ import { shouldRedirectToLogin } from "../../src/lib/auth/session-guard";
  * (a `Promise` in this Next.js version, hence the `await`), ask the helper
  * whether to redirect, and either `redirect("/login")` (`next/navigation`)
  * or render `children`.
+ *
+ * ADR-021 Phase 2 adds one exception: the native (Capacitor) build has no
+ * hosted auth and no server request to read, and it is a static export where
+ * `headers()` isn't available at all — see the native short-circuit at the
+ * top of the function body below.
  */
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }): Promise<React.ReactNode> {
+  // ADR-021: the native (Capacitor) build has no hosted auth and no server /
+  // request to read -- and it is a static export, where `headers()` is not
+  // available at all. Short-circuit the session gate before touching any
+  // request-time API so the layout renders statically. The check is a
+  // build-time-inlined env literal, so on web/desktop this branch compiles out
+  // and the original auth gate below is unchanged.
+  if (process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native") {
+    return children;
+  }
+
   const requestHeaders = await headers();
 
   if (await shouldRedirectToLogin(requestHeaders)) {

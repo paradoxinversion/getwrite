@@ -4,6 +4,7 @@ import React from "react";
 import ClientProvider from "../src/store/ClientProvider";
 import AppToaster from "../components/notifications/Toaster";
 import AppearanceRuntime from "../components/preferences/AppearanceRuntime";
+import NativeBootstrap from "../components/native/NativeBootstrap";
 
 /** Page metadata for Next.js layout — basic title for dev/storybook. */
 export const metadata = { title: `GetWrite` };
@@ -30,6 +31,13 @@ export default function RootLayout({
       </head>
       <body>
         <ClientProvider>
+          {/* ADR-021 Phase 2 (FR6): binds the native StorageContext exactly
+              once at hydration time on the native runtime; a no-op render
+              (and its own effect is a no-op) on web/desktop. See
+              components/native/NativeBootstrap.tsx's module doc. */}
+          {process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native" ? (
+            <NativeBootstrap />
+          ) : null}
           <AppearanceRuntime />
           <div className="min-h-screen bg-gw-chrome text-gw-primary">
             {children}

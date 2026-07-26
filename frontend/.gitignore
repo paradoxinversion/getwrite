@@ -20,3 +20,7 @@ node_modules/
 
 tsconfig.tsbuildinfo
 dist-cli
+
+# ADR-021 Phase 2: native static export output and its generated build tree.
+/out/
+.native-build/

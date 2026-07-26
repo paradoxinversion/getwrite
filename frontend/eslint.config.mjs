@@ -49,6 +49,12 @@ const eslintConfig = [
       "storybook-static/**",
       "playwright-report/**",
       "stories/**",
+      // ADR-021 Phase 2: build-native-static.mjs's generated shadow build
+      // root and its static export output — neither is source, both are
+      // gitignored, and the shadow root's own `.next/**` build artifacts
+      // aren't valid lint targets.
+      ".native-build/**",
+      "out/**",
     ],
   },
   ...coreWebVitals,
