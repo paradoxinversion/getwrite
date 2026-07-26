@@ -53,7 +53,7 @@ Each `metadata.json` contains a `Revision` object:
 - When `setCanonicalRevision(projectRoot, resourceId, versionNumber)` is called, it rewrites every `metadata.json` under `revisions/<resourceId>/`: the target version is set to `isCanonical: true`, all others to `isCanonical: false`.
 - The Redux layer enforces this invariant client-side via `revision-canonical-guards.ts`, which provides `applyCanonicalRevision` (marks one entry canonical, clears all others) and `isStaleCanonicalUpdate` (guards against out-of-order updates).
 
-The `revision-transport-service.ts` handles API calls for revision operations and feeds normalized `RevisionEntry` objects to the Redux slice via `revision-normalization.ts`.
+The `revision-transport-service.ts` resolves revision operations through the transport seam (HTTP on web/desktop, in-process on native; ADR-021) and feeds normalized `RevisionEntry` objects to the Redux slice via `revision-normalization.ts`.
 
 ---
 
@@ -151,5 +151,5 @@ The revision directories under `<projectRoot>/revisions/<resourceId>/` are **not
 | `frontend/src/store/revisionsSlice.ts`           | Redux state for revision UI                             |
 | `frontend/src/store/revision-canonical-guards.ts`| Client-side canonical invariant enforcement             |
 | `frontend/src/store/revision-normalization.ts`   | Normalizes raw revision data into `RevisionEntry` shape |
-| `frontend/src/store/revision-transport-service.ts`| API call layer for revision operations                 |
+| `frontend/src/store/revision-transport-service.ts`| Transport layer for revision operations (HTTP web/desktop, in-process native) |
 | `frontend/app/api/resource/revision/[resource-id]/route.ts` | Next.js route handler                      |

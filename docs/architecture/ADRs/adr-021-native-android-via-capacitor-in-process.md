@@ -220,7 +220,14 @@ execution, tracked separately.
 
 ## Spike log
 
-### Phase 1 — Storage (2026-07-24): ✅ passes conformance
+> **Numbering note.** The spikes below are numbered 1–3 and are the original
+> 2026-07-24/25 proof-of-concept behind this decision. They are **distinct from
+> the execution phases** (Phase 0, Phase 1, …) tracked in
+> `specs/features/native-android-phase*.md` and the project roadmap — e.g.
+> execution Phase 1 (transport breadth) is the generalization of Spike 2
+> (transport collapse) across the whole data layer.
+
+### Spike 1 — Storage (2026-07-24): ✅ passes conformance
 
 `capacitorFsAdapter` (`frontend/src/lib/models/capacitorFsAdapter.ts`) passes the
 full `runStorageAdapterConformance` suite — all 14 cases — driven through the
@@ -256,7 +263,7 @@ suite is unaffected.
 **Verdict:** the storage half of Option 2 is validated in the normal gate — the
 seam ADR-017/019 built absorbs a device filesystem cleanly.
 
-### Phase 2 — Transport collapse (2026-07-24): ✅ proven on the search path
+### Spike 2 — Transport collapse (2026-07-24): ✅ proven on the search path
 
 The HTTP → in-process collapse is demonstrated end-to-end on one representative
 operation (search), passing in the normal Vitest gate (4 cases,
@@ -298,16 +305,16 @@ operation (search), passing in the normal Vitest gate (4 cases,
    backend (which pulls `node:*` and the storage layer) is imported lazily only
    when `runtime === "native"`, so the HTTP build's module graph never includes
    it — no separate source tree required.
-4. **The error-translation bridge from phase 1 is load-bearing here too.** The
+4. **The error-translation bridge from Spike 1 is load-bearing here too.** The
    in-process path exercised `readSidecar` and `listRevisions`, both of which
    branch on `err.code === "ENOENT"`; the hit only came back because
-   `capacitorFsAdapter` translates the plugin's message-only errors. Phase 1 and
-   phase 2 are genuinely coupled.
+   `capacitorFsAdapter` translates the plugin's message-only errors. Spike 1 and
+   Spike 2 are genuinely coupled.
 
-### Phase 3 — Write path over the Capacitor adapter (2026-07-25): ✅ the riskier half holds
+### Spike 3 — Write path over the Capacitor adapter (2026-07-25): ✅ the riskier half holds
 
-Phase 2 collapsed a read path; the write mechanics were the flagged unknown.
-Phase 3 drives the real revision write path — `createRevision` — in-process over
+Spike 2 collapsed a read path; the write mechanics were the flagged unknown.
+Spike 3 drives the real revision write path — `createRevision` — in-process over
 `capacitorFsAdapter`, passing in the normal gate (3 cases,
 `frontend/tests/unit/write-path.spike.test.ts`). One `createRevision` call
 exercises every risk at once: per-resource lock → `nextVersionNumber` → temp-dir
@@ -320,7 +327,7 @@ stage → **directory `rename` onto `v-<N>`** → `setCanonicalRevision` → pru
    adapter the content lands at the final path and the staging dir is gone. The
    adapter's directory-rename (already conformance-proven as "move to a fresh
    destination") is exactly what this path needs.
-2. **The fail-if-exists concern from Phase 1 is a non-issue for revisions.**
+2. **The fail-if-exists concern from Spike 1 is a non-issue for revisions.**
    `writeRevision` self-guards with a `stat` pre-check before renaming, so it
    never relies on the adapter's rename rejecting an existing destination —
    whatever Android's native rename does on collision, this path is already
@@ -354,9 +361,9 @@ locking simpler, not harder.
 **Still unproven (execution, not architecture):**
 
 - **Breadth of the transport collapse.** Only search is wired end-to-end through
-  the seam. Phase 3 proved the write _mechanics_ over the adapter, but each
+  the seam. Spike 3 proved the write _mechanics_ over the adapter, but each
   write route's core still needs lifting out of its handler (as search was) and a
-  native transport backend, following the Phase-2 pattern.
+  native transport backend, following the Spike-2 pattern.
 - **On-device reality.** The in-memory fake proves plugin _semantics_, not real
   Android I/O, the `@capacitor/filesystem` dependency sign-off, scoped-storage
   rooting, or the `nativeFilesystem()` wiring line the spike leaves as a
