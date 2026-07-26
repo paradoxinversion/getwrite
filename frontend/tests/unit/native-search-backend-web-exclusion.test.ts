@@ -14,8 +14,9 @@
 //    substitutes a `node:*`-free stub for that exact import specifier at
 //    build time — because Turbopack resolves dynamic `import()` targets into
 //    the module graph regardless of whether the surrounding runtime
-//    condition is reachable, so the guard in `search-transport.ts` alone is
-//    not sufficient (see that file's `resolveSearchTransport` doc comment).
+//    condition is reachable, so the raw-env-comparison guard alone (now in
+//    `create-transport.ts` — ADR-021 Phase 1's generalized transport-collapse
+//    helper, see that file's doc comment) is not sufficient.
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
@@ -37,6 +38,12 @@ const WEB_STUB_RELATIVE_PATH = path.join(
   "store",
   "transport",
   "native-search-backend.web-stub.ts",
+);
+const CREATE_TRANSPORT_RELATIVE_PATH = path.join(
+  "src",
+  "store",
+  "transport",
+  "create-transport.ts",
 );
 
 /** Recursively collects every `.ts`/`.tsx` file under `dir`. */
@@ -80,24 +87,35 @@ describe("native-search-backend web-bundle exclusion", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("search-transport.ts gates the dynamic import with the raw, directly-inlinable env comparison (not an indirected function call)", () => {
+  it("create-transport.ts gates native dispatch with the raw, directly-inlinable env comparison (not an indirected function call)", () => {
+    // ADR-021 Phase 1: the runtime branch that used to live inline in
+    // `search-transport.ts` is now centralized in the generic
+    // `createTransport` helper. The guarantee this test protects — the gate
+    // is the raw `process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native"`
+    // comparison, not an indirected `resolveRuntime()` call — now applies to
+    // whichever module makes that decision, which is `create-transport.ts`.
+    const contents = fs.readFileSync(
+      path.join(frontendRoot, CREATE_TRANSPORT_RELATIVE_PATH),
+      "utf8",
+    );
+
+    expect(contents).toMatch(
+      /if\s*\(\s*process\.env\.NEXT_PUBLIC_GETWRITE_RUNTIME\s*===\s*"native"\s*\)/,
+    );
+    expect(contents).not.toMatch(/resolveRuntime\(\)\s*===\s*"native"/);
+  });
+
+  it("search-transport.ts's native loader thunk still carries the literal dynamic import specifier", () => {
+    // The literal specifier (not a computed path) is what lets Turbopack's
+    // `resolveAlias` substitute the web-stub for it at build time — this must
+    // keep living at the call site even though the runtime decision that
+    // triggers it now lives in `create-transport.ts`.
     const contents = fs.readFileSync(
       path.join(frontendRoot, SEARCH_TRANSPORT_RELATIVE_PATH),
       "utf8",
     );
 
-    // The gate immediately preceding the dynamic import must be the literal
-    // `process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native"` comparison,
-    // not `resolveRuntime() === "native"`. Regression here would reintroduce
-    // an indirection that (empirically, per this task's investigation)
-    // doesn't change Turbopack's bundling behavior on its own, but keeping
-    // the literal form documents the intended, most-inlinable shape of the
-    // guard and keeps `resolveRuntime()` decoupled from this call site.
-    expect(contents).toMatch(
-      /if\s*\(\s*process\.env\.NEXT_PUBLIC_GETWRITE_RUNTIME\s*===\s*"native"\s*\)/,
-    );
-    expect(contents).not.toMatch(/resolveRuntime\(\)\s*===\s*"native"/);
-    expect(contents).toContain('await import("./native-search-backend")');
+    expect(contents).toContain('import("./native-search-backend")');
   });
 
   it("next.config.mjs aliases the native backend specifier to a node:*-free stub for Turbopack builds", () => {
