@@ -32,7 +32,10 @@ await build({
   bundle: true,
   platform: "browser",
   format: "iife",
-  target: ["es2020"],
+  // es2015 keeps native `class extends Uint8Array` (es5 would break the Buffer
+  // shim) while transpiling newer syntax down, so the bundle also parses on the
+  // old WebView (~Chrome 51) that ships with the minSdk=24 emulator image.
+  target: ["es2015"],
   outfile: resolve(androidRoot, "www", "harness.bundle.js"),
   sourcemap: true,
   logLevel: "info",
@@ -46,10 +49,13 @@ await build({
   // it for all base64 read/write. Inject a dependency-free Buffer polyfill as
   // the free `Buffer` identifier across every bundled module. See buffer-inject.mjs.
   inject: [shimPath("buffer-inject.mjs")],
-  // A minimal `process` so any stray `process.env.X` read returns undefined
-  // rather than throwing a ReferenceError in the WebView.
+  // Old WebViews (e.g. Chrome 53 on the minSdk=24 emulator) predate `globalThis`
+  // (Chrome 71), so polyfill it from `window` first — otherwise the very first
+  // banner statement throws ReferenceError and the whole bundle fails to load.
+  // Then install a minimal `process` so any stray `process.env.X` read returns
+  // undefined rather than throwing.
   banner: {
-    js: "globalThis.process = globalThis.process || { env: {} };",
+    js: "if(typeof globalThis==='undefined'){window.globalThis=window;}globalThis.process=globalThis.process||{env:{}};",
   },
   alias: {
     "node:path": shimPath("path.mjs"),
