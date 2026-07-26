@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>GetWrite — Phase 0 Device Harness</title>
+    <style>
+      :root {
+        --bg: #101012;
+        --surface: #1a1a1e;
+        --surface-2: #232329;
+        --text: #ececf0;
+        --mid: #8a8a94;
+        --ok: #4caf7d;
+        --warn: #d8a032;
+        --line: #33333b;
+        font-family:
+          "IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        padding: env(safe-area-inset-top) 16px 48px;
+        line-height: 1.5;
+      }
+      header {
+        padding: 20px 0 12px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--mid);
+        font-size: 13px;
+      }
+      button {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 15px;
+        font-weight: 600;
+        padding: 14px 18px;
+        border-radius: 10px;
+        width: 100%;
+        margin: 12px 0;
+      }
+      button:active {
+        background: var(--surface);
+      }
+      button:disabled {
+        opacity: 0.5;
+      }
+      button.secondary {
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 14px;
+        width: auto;
+      }
+      #status {
+        font-size: 13px;
+        color: var(--mid);
+        min-height: 18px;
+      }
+      .cards {
+        display: grid;
+        gap: 10px;
+        margin: 16px 0;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .card h2 {
+        font-size: 13px;
+        margin: 0 0 6px;
+        color: var(--mid);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .card .val {
+        font-size: 15px;
+      }
+      .kv {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 13px;
+        padding: 2px 0;
+      }
+      .kv .k {
+        color: var(--mid);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+      }
+      .tag.ok {
+        color: var(--ok);
+        border-color: var(--ok);
+      }
+      .tag.warn {
+        color: var(--warn);
+        border-color: var(--warn);
+      }
+      pre {
+        background: #000;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+        font-size: 11px;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre;
+        max-height: 46vh;
+        overflow-y: auto;
+      }
+      .hint {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 12px;
+        color: var(--mid);
+      }
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      ADR-021 Phase 0 on-device harness page. Replaces the Task 1 placeholder.
+      Loads harness.bundle.js (built by scripts/build-harness.mjs from
+      harness/harness-entry.ts) and drives runNativeDeviceHarness() against the
+      real @capacitor/filesystem plugin. Still a minimal harness page, NOT the
+      full app UI — full WebView wiring against real frontend assets is Phase 2
+      per the spec's non-goals.
+    -->
+    <header>
+      <h1>GetWrite · Phase 0 Device Harness</h1>
+      <div class="sub">
+        ADR-021 · FR6 search · FR7a base64 throughput · FR7b rename-on-collision
+      </div>
+    </header>
+
+    <div class="hint" id="env-hint">
+      Runs the three physical-device checks against the real
+      <code>@capacitor/filesystem</code> plugin. Must run inside the installed
+      Android app (not a browser). Read the numbers, set the base64 threshold
+      from the throughput result, and note the rename-collision behavior.
+    </div>
+
+    <button id="run" disabled>Run harness</button>
+    <div id="status">Loading harness bundle…</div>
+
+    <div class="cards" id="cards" hidden>
+      <div class="card" id="card-search">
+        <h2>FR6 · Search</h2>
+        <div class="val"></div>
+      </div>
+      <div class="card" id="card-throughput">
+        <h2>FR7a · base64 throughput</h2>
+        <div class="val"></div>
+      </div>
+      <div class="card" id="card-rename">
+        <h2>FR7b · Rename-on-collision</h2>
+        <div class="val"></div>
+      </div>
+    </div>
+
+    <button class="secondary" id="copy" hidden>Copy full JSON report</button>
+    <pre id="output" hidden></pre>
+
+    <script src="harness.bundle.js"></script>
+    <script>
+      (function () {
+        var runBtn = document.getElementById("run");
+        var status = document.getElementById("status");
+        var cards = document.getElementById("cards");
+        var output = document.getElementById("output");
+        var copyBtn = document.getElementById("copy");
+        var lastReport = null;
+
+        function setStatus(msg) {
+          status.textContent = msg;
+        }
+
+        function tag(cls, text) {
+          return '<span class="tag ' + cls + '">' + text + "</span>";
+        }
+
+        function row(k, v) {
+          return (
+            '<div class="kv"><span class="k">' +
+            k +
+            '</span><span class="v">' +
+            v +
+            "</span></div>"
+          );
+        }
+
+        function render(report) {
+          lastReport = report;
+          cards.hidden = false;
+
+          var s = report.search;
+          document.querySelector("#card-search .val").innerHTML =
+            (s.hitCount > 0
+              ? tag("ok", s.hitCount + " hit(s)")
+              : tag("warn", "0 hits")) +
+            row("query", '"' + s.query + '"') +
+            row(
+              "top title",
+              s.hits[0] ? '"' + (s.hits[0].title || "—") + '"' : "—",
+            ) +
+            row("expected", '1 hit · "Dragon Notes"');
+
+          var t = report.throughput;
+          document.querySelector("#card-throughput .val").innerHTML =
+            (t.roundTripIntegrityOk
+              ? tag("ok", "integrity ok")
+              : tag("warn", "integrity FAILED")) +
+            row("payload", (t.payloadBytes / 1048576).toFixed(1) + " MiB") +
+            row(
+              "write",
+              t.writeMBps.toFixed(1) + " MB/s (" + t.writeMs.toFixed(1) + " ms)",
+            ) +
+            row(
+              "read",
+              t.readMBps.toFixed(1) + " MB/s (" + t.readMs.toFixed(1) + " ms)",
+            );
+
+          var r = report.renameCollision;
+          document.querySelector("#card-rename .val").innerHTML =
+            tag(
+              r.observedBehavior === "threw" ? "ok" : "warn",
+              r.observedBehavior,
+            ) +
+            row("threw", String(r.threw)) +
+            row("src exists after", String(r.sourceStillExistsAfter)) +
+            row("dest entries", String(r.destinationEntriesAfter.length)) +
+            row("vs fake", "fake merges silently (no throw)");
+
+          output.hidden = false;
+          output.textContent = JSON.stringify(report, null, 2);
+          copyBtn.hidden = false;
+        }
+
+        if (
+          !window.getwriteHarness ||
+          typeof window.getwriteHarness.run !== "function"
+        ) {
+          setStatus(
+            "Harness bundle not loaded. Rebuild with `pnpm --filter getwrite-android build:harness`, then `cap sync android`.",
+          );
+          return;
+        }
+
+        runBtn.disabled = false;
+        setStatus("Ready.");
+
+        runBtn.addEventListener("click", function () {
+          runBtn.disabled = true;
+          cards.hidden = true;
+          output.hidden = true;
+          copyBtn.hidden = true;
+          setStatus("Running search · throughput · rename checks…");
+          window.getwriteHarness
+            .run()
+            .then(function (report) {
+              setStatus("Done · " + report.generatedAt);
+              render(report);
+            })
+            .catch(function (err) {
+              setStatus(
+                "FAILED: " + (err && err.message ? err.message : String(err)),
+              );
+              output.hidden = false;
+              output.textContent = (err && err.stack) || String(err);
+            })
+            .finally(function () {
+              runBtn.disabled = false;
+            });
+        });
+
+        copyBtn.addEventListener("click", function () {
+          if (!lastReport) return;
+          var text = JSON.stringify(lastReport, null, 2);
+          var done = function () {
+            copyBtn.textContent = "Copied ✓";
+            setTimeout(function () {
+              copyBtn.textContent = "Copy full JSON report";
+            }, 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, done);
+          } else {
+            done();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -15,6 +15,15 @@ async call chain. When no context is active, both fall back to today's process-w
 defaults: `defaultProjectsDir()`'s env-var/cwd resolution for the projects directory,
 and the module-level adapter set via `setStorageAdapter()` for the filesystem adapter.
 
+**ADR-021 Phase 0 addition.** `storage-context.ts` also supports a module-scoped
+*default* `StorageContext`, installed once via `setDefaultStorageContext()` and
+consulted by `getStorageContext()` whenever no `AsyncLocalStorage` scope is
+active. This is for the native (Capacitor Android) build only — a long-lived,
+single-tenant process with no per-request boundary to bind a scope to —
+installed once at startup by `native-bootstrap.ts`. Web and desktop never call
+`setDefaultStorageContext()`, so the fallback stays `undefined` there and the
+"no context active" behavior described above is unchanged for those platforms.
+
 This ambient context is the seam per-tenant storage isolation is built on. See
 ADR-017
 (`docs/architecture/ADRs/adr-017-request-scoped-directory-per-tenant-storage.md`)

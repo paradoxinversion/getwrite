@@ -1,0 +1,22 @@
+{
+    "name": "getwrite-android",
+    "version": "1.6.0",
+    "private": true,
+    "description": "Native Android shell for GetWrite (Capacitor)",
+    "author": {
+        "name": "Saboteur LLC - Saboteur Works",
+        "url": "https://github.com/saboteur-works"
+    },
+    "scripts": {
+        "sync": "cap sync android",
+        "build:harness": "node scripts/build-harness.mjs",
+        "build": "node -e \"console.log('getwrite-android: build is a scaffold placeholder for Phase 0 Task 1 -- Task 5 wires the real cap sync/Gradle CI build.')\""
+    },
+    "devDependencies": {
+        "@capacitor/android": "^8.4.2",
+        "@capacitor/cli": "^8.4.2",
+        "@capacitor/core": "^8.4.2",
+        "@capacitor/filesystem": "^8.1.2",
+        "esbuild": "^0.28.0"
+    }
+}

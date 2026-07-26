@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Generated on-device harness bundle — rebuilt via `pnpm --filter getwrite-android build:harness`
+www/harness.bundle.js
+www/harness.bundle.js.map
+
+# Capacitor-generated native Android project (created by `npx cap add android`)
+android/
+
+# Gradle / build output
+*.iml
+.gradle/
+build/

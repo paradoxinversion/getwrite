@@ -73,12 +73,20 @@ describe("transport collapse — native routing (no HTTP)", () => {
     }) as unknown as typeof fetch;
     globalThis.fetch = fetchMock;
 
-    // No deps are threaded through the service, so the native backend hits its
-    // deferred real-plugin resolver — the ADR-021 marker. Reaching THAT error
-    // (rather than a fetch) is the proof the seam flipped to in-process.
+    // No deps are threaded through the service, so the native backend resolves
+    // `nativeFilesystem()` to the real `@capacitor/filesystem` bridge
+    // (ADR-021 Phase 0, Task 3 — the old "Native filesystem not wired" stub is
+    // gone). Outside a real Capacitor WebView there's no native implementation
+    // registered for the plugin, so `findProjectRoot`'s directory read fails
+    // and it swallows that failure as "project not found" — proving the real
+    // bridge was reached (not the literal stub message) without asserting on
+    // Capacitor's internal, version-fragile error text.
     await expect(
       executeSearchRequest({ projectId: "proj-1" }, "dragon"),
-    ).rejects.toThrow(/Native filesystem not wired/);
+    ).rejects.toThrow(/Project proj-1 not found/);
+    await expect(
+      executeSearchRequest({ projectId: "proj-1" }, "dragon"),
+    ).rejects.not.toThrow(/Native filesystem not wired/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

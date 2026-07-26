@@ -1,4 +1,4 @@
-// Last Updated: 2026-07-24
+// Last Updated: 2026-07-25
 
 /**
  * @module store/transport/native-search-backend
@@ -6,23 +6,40 @@
  * **ADR-021 spike — the transport collapse.** The in-process implementation of
  * {@link SearchTransport} for a native (Capacitor) build: instead of
  * `fetch('/api/...')`, it invokes the *same* transport-agnostic search core the
- * HTTP route uses ({@link executeSearch}), inside a {@link runInStorageContext}
- * scope bound to a {@link capacitorFsAdapter} over the device filesystem. There
- * is no server and no HTTP — the exact same business logic runs directly in the
- * WebView process.
+ * HTTP route uses ({@link executeSearch}). There is no server and no HTTP — the
+ * exact same business logic runs directly in the WebView process.
  *
  * This module is imported *only* on the native path (see
  * `search-transport.ts`'s dynamic import), because it pulls in the server-side
  * search core and storage layer, which must never enter the web client bundle.
  *
- * The `deps` seam exists so the spike test can inject the in-memory Capacitor
- * fake and a fixture projects dir. In a real native build, `deps` is omitted and
- * `nativeFilesystem()` resolves the actual `@capacitor/filesystem` plugin — that
- * one wiring line is the only piece deferred behind the dependency sign-off.
+ * **Storage context binding (ADR-021 Phase 0, Task 4 — FR5).** `deps.fs`
+ * remains the test-injection seam for exercising this transport without a
+ * device: when supplied, this module binds a fresh, one-off
+ * {@link runInStorageContext} scope for that call, exactly as before, so
+ * spike tests get a standalone, isolated result with no global bootstrap
+ * required.
+ *
+ * In a real native build, `deps.fs` is omitted. FR5 requires
+ * `runInStorageContext` be bound exactly once, at app startup — not
+ * per-operation — so this production path does **not** rebind a context per
+ * search call. It relies on the ambient *default* {@link StorageContext}
+ * installed once by `native-bootstrap.ts` (`setDefaultStorageContext`),
+ * which `getStorageContext()`'s fallback (`storage-context.ts`) makes
+ * transparently visible to every `io.ts` call in this module's call chain.
+ * `nativeFilesystem()` is kept only as a defensive fallback for the
+ * (unsupported) case where no bootstrap has run yet: rather than silently
+ * resolving to the wrong default (Node's `fs/promises` adapter, meaningless
+ * on Android), it binds a one-off context against the real plugin so the
+ * call still resolves against the real device filesystem.
  */
 import type { CapacitorFilesystemLike } from "../../lib/models/capacitor-filesystem";
+import { createRealCapacitorFilesystem } from "../../lib/models/capacitor-filesystem-real";
 import { capacitorFsAdapter } from "../../lib/models/capacitorFsAdapter";
-import { runInStorageContext } from "../../lib/models/storage-context";
+import {
+  getStorageContext,
+  runInStorageContext,
+} from "../../lib/models/storage-context";
 import {
   executeSearch,
   findProjectRoot,
@@ -44,14 +61,12 @@ export interface NativeSearchDeps {
 }
 
 /**
- * Resolves the real Capacitor Filesystem plugin. Deferred behind the
- * dependency sign-off (ADR-021): the native build supplies it, the spike does
- * not need it.
+ * Resolves the real Capacitor Filesystem plugin, scoped to the default
+ * `Directory.Data` root. This is the production path: the native runtime
+ * never supplies `deps.fs`, so every real device call flows through here.
  */
 function nativeFilesystem(): CapacitorFilesystemLike {
-  throw new Error(
-    "Native filesystem not wired: pass deps.fs, or adopt @capacitor/filesystem for the native build (ADR-021).",
-  );
+  return createRealCapacitorFilesystem();
 }
 
 /**
@@ -64,34 +79,57 @@ export function createNativeSearchTransport(
 ): SearchTransport {
   return {
     async search(projectId, query, filters) {
-      const fs = deps.fs ?? nativeFilesystem();
       const projectsDir = deps.projectsDir ?? "/projects";
-      const adapter = capacitorFsAdapter(fs);
 
-      // Establish the storage context so the shared core's io.ts calls resolve
-      // to the Capacitor adapter — exactly what withStorageContext does for the
-      // HTTP route, minus the request.
+      const runSearch = async (): Promise<SearchResult[]> => {
+        const projectRoot = await findProjectRoot(projectsDir, projectId);
+        if (!projectRoot) {
+          throw new Error(`Project ${projectId} not found.`);
+        }
+        const results = await executeSearch(
+          projectRoot,
+          query,
+          {
+            folder: filters?.folder,
+            status: filters?.status,
+            tags: filters?.tags,
+          },
+          deps.resultLimit ?? DEFAULT_RESULT_LIMIT,
+        );
+        // The core returns the canonical server shape; the service's public
+        // SearchResult is structurally the same view of it.
+        return results as unknown as SearchResult[];
+      };
+
+      if (deps.fs) {
+        // Explicit test injection: bind a fresh, one-off context for this
+        // call only — matching how the spike tests exercise this transport
+        // standalone, without any global native bootstrap having run.
+        const adapter = capacitorFsAdapter(deps.fs);
+        return runInStorageContext(
+          { tenantRoot: projectsDir, adapter },
+          runSearch,
+        );
+      }
+
+      if (getStorageContext()) {
+        // Production path: an ambient StorageContext is already active —
+        // either the process-wide default installed once at native app
+        // startup (native-bootstrap.ts, FR5), or an explicit scope some
+        // caller already established. Resolve directly; do not rebind.
+        return runSearch();
+      }
+
+      // Defensive fallback: no ambient context yet (e.g. this call happened
+      // before native-bootstrap.ts ran, or there is no bootstrap at all in
+      // this environment). Bind a one-off context against the real plugin so
+      // the call still resolves against the real device filesystem instead
+      // of silently falling through to io.ts's Node `fs/promises` default,
+      // which is meaningless on Android.
+      const adapter = capacitorFsAdapter(nativeFilesystem());
       return runInStorageContext(
         { tenantRoot: projectsDir, adapter },
-        async () => {
-          const projectRoot = await findProjectRoot(projectsDir, projectId);
-          if (!projectRoot) {
-            throw new Error(`Project ${projectId} not found.`);
-          }
-          const results = await executeSearch(
-            projectRoot,
-            query,
-            {
-              folder: filters?.folder,
-              status: filters?.status,
-              tags: filters?.tags,
-            },
-            deps.resultLimit ?? DEFAULT_RESULT_LIMIT,
-          );
-          // The core returns the canonical server shape; the service's public
-          // SearchResult is structurally the same view of it.
-          return results as unknown as SearchResult[];
-        },
+        runSearch,
       );
     },
   };

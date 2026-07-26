@@ -20,7 +20,6 @@
  * platforms with no branching of its own.
  */
 import type { SearchFilters, SearchResult } from "../search-transport-service";
-import { resolveRuntime } from "./runtime";
 
 /** The single operation both platforms implement. */
 export interface SearchTransport {
@@ -78,11 +77,16 @@ export const httpSearchTransport: SearchTransport = {
  * bundle's module graph.
  */
 export async function resolveSearchTransport(): Promise<SearchTransport> {
-  // The runtime resolver is a tiny, client-safe env read, imported statically so
-  // the web path adds no async module-load hop. Only the native backend — which
-  // pulls in server-only code — is imported lazily, and only under the native
-  // runtime, so it never enters the web bundle's module graph.
-  if (resolveRuntime() === "native") {
+  // The gate here is deliberately the raw, directly-inlinable env comparison
+  // (not routed through `resolveRuntime()`) so Next.js's build-time inlining of
+  // `NEXT_PUBLIC_*` vars plus Turbopack's dead-code elimination can see the
+  // literal `false` in the web build and statically drop this whole branch —
+  // including the dynamic `import("./native-search-backend")` — out of the
+  // client/SSR bundle. `resolveRuntime()` is an indirected function call, which
+  // defeats that static analysis (Turbopack still traces the dynamic import),
+  // so it's intentionally not used at this call site even though it reads the
+  // same env var and remains the source of truth for tests/other call sites.
+  if (process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native") {
     const { createNativeSearchTransport } =
       await import("./native-search-backend");
     return createNativeSearchTransport();
