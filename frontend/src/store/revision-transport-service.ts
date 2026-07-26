@@ -1,6 +1,7 @@
 import type { Revision } from "../lib/models/types";
 import { selectActiveProjectDirectoryId } from "./projectsSlice";
 import type { RootState } from "./store";
+import { createTransport } from "./transport/create-transport";
 
 /**
  * Response shape for `/api/project-resources` used by revision list loading.
@@ -12,7 +13,7 @@ interface ProjectResourcesResponse {
 /**
  * Response shape for fetching a single revision preview.
  */
-interface RevisionContentResponse {
+export interface RevisionContentResponse {
   revision: Revision;
   content: string;
 }
@@ -66,6 +67,10 @@ async function throwApiError(
 
 /**
  * Fetch persisted revisions for a selected resource.
+ *
+ * Out of scope for the ADR-021 Phase 1 transport-collapse (this hits
+ * `/api/project-resources`, not the revision route migrated below) — left as
+ * plain HTTP.
  */
 export async function fetchRevisionList(
   context: RevisionRequestContext,
@@ -84,6 +89,159 @@ export async function fetchRevisionList(
   return (await response.json()) as ProjectResourcesResponse;
 }
 
+// ---------------------------------------------------------------------------
+// Transport collapse (ADR-021 Phase 1, Task 2)
+//
+// One RevisionTransport contract with two implementations selected by the
+// build-time runtime, mirroring search-transport.ts:
+//
+// - Web/hosted/desktop -> httpRevisionTransport, which carries the original
+//   `fetch('/api/resource/revision/:resourceId')` calls byte-for-byte.
+// - Native (Capacitor) -> an in-process backend
+//   (`./transport/native-revision-backend`), dynamically imported only when
+//   `runtime === "native"`, reusing the shared revision core
+//   (`lib/models/revision-core.ts`) instead of HTTP.
+//
+// `createTransport` centralizes the runtime branch and dispatch (see
+// `./transport/create-transport`).
+// ---------------------------------------------------------------------------
+
+/**
+ * The revision-route-backed operations both platforms implement. Shared with
+ * `./transport/native-revision-backend`, which imports this type rather than
+ * duplicating it.
+ */
+export interface RevisionTransport {
+  /** Creates a new explicit revision for a resource. */
+  create(
+    context: RevisionRequestContext,
+    revisionName: string,
+  ): Promise<Revision>;
+  /** Reads a specific revision's metadata and content. */
+  read(
+    context: RevisionRequestContext,
+    revisionId: string,
+  ): Promise<RevisionContentResponse>;
+  /** Updates the canonical revision's content in place. */
+  updateInPlace(
+    context: RevisionRequestContext,
+    revisionId: string,
+    content: string,
+  ): Promise<Revision & { updatedAt: string }>;
+  /** Marks the given revision as canonical. */
+  setCanonical(
+    context: RevisionRequestContext,
+    revisionId: string,
+  ): Promise<void>;
+  /** Deletes a non-canonical revision. */
+  delete(context: RevisionRequestContext, revisionId: string): Promise<void>;
+}
+
+/**
+ * HTTP transport — the hosted/desktop path. Every method body below is the
+ * original public function's `fetch` call verbatim; preserving it exactly is
+ * what keeps the server build unchanged.
+ */
+export const httpRevisionTransport: RevisionTransport = {
+  async create(context, revisionName) {
+    const response = await fetch(
+      `/api/resource/revision/${context.resourceId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: context.projectId,
+          isCanonical: false,
+          metadata: { name: revisionName },
+        }),
+      },
+    );
+
+    if (!response.ok) await throwApiError(response, "Failed to save revision.");
+
+    return (await response.json()) as Revision;
+  },
+
+  async read(context, revisionId) {
+    const params = new URLSearchParams({
+      projectId: context.projectId,
+      revisionId,
+    });
+
+    const response = await fetch(
+      `/api/resource/revision/${context.resourceId}?${params}`,
+    );
+
+    if (!response.ok)
+      await throwApiError(response, "Failed to fetch revision.");
+
+    return (await response.json()) as RevisionContentResponse;
+  },
+
+  async updateInPlace(context, revisionId, content) {
+    const response = await fetch(
+      `/api/resource/revision/${context.resourceId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: context.projectId,
+          revisionId,
+          content,
+        }),
+      },
+    );
+
+    if (!response.ok)
+      await throwApiError(response, "Failed to update revision.");
+
+    return (await response.json()) as Revision & { updatedAt: string };
+  },
+
+  async setCanonical(context, revisionId) {
+    const response = await fetch(
+      `/api/resource/revision/${context.resourceId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: context.projectId, revisionId }),
+      },
+    );
+
+    if (!response.ok)
+      await throwApiError(response, "Failed to set canonical revision.");
+  },
+
+  async delete(context, revisionId) {
+    const response = await fetch(
+      `/api/resource/revision/${context.resourceId}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: context.projectId, revisionId }),
+      },
+    );
+
+    if (!response.ok)
+      await throwApiError(response, "Failed to delete revision.");
+  },
+};
+
+/**
+ * Resolves the transport for the active runtime. On native, the in-process
+ * backend is imported lazily so it forms its own chunk and never enters the
+ * web bundle's module graph. The thunk carries the literal
+ * `import("./transport/native-revision-backend")` specifier so Turbopack's
+ * `resolveAlias` (`next.config.mjs`) can substitute a `node:*`-free web-stub
+ * for it at build time.
+ */
+export const resolveRevisionTransport: () => Promise<RevisionTransport> =
+  createTransport(httpRevisionTransport, () =>
+    import("./transport/native-revision-backend").then(
+      ({ createNativeRevisionTransport }) => createNativeRevisionTransport(),
+    ),
+  );
+
 /**
  * Create a new explicit revision for a selected resource.
  */
@@ -91,19 +249,8 @@ export async function createRevision(
   context: RevisionRequestContext,
   revisionName: string,
 ): Promise<Revision> {
-  const response = await fetch(`/api/resource/revision/${context.resourceId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      projectId: context.projectId,
-      isCanonical: false,
-      metadata: { name: revisionName },
-    }),
-  });
-
-  if (!response.ok) await throwApiError(response, "Failed to save revision.");
-
-  return (await response.json()) as Revision;
+  const transport = await resolveRevisionTransport();
+  return transport.create(context, revisionName);
 }
 
 /**
@@ -113,13 +260,8 @@ export async function removeRevision(
   context: RevisionRequestContext,
   revisionId: string,
 ): Promise<void> {
-  const response = await fetch(`/api/resource/revision/${context.resourceId}`, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId: context.projectId, revisionId }),
-  });
-
-  if (!response.ok) await throwApiError(response, "Failed to delete revision.");
+  const transport = await resolveRevisionTransport();
+  await transport.delete(context, revisionId);
 }
 
 /**
@@ -129,18 +271,8 @@ export async function fetchRevisionContent(
   context: RevisionRequestContext,
   revisionId: string,
 ): Promise<RevisionContentResponse> {
-  const params = new URLSearchParams({
-    projectId: context.projectId,
-    revisionId,
-  });
-
-  const response = await fetch(
-    `/api/resource/revision/${context.resourceId}?${params}`,
-  );
-
-  if (!response.ok) await throwApiError(response, "Failed to fetch revision.");
-
-  return (await response.json()) as RevisionContentResponse;
+  const transport = await resolveRevisionTransport();
+  return transport.read(context, revisionId);
 }
 
 /**
@@ -150,12 +282,6 @@ export async function persistCanonicalRevision(
   context: RevisionRequestContext,
   revisionId: string,
 ): Promise<void> {
-  const response = await fetch(`/api/resource/revision/${context.resourceId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId: context.projectId, revisionId }),
-  });
-
-  if (!response.ok)
-    await throwApiError(response, "Failed to set canonical revision.");
+  const transport = await resolveRevisionTransport();
+  await transport.setCanonical(context, revisionId);
 }

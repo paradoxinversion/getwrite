@@ -18,8 +18,18 @@
  * Call sites depend on {@link resolveSearchTransport} rather than on `fetch`,
  * which is the whole point — the same Redux transport service works on both
  * platforms with no branching of its own.
+ *
+ * As of ADR-021 Phase 1, the runtime branch, dispatch, and error handling are
+ * centralized in {@link createTransport} (`./create-transport`), a generic
+ * helper shared across transports. This module's job is now just to supply
+ * the HTTP implementation and a `loadNative` thunk carrying the literal
+ * dynamic import specifier `./native-search-backend` — the literal specifier
+ * is what lets `next.config.mjs`'s `turbopack.resolveAlias` substitute the
+ * `node:*`-free web-stub for it at build time (see
+ * `native-search-backend.web-stub.ts`).
  */
 import type { SearchFilters, SearchResult } from "../search-transport-service";
+import { createTransport } from "./create-transport";
 
 /** The single operation both platforms implement. */
 export interface SearchTransport {
@@ -75,21 +85,17 @@ export const httpSearchTransport: SearchTransport = {
  * Resolves the transport for the active runtime. On native, the in-process
  * backend is imported lazily so it forms its own chunk and never enters the web
  * bundle's module graph.
+ *
+ * The runtime branch, dispatch, and error handling are centralized in
+ * {@link createTransport}; this call site's only remaining responsibility is
+ * providing the HTTP implementation and the native loader thunk. The thunk
+ * contains the literal `import("./native-search-backend")` specifier so
+ * Turbopack's `resolveAlias` (`next.config.mjs`) can still substitute the
+ * web-stub for it at build time, exactly as before this refactor.
  */
-export async function resolveSearchTransport(): Promise<SearchTransport> {
-  // The gate here is deliberately the raw, directly-inlinable env comparison
-  // (not routed through `resolveRuntime()`) so Next.js's build-time inlining of
-  // `NEXT_PUBLIC_*` vars plus Turbopack's dead-code elimination can see the
-  // literal `false` in the web build and statically drop this whole branch —
-  // including the dynamic `import("./native-search-backend")` — out of the
-  // client/SSR bundle. `resolveRuntime()` is an indirected function call, which
-  // defeats that static analysis (Turbopack still traces the dynamic import),
-  // so it's intentionally not used at this call site even though it reads the
-  // same env var and remains the source of truth for tests/other call sites.
-  if (process.env.NEXT_PUBLIC_GETWRITE_RUNTIME === "native") {
-    const { createNativeSearchTransport } =
-      await import("./native-search-backend");
-    return createNativeSearchTransport();
-  }
-  return httpSearchTransport;
-}
+export const resolveSearchTransport: () => Promise<SearchTransport> =
+  createTransport(httpSearchTransport, () =>
+    import("./native-search-backend").then(({ createNativeSearchTransport }) =>
+      createNativeSearchTransport(),
+    ),
+  );

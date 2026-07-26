@@ -17,31 +17,15 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
-  addField,
-  removeField,
-  deprecateField,
-  clearField,
-  reorderFields,
-  renameField,
-  updateFieldOptions,
-  updateFieldOptionsWithMigration,
-  updateRefProperties,
-  changeFieldType,
-  changeFieldTypeWithMigration,
-  addGroup,
-  removeGroup,
-  reorderGroups,
-  renameFieldKey,
-} from "../../../../src/lib/models/metadata-schema";
+  dispatchMetadataSchemaAction,
+  fetchFieldValues,
+  InvalidFieldKeyError,
+  UnknownMetadataSchemaActionError,
+} from "../../../../src/lib/models/metadata-schema-dispatch-core";
 import type {
   TypeMigrationEntry,
   OptionsMigrationEntry,
 } from "../../../../src/lib/models/metadata-schema";
-import {
-  scanAllFieldValues,
-  NULL_VALUE_KEY,
-  MISSING_VALUE_KEY,
-} from "../../../../src/lib/models/field-values";
 import type {
   MetadataField,
   MetadataFieldType,
@@ -50,8 +34,6 @@ import type {
 } from "../../../../src/lib/models/types";
 import { resolveProjectPath } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
-
-const SLUG_RE = /^[a-z0-9-]+$/;
 
 // ---------------------------------------------------------------------------
 // Request shapes
@@ -242,146 +224,20 @@ async function handlePost(req: NextRequest): Promise<Response> {
   const { projectPath } = resolved;
 
   try {
-    if (body.action === "add-field") {
-      if (!SLUG_RE.test(body.field.key)) return invalidFieldKey(body.field.key);
-      return okSchema(await addField(projectPath, body.groupId, body.field));
-    }
-
-    if (body.action === "remove-field") {
-      return okSchema(
-        await removeField(projectPath, body.groupId, body.fieldKey),
-      );
-    }
-
-    if (body.action === "deprecate-field") {
-      return okSchema(
-        await deprecateField(projectPath, body.groupId, body.fieldKey),
-      );
-    }
-
-    if (body.action === "clear-field") {
-      return okSchema(
-        await clearField(projectPath, body.groupId, body.fieldKey),
-      );
-    }
-
-    if (body.action === "reorder-fields") {
-      return okSchema(
-        await reorderFields(projectPath, body.groupId, body.newKeyOrder),
-      );
-    }
-
-    if (body.action === "rename-field") {
-      return okSchema(
-        await renameField(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.newLabel,
-        ),
-      );
-    }
-
-    if (body.action === "update-field-options") {
-      return okSchema(
-        await updateFieldOptions(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.options,
-        ),
-      );
-    }
-
-    if (body.action === "add-group") {
-      return okSchema(await addGroup(projectPath, body.group));
-    }
-
-    if (body.action === "remove-group") {
-      return okSchema(await removeGroup(projectPath, body.groupId));
-    }
-
-    if (body.action === "reorder-groups") {
-      return okSchema(await reorderGroups(projectPath, body.newGroupIdOrder));
-    }
-
-    if (body.action === "rename-key") {
-      if (!SLUG_RE.test(body.newKey)) return invalidFieldKey(body.newKey);
-      return okSchema(
-        await renameFieldKey(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.newKey,
-        ),
-      );
-    }
-
-    if (body.action === "change-field-type") {
-      return okSchema(
-        await changeFieldType(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.newType,
-        ),
-      );
-    }
-
-    if (body.action === "change-field-type-with-migration") {
-      return okSchema(
-        await changeFieldTypeWithMigration(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.newType,
-          body.newOptions,
-          body.migrations,
-        ),
-      );
-    }
-
-    if (body.action === "update-field-options-with-migration") {
-      return okSchema(
-        await updateFieldOptionsWithMigration(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          body.newOptions,
-          body.migrations,
-        ),
-      );
-    }
-
-    if (body.action === "update-ref-properties") {
-      const updates: {
-        refFolder?: string | null;
-        includeSubfolders?: boolean | null;
-        maxSelections?: number | null;
-      } = {};
-      if ("refFolder" in body) updates.refFolder = body.refFolder;
-      if ("includeSubfolders" in body)
-        updates.includeSubfolders = body.includeSubfolders;
-      if ("maxSelections" in body) updates.maxSelections = body.maxSelections;
-      return okSchema(
-        await updateRefProperties(
-          projectPath,
-          body.groupId,
-          body.fieldKey,
-          updates,
-        ),
-      );
-    }
-
-    return NextResponse.json(
-      {
-        error: "Invalid action",
-        details:
-          "Expected one of: add-field, remove-field, reorder-fields, rename-field, update-field-options, update-ref-properties, change-field-type, add-group, remove-group, reorder-groups, rename-key",
-      },
-      { status: 400 },
-    );
+    const schema = await dispatchMetadataSchemaAction(projectPath, body);
+    return okSchema(schema);
   } catch (error) {
+    if (error instanceof InvalidFieldKeyError) {
+      return invalidFieldKey(error.key);
+    }
+
+    if (error instanceof UnknownMetadataSchemaActionError) {
+      return NextResponse.json(
+        { error: "Invalid action", details: error.message },
+        { status: 400 },
+      );
+    }
+
     const message = (error as Error).message;
     const isClientError =
       /locked/i.test(message) ||
@@ -402,13 +258,7 @@ async function handlePost(req: NextRequest): Promise<Response> {
 // Returns a serialized frequency map of distinct values for a single field.
 // ---------------------------------------------------------------------------
 
-export interface FieldValueEntry {
-  /** Canonical string key (use NULL_VALUE_KEY / MISSING_VALUE_KEY sentinels). */
-  canonicalKey: string;
-  count: number;
-  /** One representative value for display and type introspection. */
-  sample: unknown;
-}
+export type { FieldValueEntry } from "../../../../src/lib/models/metadata-schema-dispatch-core";
 
 async function handleGet(request: NextRequest): Promise<Response> {
   const { searchParams } = request.nextUrl;
@@ -427,20 +277,8 @@ async function handleGet(request: NextRequest): Promise<Response> {
   }
 
   try {
-    const map = await scanAllFieldValues(projectPath, fieldKey);
-    const values: FieldValueEntry[] = Array.from(
-      map.entries(),
-      ([canonicalKey, entry]) => ({
-        canonicalKey,
-        count: entry.count,
-        sample: entry.sample,
-      }),
-    );
-    return NextResponse.json({
-      values,
-      nullKey: NULL_VALUE_KEY,
-      missingKey: MISSING_VALUE_KEY,
-    });
+    const result = await fetchFieldValues(projectPath, fieldKey);
+    return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
       {

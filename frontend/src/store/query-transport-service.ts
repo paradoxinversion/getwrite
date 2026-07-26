@@ -2,6 +2,7 @@ import type { SavedQuery } from "../lib/models/saved-queries";
 import type { QueryAST } from "../lib/models/query-ast";
 import { selectActiveProjectDirectoryId } from "./projectsSlice";
 import type { RootState } from "./store";
+import { createTransport } from "./transport/create-transport";
 
 export interface QueryRequestContext {
   projectId: string;
@@ -68,69 +69,153 @@ async function postJson<T>(
   return (await response.json()) as T;
 }
 
-interface ListQueriesResponse {
+export interface ListQueriesResponse {
   queries: SavedQuery[];
 }
 
-interface WriteQueryResponse {
+export interface WriteQueryResponse {
   query: SavedQuery;
 }
 
-interface EvaluateQueryResponse {
+export interface EvaluateQueryResponse {
   ids: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Transport collapse (ADR-021 Phase 1, Task 3)
+//
+// One QueryTransport contract with two implementations selected by the
+// build-time runtime, mirroring revision-transport-service.ts:
+//
+// - Web/hosted/desktop -> httpQueryTransport, which carries the original
+//   `fetch('/api/project/query/...')` calls byte-for-byte.
+// - Native (Capacitor) -> an in-process backend
+//   (`./transport/native-query-backend`), dynamically imported only when
+//   `runtime === "native"`, reusing the shared query cores
+//   (`lib/models/query-evaluate-core.ts`,
+//   `lib/models/saved-query-dispatch-core.ts`) instead of HTTP.
+//
+// `createTransport` centralizes the runtime branch and dispatch (see
+// `./transport/create-transport`).
+// ---------------------------------------------------------------------------
+
+/**
+ * The query-route-backed operations both platforms implement. Shared with
+ * `./transport/native-query-backend`, which imports this type rather than
+ * duplicating it.
+ */
+export interface QueryTransport {
+  /** Fetch all saved queries for a project. */
+  fetchSavedQueryList(
+    context: QueryRequestContext,
+  ): Promise<ListQueriesResponse>;
+  /** Write (create or overwrite) a saved query. */
+  persistSavedQuery(
+    context: QueryRequestContext,
+    query: SavedQuery,
+  ): Promise<WriteQueryResponse>;
+  /** Delete a saved query by id. */
+  removeSavedQuery(context: QueryRequestContext, id: string): Promise<void>;
+  /** Evaluate a query AST inline and return matching resource IDs. */
+  evaluateQueryAst(
+    context: QueryRequestContext,
+    definition: QueryAST,
+  ): Promise<EvaluateQueryResponse>;
+}
+
+/**
+ * HTTP transport — the hosted/desktop path. Every method body below is the
+ * original public function's `fetch`/`postJson` call verbatim; preserving it
+ * exactly is what keeps the server build unchanged.
+ */
+export const httpQueryTransport: QueryTransport = {
+  fetchSavedQueryList(context) {
+    return postJson(
+      "/api/project/query/saved",
+      { action: "list", projectId: context.projectId },
+      "Unable to load saved queries.",
+    );
+  },
+
+  persistSavedQuery(context, query) {
+    return postJson(
+      "/api/project/query/saved",
+      { action: "write", projectId: context.projectId, query },
+      "Failed to save query.",
+    );
+  },
+
+  removeSavedQuery(context, id) {
+    return postJson(
+      "/api/project/query/saved",
+      { action: "delete", projectId: context.projectId, id },
+      "Failed to delete query.",
+    );
+  },
+
+  evaluateQueryAst(context, definition) {
+    return postJson(
+      "/api/project/query/evaluate",
+      { projectId: context.projectId, definition },
+      "Query evaluation failed.",
+    );
+  },
+};
+
+/**
+ * Resolves the transport for the active runtime. On native, the in-process
+ * backend is imported lazily so it forms its own chunk and never enters the
+ * web bundle's module graph. The thunk carries the literal
+ * `import("./transport/native-query-backend")` specifier so Turbopack's
+ * `resolveAlias` (`next.config.mjs`) can substitute a `node:*`-free web-stub
+ * for it at build time.
+ */
+export const resolveQueryTransport: () => Promise<QueryTransport> =
+  createTransport(httpQueryTransport, () =>
+    import("./transport/native-query-backend").then(
+      ({ createNativeQueryTransport }) => createNativeQueryTransport(),
+    ),
+  );
 
 /**
  * Fetch all saved queries for a project.
  */
-export function fetchSavedQueryList(
+export async function fetchSavedQueryList(
   context: QueryRequestContext,
 ): Promise<ListQueriesResponse> {
-  return postJson(
-    "/api/project/query/saved",
-    { action: "list", projectId: context.projectId },
-    "Unable to load saved queries.",
-  );
+  const transport = await resolveQueryTransport();
+  return transport.fetchSavedQueryList(context);
 }
 
 /**
  * Write (create or overwrite) a saved query.
  */
-export function persistSavedQuery(
+export async function persistSavedQuery(
   context: QueryRequestContext,
   query: SavedQuery,
 ): Promise<WriteQueryResponse> {
-  return postJson(
-    "/api/project/query/saved",
-    { action: "write", projectId: context.projectId, query },
-    "Failed to save query.",
-  );
+  const transport = await resolveQueryTransport();
+  return transport.persistSavedQuery(context, query);
 }
 
 /**
  * Delete a saved query by id.
  */
-export function removeSavedQuery(
+export async function removeSavedQuery(
   context: QueryRequestContext,
   id: string,
 ): Promise<void> {
-  return postJson(
-    "/api/project/query/saved",
-    { action: "delete", projectId: context.projectId, id },
-    "Failed to delete query.",
-  );
+  const transport = await resolveQueryTransport();
+  await transport.removeSavedQuery(context, id);
 }
 
 /**
  * Evaluate a query AST inline and return matching resource IDs.
  */
-export function evaluateQueryAst(
+export async function evaluateQueryAst(
   context: QueryRequestContext,
   definition: QueryAST,
 ): Promise<EvaluateQueryResponse> {
-  return postJson(
-    "/api/project/query/evaluate",
-    { projectId: context.projectId, definition },
-    "Query evaluation failed.",
-  );
+  const transport = await resolveQueryTransport();
+  return transport.evaluateQueryAst(context, definition);
 }
