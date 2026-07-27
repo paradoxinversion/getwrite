@@ -18,20 +18,22 @@
  * {@link NativeDeviceHarnessReport} — safe to
  * `console.log(JSON.stringify(report, null, 2))` — covering three checks:
  *
- * - **FR6 — search end-to-end.** Seeds a small, deterministic fixture
- *   directly onto the real on-device filesystem — same shape as
- *   `transport-collapse.spike.test.ts`'s `seedProject()` helper
- *   (`project.json`, `meta/index/inverted.json`, a resource sidecar) — then
- *   runs a query through `resolveSearchTransport()` (`search-transport.ts`),
- *   the same entry point production call sites use. On a real native build
- *   (`NEXT_PUBLIC_GETWRITE_RUNTIME === "native"`) that resolves to the
- *   in-process native transport created with **no** injected `deps`, relying
- *   on the ambient {@link StorageContext} `native-bootstrap.ts` already
- *   installed. This module deliberately does **not** import
- *   `native-search-backend.ts` directly — only `search-transport.ts`'s own
- *   dynamic `import()` may reference it (see
- *   `native-search-backend-web-exclusion.test.ts`). The report returns the
- *   raw, ordered hit array so a human can visually diff it against the same
+ * - **FR6 — search end-to-end.** Seeds a small, deterministic fixture — same
+ *   shape as `transport-collapse.spike.test.ts`'s `seedProject()` helper
+ *   (`project.json`, `meta/index/inverted.json`, a resource sidecar) — into an
+ *   **isolated** fixture projects dir under `/harness` (never the real
+ *   `/projects` dir the app lists), then runs a query through the in-process
+ *   native transport ({@link createNativeSearchTransport}) pointed at that dir,
+ *   and removes the fixture afterward. With no injected `deps.fs` the transport
+ *   still awaits `native-bootstrap.ts`'s memoized bootstrap and resolves against
+ *   the ambient {@link StorageContext} installed at startup — the same context
+ *   production uses — but confined to the harness namespace so a run never
+ *   mutates the user's real projects. This module imports
+ *   `native-search-backend.ts` directly (it is itself native-only and never
+ *   web-reachable, so this does not leak it into the web bundle — see the
+ *   allowlist in `native-search-backend-web-exclusion.test.ts`). The report
+ *   returns the raw, ordered hit array so a human can visually diff it against
+ *   the same
  *   fixture run through the existing web/desktop `/api/project/:id/search`
  *   route to confirm "same hits, same ordering" (FR6). There is no live
  *   server on-device to automate that comparison against — the harness only
@@ -83,7 +85,7 @@
  */
 import { createRealCapacitorFilesystem } from "./capacitor-filesystem-real";
 import { capacitorFsAdapter } from "./capacitorFsAdapter";
-import { resolveSearchTransport } from "../../store/transport/search-transport";
+import { createNativeSearchTransport } from "../../store/transport/native-search-backend";
 import type { SearchResult } from "../../store/search-transport-service";
 
 /**
@@ -92,8 +94,19 @@ import type { SearchResult } from "../../store/search-transport-service";
  */
 const HARNESS_ROOT = "/harness";
 
-/** FR6 fixture identifiers, matching `transport-collapse.spike.test.ts`'s `seedProject()` shape. */
-const FIXTURE_PROJECTS_DIR = "/projects";
+/**
+ * FR6 fixture identifiers, matching `transport-collapse.spike.test.ts`'s
+ * `seedProject()` shape.
+ *
+ * The fixture projects dir lives under {@link HARNESS_ROOT}, **not** the real
+ * `/projects` dir the app lists. The fixture manifest is intentionally minimal
+ * (just an `id`, no `createdAt`) and would fail `validateProject`, so seeding it
+ * into `/projects` used to poison the whole project list on the next app open
+ * (`listProjectsCore` now skips such a manifest, but the harness must not write
+ * into real user data regardless). Isolating it here keeps every harness run
+ * free of side effects on the user's actual projects.
+ */
+const FIXTURE_PROJECTS_DIR = `${HARNESS_ROOT}/projects`;
 const FIXTURE_PROJECT_ID = "harness-proj-1";
 const FIXTURE_RESOURCE_ID = "harness-res-1";
 const FIXTURE_RESOURCE_TITLE = "Dragon Notes";
@@ -246,24 +259,39 @@ async function seedSearchFixture(): Promise<void> {
 }
 
 /**
- * FR6: seeds the fixture, then runs a real search through
- * {@link resolveSearchTransport} — the same production entry point call
- * sites use, with no `deps` of its own to inject — so the call resolves
- * against whatever ambient {@link StorageContext} `native-bootstrap.ts`
- * already installed for this process (on a real native build, where
- * `NEXT_PUBLIC_GETWRITE_RUNTIME === "native"`, this resolves to the
- * in-process native transport).
+ * FR6: seeds the fixture, then runs a real search through the in-process native
+ * search transport ({@link createNativeSearchTransport}) pointed at the isolated
+ * {@link FIXTURE_PROJECTS_DIR} under {@link HARNESS_ROOT}. With no `deps.fs`
+ * injected it still awaits the memoized native bootstrap and resolves against
+ * the ambient {@link StorageContext} `native-bootstrap.ts` installed at startup
+ * — the same context the production transport uses — but confined to the
+ * harness namespace so it never touches the user's real `/projects` dir. The
+ * fixture is removed in a `finally` so a run leaves nothing behind.
  */
 async function runSearchCheck(): Promise<SearchCheckReport> {
-  await seedSearchFixture();
-  const transport = await resolveSearchTransport();
-  const hits = await transport.search(FIXTURE_PROJECT_ID, FIXTURE_QUERY);
-  return {
-    projectId: FIXTURE_PROJECT_ID,
-    query: FIXTURE_QUERY,
-    hitCount: hits.length,
-    hits,
-  };
+  try {
+    await seedSearchFixture();
+    const transport = createNativeSearchTransport({
+      projectsDir: FIXTURE_PROJECTS_DIR,
+    });
+    const hits = await transport.search(FIXTURE_PROJECT_ID, FIXTURE_QUERY);
+    return {
+      projectId: FIXTURE_PROJECT_ID,
+      query: FIXTURE_QUERY,
+      hitCount: hits.length,
+      hits,
+    };
+  } finally {
+    const adapter = capacitorFsAdapter(createRealCapacitorFilesystem());
+    await adapter
+      .rm(`${FIXTURE_PROJECTS_DIR}/${FIXTURE_PROJECT_ID}`, {
+        recursive: true,
+        force: true,
+      })
+      .catch(() => {
+        /* best-effort cleanup; a leftover under /harness never reaches the UI */
+      });
+  }
 }
 
 /** Converts bytes transferred over a duration (ms) into MB/s, floor-guarded against divide-by-zero. */

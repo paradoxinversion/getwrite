@@ -39,6 +39,20 @@ const WEB_STUB_RELATIVE_PATH = path.join(
   "transport",
   "native-search-backend.web-stub.ts",
 );
+// The on-device verification harness (ADR-021 Phase 0/2, FR6) imports the
+// native search transport directly so it can run its search check against an
+// isolated fixture projects dir under `/harness` (never the real `/projects`).
+// This does not leak native-search-backend into the web bundle: the harness is
+// itself native-only — nothing under src/app/components imports it; it is
+// reached only from the android/harness entry bundle — so it is web-dead-code
+// and never enters the Turbopack web graph. Same rationale the native-bootstrap
+// exclusion test uses to allow the native-*-backend modules.
+const NATIVE_HARNESS_RELATIVE_PATH = path.join(
+  "src",
+  "lib",
+  "models",
+  "native-device-harness.ts",
+);
 const CREATE_TRANSPORT_RELATIVE_PATH = path.join(
   "src",
   "store",
@@ -77,6 +91,7 @@ describe("native-search-backend web-bundle exclusion", () => {
         if (relative === SEARCH_TRANSPORT_RELATIVE_PATH) continue;
         if (relative === NATIVE_BACKEND_RELATIVE_PATH) continue;
         if (relative === WEB_STUB_RELATIVE_PATH) continue;
+        if (relative === NATIVE_HARNESS_RELATIVE_PATH) continue;
         const contents = fs.readFileSync(file, "utf8");
         if (importRe.test(contents)) {
           offenders.push(relative);

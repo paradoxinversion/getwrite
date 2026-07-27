@@ -34,6 +34,7 @@ import { readFolderTree } from "./folder-utils";
 import { resolveProjectsDir } from "./projects-dir";
 import { resolveProjectRoot } from "./project-root-resolver";
 import { loadProjectFromDisk, type LoadedProject } from "./project-loader";
+import { validateProject } from "./project";
 import { createProjectFromType } from "./project-creator";
 import { generateUUID } from "./uuid";
 import { getProjectType } from "../projectTypes";
@@ -66,19 +67,34 @@ export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   const projectIds = (await readdir(projectsDir)).filter(
     (file) => file !== ".DS_Store",
   );
-  return Promise.all(
-    projectIds.map(async (id) => {
-      const projectPath = path.join(projectsDir, id, "project.json");
-      const projectData = await readFile(projectPath, "utf-8");
-      const project = JSON.parse(projectData);
+  const entries = await Promise.all(
+    projectIds.map(async (id): Promise<ProjectListEntry | null> => {
+      try {
+        const projectPath = path.join(projectsDir, id, "project.json");
+        const projectData = await readFile(projectPath, "utf-8");
+        // Validate the on-disk manifest before admitting it to the list. A
+        // single unreadable/corrupt/incomplete project.json (a partial write, a
+        // crash mid-save, or a stray fixture directory) must not take down the
+        // whole list via `Promise.all` rejection — skip the offender and return
+        // every healthy project instead. `validateProject` throws on a manifest
+        // the UI would reject downstream anyway (e.g. missing `createdAt`).
+        const project = validateProject(JSON.parse(projectData));
 
-      const foldersPath = path.join(projectsDir, id, "folders");
-      const folders = await readFolderTree(foldersPath);
+        const foldersPath = path.join(projectsDir, id, "folders");
+        const folders = await readFolderTree(foldersPath);
 
-      const resources = await getLocalResources(path.join(projectsDir, id));
-      return { project, resources, folders };
+        const resources = await getLocalResources(path.join(projectsDir, id));
+        return { project, resources, folders };
+      } catch (error) {
+        console.warn(
+          `Skipping unreadable project "${id}" while listing projects:`,
+          error,
+        );
+        return null;
+      }
     }),
   );
+  return entries.filter((entry): entry is ProjectListEntry => entry !== null);
 }
 
 /** Thrown by {@link createProjectCore} when `name` or `projectType` is missing. */
