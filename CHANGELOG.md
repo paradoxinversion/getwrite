@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.7.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.6.0...getwrite-v1.7.0) (2026-07-27)
+
+
+### Features
+
+* **auth:** add hosted-auth live smoke harness + CLI migration config ([6a54829](https://github.com/saboteur-works/getwrite/commit/6a54829ce2482052af6a17e3df537c5b8c3cfc36))
+* **auth:** drop the Name field from signup ([da61dcd](https://github.com/saboteur-works/getwrite/commit/da61dcd7d3e6197f083ad3755fdad837d48b466e))
+* **native:** ADR-021 native-Android spikes (storage + transport collapse) ([21ebf44](https://github.com/saboteur-works/getwrite/commit/21ebf44de298fba72b6ecb0a576d3879600139fd))
+* **native:** ADR-021 Phase 0 — native Android walking skeleton (code-complete) ([d0452da](https://github.com/saboteur-works/getwrite/commit/d0452da6ff47311715777039400b0fd4041746b9))
+* **native:** ADR-021 Phase 1 — transport breadth (generalized in-process collapse) ([e23f6ae](https://github.com/saboteur-works/getwrite/commit/e23f6ae900adbf6a3543f292c0c303be33ee6eae))
+* **native:** ADR-021 Phase 2 — full-app native integration (WebView shell + lib/api collapse) ([4210895](https://github.com/saboteur-works/getwrite/commit/421089573537a9f9d0f4d59b53f2f889c2e509c9))
+* **native:** on-device harness loader bundle for Phase 0 Task 7 ([77fd2fe](https://github.com/saboteur-works/getwrite/commit/77fd2feb28ee3d2195a9996c2966b8690f547a3b))
+* **task-1:** generalized createTransport helper; refactor search onto it ([1bc1cee](https://github.com/saboteur-works/getwrite/commit/1bc1ceec1a3d5d9a728a4410f31617bb40cae9f5))
+* **task-1:** native-export build foundation (ADR-021 Phase 2) ([547450b](https://github.com/saboteur-works/getwrite/commit/547450b20e603a20effe9b61f6ae552f84ed7cda))
+* **task-1:** scaffold getwrite-android sibling workspace package ([27d5551](https://github.com/saboteur-works/getwrite/commit/27d5551399e6cace6abb36bf10024d45a457e5f5))
+* **task-2:** lift revision core; add native-revision-backend transport ([944700d](https://github.com/saboteur-works/getwrite/commit/944700d4029c0fb8d3f4b9fee3047806d7630efb))
+* **task-2:** native transport for projects + project-actions-controller (ADR-021 Phase 2) ([61eb52b](https://github.com/saboteur-works/getwrite/commit/61eb52bb021024aeb60825708834e14e206b3060))
+* **task-2:** real @capacitor/filesystem -&gt; CapacitorFilesystemLike bridge ([3fc4880](https://github.com/saboteur-works/getwrite/commit/3fc48800adde58c45338092b9cd080b60c7a506e))
+* **task-3:** lift query core; add native-query-backend transport ([e56fe35](https://github.com/saboteur-works/getwrite/commit/e56fe351ce076e8c290d45fa90b8764e818eb92e))
+* **task-3:** native transport for resources + resource-excerpts (ADR-021 Phase 2) ([d857006](https://github.com/saboteur-works/getwrite/commit/d8570063bd22b17e6c8c6bce1f49e91dbdbdf753))
+* **task-3:** wire nativeFilesystem() to the real Capacitor bridge ([d40c44a](https://github.com/saboteur-works/getwrite/commit/d40c44aadffb07ee9c408a8be15958f8751bc081))
+* **task-4:** app-lifetime StorageContext binding for native (FR4, FR5) ([33a11e7](https://github.com/saboteur-works/getwrite/commit/33a11e7ea25c2d113cea655c5d6d4b4bcfe610e0))
+* **task-4:** lift metadata-schema core; add native-metadata-schema-backend ([1573289](https://github.com/saboteur-works/getwrite/commit/1573289b4eb19bf4a30e5fd7f1ed342a8f152c8a))
+* **task-4:** native transport for tags + preferences + editor-config (ADR-021 Phase 2) ([ae993fa](https://github.com/saboteur-works/getwrite/commit/ae993fa00835eab2fabe77d50193ef4236e00ca2))
+* **task-5:** add native-feature-config-backend transport ([fa6208a](https://github.com/saboteur-works/getwrite/commit/fa6208aeca6448829ce015de80934e5227bf7587))
+* **task-5:** native transport for project-types + compile + export (ADR-021 Phase 2) ([a39bbb9](https://github.com/saboteur-works/getwrite/commit/a39bbb99dca45f534449406bee261f1568ff806a))
+* **task-6:** extend on-device harness with image/audio media throughput checks (ADR-021 Phase 2) ([9197cc9](https://github.com/saboteur-works/getwrite/commit/9197cc9dd80299e1f9dee28fe00ef3460f9ff816))
+* **task-6:** on-device verification + baseline-benchmark harness (FR6-FR8) ([8b73fcd](https://github.com/saboteur-works/getwrite/commit/8b73fcd3d336def7b33243d4d9be05ade624918b))
+* **task-6:** wire auth-status and update-check through createTransport ([4a74fb8](https://github.com/saboteur-works/getwrite/commit/4a74fb8ecca8b1d78ce9c4eddef54f4d39aafc37))
+
+
+### Bug Fixes
+
+* **auth:** remediate FR26 review findings H1, H2, M1 ([b4df891](https://github.com/saboteur-works/getwrite/commit/b4df891ded50254dd5571732454b848481a98b51))
+* **auth:** remediate FR26 review low-severity findings M2, L1, L2, L3 ([2e325e6](https://github.com/saboteur-works/getwrite/commit/2e325e6be420ac28fb38da0b735e287f4866afa1))
+* **native:** build-time-exclude native transport subtree from web bundle (FR2) ([15c925e](https://github.com/saboteur-works/getwrite/commit/15c925e649e0d3a7f08632f24763823ccf5a3f0f))
+* **native:** close the bootstrap-vs-first-fetch race with a ready-gate (Option A) ([4769064](https://github.com/saboteur-works/getwrite/commit/4769064162dacf8c63188ac3cb915de2fa0c9c57))
+* **native:** collapse fetchRevisionList off raw fetch (the &lt;!DOCTYPE JSON error) ([bc24976](https://github.com/saboteur-works/getwrite/commit/bc249765d8df0ed53054694398431febf615e1f3))
+* **native:** correct capacitorFsAdapter error handling surfaced by device gate ([8a28129](https://github.com/saboteur-works/getwrite/commit/8a281290f128c57fe9000f4ceef3d4bcc3c07544))
+* **native:** generate frontend/getwrite-config link instead of tracking a git symlink ([347dc7f](https://github.com/saboteur-works/getwrite/commit/347dc7f718a0fba96b08096d19787361ee798f89))
+* **native:** make the native export actually run its backends on-device ([c1cc0b5](https://github.com/saboteur-works/getwrite/commit/c1cc0b5e4c53ad0a5e286a3a956fab6701cd91c0))
+* **native:** no-op fs.watch/existsSync so the backlinks watcher degrades gracefully ([7031d95](https://github.com/saboteur-works/getwrite/commit/7031d95c78f64d566fe8a5c84c84926f90017739))
+* **native:** polyfill setImmediate/clearImmediate for the WebView ([e3af422](https://github.com/saboteur-works/getwrite/commit/e3af4223bfe51aaceda64e69c3f9146b55484c92))
+* **native:** project list survives a bad manifest; harness stops polluting /projects ([77e1d19](https://github.com/saboteur-works/getwrite/commit/77e1d19dbe2d58abf71feeab86af196c99f6be56))
+* **native:** resolve code-review correctness findings (1-5) ([74007ac](https://github.com/saboteur-works/getwrite/commit/74007ac9e7a3a6fef81d9c24b1af3d61dab1064d))
+* **native:** static-import runtime resolver in the search transport seam ([2d8f8ae](https://github.com/saboteur-works/getwrite/commit/2d8f8ae0971554d5554798acf9a0ad14cc8df34c))
+
 ## [1.6.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.5.0...getwrite-v1.6.0) (2026-07-24)
 
 
