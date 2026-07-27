@@ -91,7 +91,14 @@ async function doBootstrap(): Promise<void> {
  */
 export function bootstrapNativeStorageContext(): Promise<void> {
   if (!bootstrapPromise) {
-    bootstrapPromise = doBootstrap();
+    // Do NOT memoize a rejected bootstrap. If the first attempt fails (e.g. a
+    // transient `@capacitor/filesystem` import or mkdir hiccup), clearing the
+    // memo lets the next native op's ensureNativeStorageContext() retry, rather
+    // than permanently bricking all native storage until an app restart.
+    bootstrapPromise = doBootstrap().catch((err: unknown) => {
+      bootstrapPromise = null;
+      throw err;
+    });
   }
   return bootstrapPromise;
 }

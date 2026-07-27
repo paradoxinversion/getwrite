@@ -36,10 +36,12 @@
  *    web/desktop builds — the same pattern as every other native backend's
  *    web-stub.
  *
- * `bootstrapNativeStorageContext()` is itself idempotent-guarded (its own
- * `isBootstrapped` flag), so this component being mounted for the lifetime
- * of the root layout (it never unmounts on client-side navigation, since the
- * root layout doesn't remount between routes) never re-runs the bootstrap.
+ * `bootstrapNativeStorageContext()` is itself idempotent-guarded (a
+ * module-scoped memoized `bootstrapPromise`), so this component being mounted
+ * for the lifetime of the root layout (it never unmounts on client-side
+ * navigation, since the root layout doesn't remount between routes) never
+ * re-runs a successful bootstrap. A *failed* bootstrap is not memoized, so the
+ * first native transport call's `ensureNativeStorageContext()` gate retries it.
  */
 import { useEffect } from "react";
 
@@ -55,9 +57,16 @@ export default function NativeBootstrap(): null {
       return;
     }
 
-    void import("../../src/lib/models/native-bootstrap").then(
-      ({ bootstrapNativeStorageContext }) => bootstrapNativeStorageContext(),
-    );
+    void import("../../src/lib/models/native-bootstrap")
+      .then(({ bootstrapNativeStorageContext }) =>
+        bootstrapNativeStorageContext(),
+      )
+      .catch(() => {
+        // Warm-start only. A failure here is not fatal: it clears the memo (see
+        // native-bootstrap.ts), so the first native transport call's
+        // ensureNativeStorageContext() gate retries lazily. Swallow to avoid an
+        // unhandled promise rejection.
+      });
   }, []);
 
   return null;

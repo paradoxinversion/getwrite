@@ -76,8 +76,11 @@ async function throwApiError(
  * mirroring the rest of the effort:
  * - web/desktop → the original `fetch('/api/project-resources')` call verbatim.
  * - native → `fetchResourceContent` (`lib/api/resources.ts`), the Phase 2
- *   in-process resources backend hitting the same operation, degrading to an
- *   empty revision set on failure.
+ *   in-process resources backend hitting the same operation. It returns `null`
+ *   only on failure (a real resource yields a non-null response even with no
+ *   revisions), so a `null` is surfaced as an error — matching the web path's
+ *   throw — rather than silently reporting an empty revision history for a
+ *   resource that actually has one.
  */
 const resolveRevisionListTransport = createTransport<
   (context: RevisionRequestContext) => Promise<ProjectResourcesResponse>
@@ -101,9 +104,10 @@ const resolveRevisionListTransport = createTransport<
         context.projectId,
         context.resourceId,
       );
-      return (result ?? {
-        revisions: [],
-      }) as unknown as ProjectResourcesResponse;
+      if (result === null) {
+        throw new Error("Unable to load revisions.");
+      }
+      return result as unknown as ProjectResourcesResponse;
     }),
 );
 

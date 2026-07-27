@@ -5,6 +5,7 @@ import {
   MediaUploadValidationError,
   uploadMediaResourceCore,
 } from "../../../../src/lib/models/resource-crud-core";
+import { validateMediaFile } from "../../../../src/lib/models/media-validation";
 import { withStorageContext } from "../../_tenant/with-storage-context";
 
 /**
@@ -33,6 +34,24 @@ async function handlePost(req: Request): Promise<Response> {
       typeof projectId === "string" ? projectId : "",
     );
     if (resolved instanceof Response) return resolved;
+
+    // Enforce the media type/size cap BEFORE buffering the entire file into
+    // memory. uploadMediaResourceCore re-validates for native callers that
+    // already hold the bytes, but for this HTTP path an oversized file must be
+    // rejected without first allocating a full-file copy via arrayBuffer() —
+    // otherwise the size cap no longer gates that allocation (a memory-
+    // exhaustion vector). This restores the pre-transport-collapse ordering.
+    const preCheck = validateMediaFile({
+      mime: file.type || undefined,
+      ext: file.name,
+      size: file.size,
+    });
+    if (!preCheck.ok) {
+      return NextResponse.json(
+        { error: preCheck.message, reason: preCheck.reason },
+        { status: 400 },
+      );
+    }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
 

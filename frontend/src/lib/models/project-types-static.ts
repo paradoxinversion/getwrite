@@ -36,34 +36,30 @@
  * silently skipped, exactly like that route's `try { ... } catch { continue; }`
  * loop.
  *
- * **Import path mechanics.** The imports below go through
- * `frontend/getwrite-config` — a **generated, gitignored** link to the
- * repo-root `getwrite-config/` directory — rather than a longer
- * `"../../../../getwrite-config"` relative path straight to the repo root.
- * This matters specifically for the native build:
- * `scripts/build-native-static.mjs` builds against a *shadow* project root
- * (`frontend/.native-build/`) that mirrors every top-level `frontend/` entry
- * into itself but sits one directory level deeper than the real `frontend/`.
- * A relative import computed for the real `frontend/src/lib/models/` depth
- * would therefore resolve to the wrong directory when compiled from
- * `frontend/.native-build/src/lib/models/` instead. Routing through a
- * `getwrite-config` link that exists at the top level of *both* `frontend/`
- * and the shadow root keeps the relative depth (`"../../../getwrite-config"`,
- * three levels up to whichever project root is currently building) identical
- * in both cases.
+ * **Import path mechanics.** The imports below use a plain
+ * `"../../../../getwrite-config/..."` relative path straight to the repo-root
+ * `getwrite-config/` directory. From `frontend/src/lib/models/` that resolves
+ * to `<repo>/getwrite-config/`, which is a tracked directory present in every
+ * checkout — so the hosted/desktop `next build` and `tsc` need NO generated
+ * link or install-time script (this is deliberate: it keeps the web/desktop
+ * production build free of any build-time symlink dependency).
  *
- * The link is created by `scripts/ensure-config-link.mjs` (run via
- * `postinstall`, `prebuild`, `pretypecheck`, and the native build) — a real
- * symlink on POSIX and a directory junction on Windows — rather than being
- * committed as a git symlink, which is fragile on Windows checkouts.
+ * The native build is the only case that needs help: `build-native-static.mjs`
+ * builds against a *shadow* project root (`frontend/.native-build/`) that sits
+ * one directory level deeper, so the same `"../../../../getwrite-config"`
+ * resolves (logically) to `frontend/getwrite-config` there. `build-native-static.mjs`
+ * therefore creates a generated, gitignored `frontend/getwrite-config` link
+ * (via `scripts/ensure-config-link.mjs` — a POSIX symlink / Windows junction,
+ * never a committed git symlink) as part of that build, and mirrors it into the
+ * shadow root. Nothing else creates or depends on that link.
  */
 import { validateProjectType, type ProjectTypeSpec } from "./schemas";
-import articleProjectType from "../../../getwrite-config/templates/project-types/article_project_type.json";
-import blankProjectType from "../../../getwrite-config/templates/project-types/blank_project_type.json";
-import gameDocumentationProjectType from "../../../getwrite-config/templates/project-types/game_documentation.json";
-import novelProjectType from "../../../getwrite-config/templates/project-types/novel_project_type.json";
-import poetryAndLyricsProjectType from "../../../getwrite-config/templates/project-types/poetry_and_lyrics_type.json";
-import serialProjectType from "../../../getwrite-config/templates/project-types/serial_project_type.json";
+import articleProjectType from "../../../../getwrite-config/templates/project-types/article_project_type.json";
+import blankProjectType from "../../../../getwrite-config/templates/project-types/blank_project_type.json";
+import gameDocumentationProjectType from "../../../../getwrite-config/templates/project-types/game_documentation.json";
+import novelProjectType from "../../../../getwrite-config/templates/project-types/novel_project_type.json";
+import poetryAndLyricsProjectType from "../../../../getwrite-config/templates/project-types/poetry_and_lyrics_type.json";
+import serialProjectType from "../../../../getwrite-config/templates/project-types/serial_project_type.json";
 
 /**
  * Every bundled project-type template, as raw (unvalidated) JSON. Add new
