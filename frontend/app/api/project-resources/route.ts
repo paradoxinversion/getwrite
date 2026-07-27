@@ -1,44 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "node:path";
-import { readFile } from "../../../src/lib/models/io";
-import { ResourceType, TipTapDocument } from "../../../src/lib/models";
-import { listRevisions } from "../../../src/lib/models/revision";
-import { resolveProjectPath } from "../../../src/lib/models/project-path";
+import {
+  InvalidProjectIdCoreError,
+  fetchResourceContentCore,
+} from "../../../src/lib/models/resource-crud-core";
+import { respondInvalidProjectId } from "../../../src/lib/models/project-path";
 import { withStorageContext } from "../_tenant/with-storage-context";
-
-async function getProjectResource(
-  projectPath: string,
-  resourceId: string,
-  resourceType: ResourceType,
-) {
-  const resourceDir = path.join(projectPath, "resources", resourceId);
-
-  if (resourceType === "text") {
-    const tiptapPath = path.join(resourceDir, "content.tiptap.json");
-    let tipTapContent: TipTapDocument | null = null;
-    try {
-      tipTapContent = JSON.parse(
-        await readFile(tiptapPath, "utf-8"),
-      ) as TipTapDocument;
-    } catch {
-      // no tiptap file
-    }
-
-    let plaintextContent: string | null = null;
-    const plaintextPath = path.join(resourceDir, "content.txt");
-    try {
-      plaintextContent = await readFile(plaintextPath, "utf-8");
-    } catch {
-      // no plaintext file
-    }
-
-    return { tipTapContent, plaintextContent };
-  }
-
-  throw new Error(
-    `No valid content found for resource ${resourceId} at path ${resourceDir}`,
-  );
-}
 
 interface ProjectResourcesRequestBody {
   projectId: string;
@@ -59,19 +25,10 @@ async function handlePost(req: NextRequest): Promise<Response> {
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath } = resolved;
-  const { resourceId } = body;
-
-  const revisions = await listRevisions(projectPath, resourceId);
-  // For now, we assume all resources are text resources and fetch accordingly.
-  // In the future, we can extend this to handle different resource types based on additional parameters in the request body.
   try {
-    const resourceContent = await getProjectResource(
-      projectPath,
-      resourceId,
-      "text",
+    const { resourceContent, revisions } = await fetchResourceContentCore(
+      body.projectId,
+      body.resourceId,
     );
 
     return NextResponse.json({
@@ -80,6 +37,9 @@ async function handlePost(req: NextRequest): Promise<Response> {
       revisions,
     });
   } catch (err) {
+    if (err instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     console.error("Error fetching project resource:", err);
     return NextResponse.json(
       {

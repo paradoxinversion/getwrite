@@ -11,9 +11,9 @@
  * Failure: `{ error: string }`
  */
 import { NextRequest, NextResponse } from "next/server";
-import path from "node:path";
-import { readResourceExcerpts } from "../../../../src/lib/models/resource-persistence";
-import { resolveProjectPath } from "../../../../src/lib/models/project-path";
+import { fetchResourceExcerptsCore } from "../../../../src/lib/models/resource-excerpts-core";
+import { InvalidProjectIdCoreError } from "../../../../src/lib/models/resource-crud-core";
+import { respondInvalidProjectId } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
 
 interface ExcerptsBody {
@@ -33,10 +33,6 @@ async function handlePost(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath } = resolved;
-
   const { resourceIds, maxChars } = body;
   if (!Array.isArray(resourceIds)) {
     return NextResponse.json(
@@ -52,13 +48,16 @@ async function handlePost(req: NextRequest): Promise<Response> {
   }
 
   try {
-    const excerpts = await readResourceExcerpts(
-      projectPath,
+    const excerpts = await fetchResourceExcerptsCore(
+      body.projectId,
       resourceIds,
       maxChars,
     );
     return NextResponse.json({ excerpts });
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     const message =
       error instanceof Error ? error.message : "Failed to read excerpts.";
     return NextResponse.json({ error: message }, { status: 500 });

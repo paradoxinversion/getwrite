@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  readSidecar,
-  writeSidecar,
-} from "../../../../../src/lib/models/sidecar";
-import { resolveProjectPath } from "../../../../../src/lib/models/project-path";
+  InvalidProjectIdCoreError,
+  updateSidecarCore,
+} from "../../../../../src/lib/models/resource-crud-core";
+import { respondInvalidProjectId } from "../../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../../_tenant/with-storage-context";
 
 interface SidecarUpdateBody {
@@ -28,30 +28,15 @@ async function handlePost(
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath: projectRoot } = resolved;
-  const { updatedResource } = body;
-
-  const existing = await readSidecar(projectRoot, resourceId).catch(() => null);
-
-  // Merge incoming update with existing sidecar data, preserving structural
-  // fields that only the reorder route may change.
-  const merged = {
-    ...(existing ?? {}),
-    ...updatedResource,
-    orderIndex:
-      existing?.orderIndex ??
-      (updatedResource.orderIndex as number | undefined) ??
-      0,
-    folderId:
-      existing?.folderId ??
-      (updatedResource.folderId as string | null | undefined) ??
-      null,
-  };
-
-  await writeSidecar(projectRoot, resourceId, merged);
-  return NextResponse.json({ message: "Sidecar updated." });
+  try {
+    await updateSidecarCore(body.projectId, resourceId, body.updatedResource);
+    return NextResponse.json({ message: "Sidecar updated." });
+  } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
+    throw error;
+  }
 }
 
 export const POST = withStorageContext(handlePost);

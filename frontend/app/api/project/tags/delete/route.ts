@@ -10,8 +10,11 @@
  * - `{ projectId: string, tagId: string }`
  */
 import { NextRequest, NextResponse } from "next/server";
-import { deleteTag } from "../../../../../src/lib/models/tags";
-import { resolveProjectPath } from "../../../../../src/lib/models/project-path";
+import {
+  InvalidProjectIdCoreError,
+  deleteTagCore,
+} from "../../../../../src/lib/models/tags-crud-core";
+import { respondInvalidProjectId } from "../../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../../_tenant/with-storage-context";
 
 interface DeleteTagRequestBody {
@@ -30,14 +33,13 @@ async function handlePost(req: NextRequest): Promise<Response> {
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath } = resolved;
-
   try {
-    const didDelete = await deleteTag(projectPath, body.tagId);
+    const didDelete = await deleteTagCore(body.projectId, body.tagId);
     return NextResponse.json({ deleted: didDelete });
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     return NextResponse.json(
       { error: "Failed to delete tag", details: (error as Error).message },
       { status: 500 },

@@ -12,8 +12,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { updateDefaultRevisionName } from "../../../../src/lib/models/revision-settings";
-import { resolveProjectPath } from "../../../../src/lib/models/project-path";
+import {
+  InvalidProjectIdCoreError,
+  resolvePreferencesProjectRootOrThrow,
+  saveRevisionSettingsCore,
+} from "../../../../src/lib/models/project-preferences-core";
+import { respondInvalidProjectId } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
 
 interface UpdateRevisionSettingsBody {
@@ -31,8 +35,17 @@ async function handlePost(req: NextRequest): Promise<Response> {
 
   const { projectId, defaultRevisionName } = body;
 
-  const resolved = resolveProjectPath(projectId);
-  if (resolved instanceof Response) return resolved;
+  // Resolve/validate projectId up front, matching the pre-lift route's
+  // order: an invalid projectId is reported before the
+  // `defaultRevisionName` type check.
+  try {
+    resolvePreferencesProjectRootOrThrow(projectId);
+  } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
+    throw error;
+  }
 
   if (typeof defaultRevisionName !== "string") {
     return NextResponse.json(
@@ -41,11 +54,9 @@ async function handlePost(req: NextRequest): Promise<Response> {
     );
   }
 
-  const { projectPath } = resolved;
-
   try {
-    const saved = await updateDefaultRevisionName(
-      projectPath,
+    const saved = await saveRevisionSettingsCore(
+      projectId,
       defaultRevisionName,
     );
     return NextResponse.json({ defaultRevisionName: saved });

@@ -17,9 +17,12 @@
  * - `{ error: string, details: string }` with HTTP 500
  */
 import { NextRequest, NextResponse } from "next/server";
-import { loadProjectFromDisk } from "../../../src/lib/models/project-loader";
-import { resolveProjectPath } from "../../../src/lib/models/project-path";
+import {
+  InvalidProjectIdCoreError,
+  loadProjectCore,
+} from "../../../src/lib/models/project-crud-core";
 import { withStorageContext } from "../_tenant/with-storage-context";
+import { respondInvalidProjectId } from "../../../src/lib/models/project-path";
 
 /**
  * Loads a project and related entities from the local filesystem.
@@ -32,12 +35,11 @@ async function handlePost(req: NextRequest): Promise<Response> {
   try {
     const { projectId } = (await req.json()) as { projectId: string };
 
-    const resolved = resolveProjectPath(projectId);
-    if (resolved instanceof Response) return resolved;
-
-    const { projectPath } = resolved;
-    return NextResponse.json(await loadProjectFromDisk(projectPath));
+    return NextResponse.json(await loadProjectCore(projectId));
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     return NextResponse.json(
       { error: "Failed to load project", details: (error as Error).message },
       { status: 500 },

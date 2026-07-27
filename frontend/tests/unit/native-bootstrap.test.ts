@@ -5,10 +5,11 @@
 //   1. Before any bootstrap runs, getStorageContext() returns undefined --
 //      preserving today's web/desktop behavior unchanged (Section 4,
 //      docs/standards/storage-context.md).
-//   2. bootstrapNativeStorageContext() resolves the on-device app-private
-//      data dir via Filesystem.getUri({ directory: Directory.Data }) and
-//      installs it (FR4), along with the real Capacitor adapter, as the
-//      process-wide default StorageContext (FR5).
+//   2. bootstrapNativeStorageContext() installs the Directory.Data-relative
+//      "/projects" as the process-wide default StorageContext's tenantRoot
+//      (FR4/FR5), along with the real Capacitor adapter, and ensures that dir
+//      exists. It does NOT resolve an absolute file:// URI (that would mangle
+//      every adapter path, which is rooted at Directory.Data).
 //   3. AFTER bootstrap, a search issued with NO explicit
 //      runInStorageContext wrapper around it -- the real native production
 //      shape, createNativeSearchTransport({}) with no deps -- resolves
@@ -152,7 +153,7 @@ describe("native-bootstrap", () => {
     expect(getStorageContext()).toBeUndefined();
   });
 
-  it("resolves the app-private data dir via Filesystem.getUri(Directory.Data) and installs it as the default tenantRoot (FR4)", async () => {
+  it("binds the Directory.Data-relative /projects as the default tenantRoot and ensures it exists (FR4/FR5)", async () => {
     const { bootstrapNativeStorageContext } =
       await import("../../src/lib/models/native-bootstrap");
     const { getStorageContext } =
@@ -162,14 +163,20 @@ describe("native-bootstrap", () => {
 
     await bootstrapNativeStorageContext();
 
-    expect(mocks.getUri).toHaveBeenCalledWith({ path: "", directory: "DATA" });
-
     const ctx = getStorageContext();
     expect(ctx).toBeDefined();
-    expect(ctx?.tenantRoot).toBe(
-      "file:///data/user/0/app.getwrite/files/projects",
-    );
+    // tenantRoot is Directory.Data-relative "/projects" — NOT an absolute
+    // file:// URI. The adapter is rooted at Directory.Data and re-roots every
+    // path under it, so an absolute URI here would mangle every read/write.
+    expect(ctx?.tenantRoot).toBe("/projects");
     expect(ctx?.adapter).toBeDefined();
+    // The absolute-URI resolution (Filesystem.getUri) is no longer used.
+    expect(mocks.getUri).not.toHaveBeenCalled();
+    // Ensures the projects dir exists (idempotent recursive mkdir) so the first
+    // list on a fresh device returns an empty array rather than ENOENT.
+    expect(mocks.mkdir).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "projects", recursive: true }),
+    );
   });
 
   it("a search issued with no explicit runInStorageContext wrapper resolves via the ambient default after bootstrap (FR5)", async () => {
@@ -217,24 +224,28 @@ describe("native-bootstrap", () => {
     });
   });
 
-  it("running bootstrap twice does not re-resolve or re-install a second default context (bound exactly once)", async () => {
-    const { bootstrapNativeStorageContext } =
+  it("running bootstrap twice returns the same memoized promise and never re-runs (bound exactly once)", async () => {
+    const { bootstrapNativeStorageContext, ensureNativeStorageContext } =
       await import("../../src/lib/models/native-bootstrap");
     const { getStorageContext } =
       await import("../../src/lib/models/storage-context");
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await bootstrapNativeStorageContext();
+    const p1 = bootstrapNativeStorageContext();
+    await p1;
     const first = getStorageContext();
-    expect(mocks.getUri).toHaveBeenCalledTimes(1);
+    expect(mocks.mkdir).toHaveBeenCalledTimes(1); // ensured the projects dir once
 
-    await bootstrapNativeStorageContext();
+    // Both a second bootstrap call and the ensureNativeStorageContext alias
+    // (awaited by every native backend) return the SAME memoized promise — the
+    // one-time bootstrap never re-runs, which is what makes the ready-gate
+    // race-free.
+    const p2 = bootstrapNativeStorageContext();
+    expect(p2).toBe(p1);
+    expect(ensureNativeStorageContext()).toBe(p1);
+    await p2;
     const second = getStorageContext();
 
-    expect(mocks.getUri).toHaveBeenCalledTimes(1); // not re-resolved
+    expect(mocks.mkdir).toHaveBeenCalledTimes(1); // not re-run
     expect(second).toBe(first); // same object identity -- not re-installed
-    expect(warnSpy).toHaveBeenCalledTimes(1);
-
-    warnSpy.mockRestore();
   });
 });

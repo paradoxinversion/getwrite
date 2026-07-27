@@ -1,40 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "node:path";
-import { cp, exists } from "../../../../src/lib/models/io";
-import { readSidecar, writeSidecar } from "../../../../src/lib/models/sidecar";
-import { generateUUID } from "../../../../src/lib/models/uuid";
 import {
-  nullifyResourceRefs,
-  softDeleteResource,
-} from "../../../../src/lib/models/trash";
-import { getSchema } from "../../../../src/lib/models/metadata-schema";
-import { resolveProjectPath } from "../../../../src/lib/models/project-path";
+  InvalidProjectIdCoreError,
+  copyResourceCore,
+  deleteResourceCore,
+} from "../../../../src/lib/models/resource-crud-core";
+import { respondInvalidProjectId } from "../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../_tenant/with-storage-context";
-
-const copyResource = async (
-  projectRoot: string,
-  sourceId: string,
-  newName: string,
-) => {
-  const newId = generateUUID();
-  const srcDir = path.join(projectRoot, "resources", sourceId);
-  const dstDir = path.join(projectRoot, "resources", newId);
-
-  if (await exists(srcDir)) {
-    await cp(srcDir, dstDir, { recursive: true });
-  }
-
-  const sourceSidecar = await readSidecar(projectRoot, sourceId);
-  const newSidecar = {
-    ...(sourceSidecar ?? {}),
-    id: newId,
-    name: newName,
-    createdAt: new Date().toISOString(),
-  };
-
-  await writeSidecar(projectRoot, newId, newSidecar);
-  return newSidecar;
-};
 
 interface ResourceActionBody {
   projectId: string;
@@ -59,50 +30,30 @@ async function handlePost(
     );
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath: projectRoot } = resolved;
   const { action } = body;
 
-  switch (action) {
-    case "delete": {
-      // Read the resource name and resource-ref field keys before deletion.
-      const sidecar = await readSidecar(projectRoot, resourceId);
-      const deletedName = typeof sidecar?.name === "string" ? sidecar.name : "";
-
-      let resourceRefKeys: string[] = [];
-      try {
-        const schema = await getSchema(projectRoot);
-        resourceRefKeys = schema.groups
-          .flatMap((g) => g.fields)
-          .filter(
-            (f) => f.type === "resource-ref" || f.type === "multi-resource-ref",
-          )
-          .map((f) => f.key);
-      } catch {
-        // Schema unreadable — proceed without nullification
+  try {
+    switch (action) {
+      case "delete": {
+        await deleteResourceCore(body.projectId, resourceId);
+        return NextResponse.json({ message: "Resource deleted successfully" });
       }
-
-      await nullifyResourceRefs(
-        projectRoot,
-        resourceId,
-        deletedName,
-        resourceRefKeys,
-      );
-
-      await softDeleteResource(projectRoot, resourceId);
-      return NextResponse.json({ message: "Resource deleted successfully" });
+      case "copy": {
+        const newResource = await copyResourceCore(
+          body.projectId,
+          resourceId,
+          body.newName ?? "Copy",
+        );
+        return NextResponse.json({ success: true, resource: newResource });
+      }
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
-    case "copy": {
-      const newResource = await copyResource(
-        projectRoot,
-        resourceId,
-        body.newName ?? "Copy",
-      );
-      return NextResponse.json({ success: true, resource: newResource });
+  } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
     }
-    default:
-      throw new Error(`Unknown action: ${action}`);
+    throw error;
   }
 }
 

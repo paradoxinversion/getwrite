@@ -2,6 +2,7 @@ import type { Revision } from "../lib/models/types";
 import { selectActiveProjectDirectoryId } from "./projectsSlice";
 import type { RootState } from "./store";
 import { createTransport } from "./transport/create-transport";
+import { fetchResourceContent } from "../lib/api/resources";
 
 /**
  * Response shape for `/api/project-resources` used by revision list loading.
@@ -68,25 +69,53 @@ async function throwApiError(
 /**
  * Fetch persisted revisions for a selected resource.
  *
- * Out of scope for the ADR-021 Phase 1 transport-collapse (this hits
- * `/api/project-resources`, not the revision route migrated below) — left as
- * plain HTTP.
+ * This was the ONE revision path left un-collapsed in Phase 1 (it hits
+ * `/api/project-resources`, not the revision route). On native the raw `fetch`
+ * received the app's static `index.html` and failed with
+ * `Unexpected token '<', "<!DOCTYPE "…`. Collapsed here via `createTransport`,
+ * mirroring the rest of the effort:
+ * - web/desktop → the original `fetch('/api/project-resources')` call verbatim.
+ * - native → `fetchResourceContent` (`lib/api/resources.ts`), the Phase 2
+ *   in-process resources backend hitting the same operation. It returns `null`
+ *   only on failure (a real resource yields a non-null response even with no
+ *   revisions), so a `null` is surfaced as an error — matching the web path's
+ *   throw — rather than silently reporting an empty revision history for a
+ *   resource that actually has one.
  */
+const resolveRevisionListTransport = createTransport<
+  (context: RevisionRequestContext) => Promise<ProjectResourcesResponse>
+>(
+  async (context) => {
+    const response = await fetch("/api/project-resources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: context.projectId,
+        resourceId: context.resourceId,
+      }),
+    });
+    if (!response.ok)
+      await throwApiError(response, "Unable to load revisions.");
+    return (await response.json()) as ProjectResourcesResponse;
+  },
+  () =>
+    Promise.resolve(async (context: RevisionRequestContext) => {
+      const result = await fetchResourceContent(
+        context.projectId,
+        context.resourceId,
+      );
+      if (result === null) {
+        throw new Error("Unable to load revisions.");
+      }
+      return result as unknown as ProjectResourcesResponse;
+    }),
+);
+
 export async function fetchRevisionList(
   context: RevisionRequestContext,
 ): Promise<ProjectResourcesResponse> {
-  const response = await fetch("/api/project-resources", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      projectId: context.projectId,
-      resourceId: context.resourceId,
-    }),
-  });
-
-  if (!response.ok) await throwApiError(response, "Unable to load revisions.");
-
-  return (await response.json()) as ProjectResourcesResponse;
+  const transport = await resolveRevisionListTransport();
+  return transport(context);
 }
 
 // ---------------------------------------------------------------------------

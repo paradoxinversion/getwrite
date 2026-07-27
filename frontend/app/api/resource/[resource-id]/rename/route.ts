@@ -11,15 +11,14 @@
  * Failure payload: `{ error: string }`
  */
 
-import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import {
-  readSidecar,
-  writeSidecar,
-} from "../../../../../src/lib/models/sidecar";
-import { renameFolderById } from "../../../../../src/lib/models/folder-utils";
+  InvalidProjectIdCoreError,
+  renameFolderCore,
+  renameResourceSidecarCore,
+} from "../../../../../src/lib/models/resource-crud-core";
 import type { MetadataValue } from "../../../../../src/lib/models/types";
-import { resolveProjectPath } from "../../../../../src/lib/models/project-path";
+import { respondInvalidProjectId } from "../../../../../src/lib/models/project-path";
 import { withStorageContext } from "../../../_tenant/with-storage-context";
 
 interface RenameResourceBody {
@@ -45,10 +44,7 @@ async function handlePost(
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const resolved = resolveProjectPath(body.projectId);
-  if (resolved instanceof Response) return resolved;
-  const { projectPath: projectRoot } = resolved;
-  const { newName, resourceType } = body;
+  const { projectId, newName, resourceType } = body;
 
   if (!newName || typeof newName !== "string" || !newName.trim()) {
     return NextResponse.json(
@@ -59,9 +55,8 @@ async function handlePost(
 
   if (resourceType === "folder") {
     try {
-      const foldersDir = path.join(projectRoot, "folders");
-      const updated = await renameFolderById(
-        foldersDir,
+      const updated = await renameFolderCore(
+        projectId,
         resourceId,
         newName.trim(),
       );
@@ -75,6 +70,9 @@ async function handlePost(
         resource: updated as Record<string, MetadataValue>,
       });
     } catch (error) {
+      if (error instanceof InvalidProjectIdCoreError) {
+        return respondInvalidProjectId();
+      }
       return NextResponse.json(
         { error: errorMessage(error, "Failed to rename folder.") },
         { status: 500 },
@@ -83,24 +81,24 @@ async function handlePost(
   }
 
   try {
-    const existing = await readSidecar(projectRoot, resourceId);
+    const updatedData = await renameResourceSidecarCore(
+      projectId,
+      resourceId,
+      newName.trim(),
+    );
 
-    if (existing === null) {
+    if (updatedData === null) {
       return NextResponse.json(
         { error: "Resource not found." },
         { status: 404 },
       );
     }
 
-    const updatedData: Record<string, MetadataValue> = {
-      ...existing,
-      name: newName.trim(),
-    };
-
-    await writeSidecar(projectRoot, resourceId, updatedData);
-
     return NextResponse.json({ resource: updatedData });
   } catch (error) {
+    if (error instanceof InvalidProjectIdCoreError) {
+      return respondInvalidProjectId();
+    }
     return NextResponse.json(
       { error: errorMessage(error, "Failed to rename resource.") },
       { status: 500 },

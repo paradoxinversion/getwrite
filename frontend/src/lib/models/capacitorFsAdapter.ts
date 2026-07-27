@@ -25,6 +25,11 @@
  *    `stat`/`readdir` distinguish kinds via the plugin's `type` field rather
  *    than `Stats.isDirectory()`.
  */
+// ADR-021 Phase 2: guarantee a global `Buffer` before any base64 read/write.
+// Side-effect import; a no-op under Node (tests/build), active only in the
+// WebView. This module is native-only (web-stubbed out of the web bundle), so
+// the polyfill never reaches hosted/desktop. See ensure-buffer.mjs.
+import "../../native-shims/ensure-buffer.mjs";
 import path from "node:path";
 import type { Dirent, Stats } from "node:fs";
 import type { ReaddirResult, StorageAdapter } from "./io";

@@ -24,14 +24,16 @@ installed once at startup by `native-bootstrap.ts`. Web and desktop never call
 `setDefaultStorageContext()`, so the fallback stays `undefined` there and the
 "no context active" behavior described above is unchanged for those platforms.
 
-**ADR-021 Phase 1 usage.** The native in-process transport backends
+**ADR-021 Phase 1/2 usage.** The native in-process transport backends
 (`frontend/src/store/transport/native-*-backend.ts` — revision, query,
-metadata-schema, feature-config, search) all read through this same
-app-lifetime default context rather than establishing their own scope per
-call; there is no per-operation `runInStorageContext` rebind on the native
-path in production. Each backend accepts an injectable `deps.fs` purely for
-test isolation, which does bind a fresh one-off scope, but production calls
-never supply it.
+metadata-schema, feature-config, search from Phase 1, plus project,
+project-actions, resource, resource-excerpts, tags, preferences,
+editor-config, project-types, compile, and export from Phase 2) all read
+through this same app-lifetime default context rather than establishing
+their own scope per call; there is no per-operation `runInStorageContext`
+rebind on the native path in production. Each backend accepts an injectable
+`deps.fs` purely for test isolation, which does bind a fresh one-off scope,
+but production calls never supply it.
 
 This ambient context is the seam per-tenant storage isolation is built on. See
 ADR-017
