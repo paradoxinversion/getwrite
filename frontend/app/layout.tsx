@@ -1,5 +1,6 @@
 import "./globals.css";
 import "react-tooltip/dist/react-tooltip.css";
+import type { Metadata, Viewport } from "next";
 import React from "react";
 import ClientProvider from "../src/store/ClientProvider";
 import AppToaster from "../components/notifications/Toaster";
@@ -7,7 +8,16 @@ import AppearanceRuntime from "../components/preferences/AppearanceRuntime";
 import NativeBootstrap from "../components/native/NativeBootstrap";
 
 /** Page metadata for Next.js layout — basic title for dev/storybook. */
-export const metadata = { title: `GetWrite` };
+export const metadata: Metadata = { title: `GetWrite` };
+
+/**
+ * Viewport config. `width=device-width` is essential on phones/native WebView:
+ * without it the page renders at a ~980px virtual width and is scaled down,
+ * making the whole UI tiny and cramped. `initialScale: 1` starts unzoomed.
+ * Deliberately no `maximumScale`/`userScalable: false` — writers need to be
+ * able to pinch-zoom, and disabling it is an accessibility regression.
+ */
+export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 /** Application root layout wrapping `children` with global background and font color; imports global CSS. */
 export default function RootLayout({

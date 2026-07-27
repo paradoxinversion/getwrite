@@ -38,7 +38,11 @@ import { buildFieldPickerFields } from "../QueryBuilder/FieldPicker";
 import { filterResourceOptionsByScope } from "../Sidebar/folderScope";
 import { astToGroups } from "../QueryBuilder/ast-chip-bridge";
 import { useQueryBuilderState } from "../QueryBuilder/useQueryBuilderState";
-import ShellLayoutController from "./ShellLayoutController";
+import ShellLayoutController, {
+  ShellLayoutProvider,
+} from "./ShellLayoutController";
+import ShellDrawer from "./ShellDrawer";
+import ShellSidebarToggle from "./ShellSidebarToggle";
 import ShellSettingsMenu, {
   type SettingsMenuAction,
 } from "./ShellSettingsMenu";
@@ -919,702 +923,754 @@ export default function AppShell({
     URL.revokeObjectURL(url);
   }
 
+  // Left-sidebar body, shared by the docked pane (tablet/desktop) and the
+  // phone overlay drawer so the tree is only ever mounted once per render.
+  const leftSidebarBody = project ? (
+    <SidebarContextMenu
+      className="appshell-sidebar-content"
+      onCreateResource={() => handleResourceAction("create")}
+      onCreateSmartFolder={handleNewQuery}
+    >
+      <ResourceTree debug={false} onResourceAction={handleResourceAction} />
+      <SmartFolders
+        selectedQueryId={activeSmartFolderId ?? undefined}
+        onSelect={handleSmartFolderSelect}
+        onNewQuery={handleNewQuery}
+        onEditQuery={handleEditQuery}
+        onDeleteQuery={handleDeleteQuery}
+      />
+    </SidebarContextMenu>
+  ) : (
+    <div className="appshell-sidebar-content space-y-2">
+      <p>Loading Resource Tree</p>
+    </div>
+  );
+
+  // Right-sidebar (metadata) body, shared by the docked pane (desktop) and the
+  // phone/tablet overlay drawer.
+  const rightSidebarBody = (
+    <div className="appshell-sidebar-content">
+      <MetadataSidebar
+        onChangeField={(key, value) => {
+          if (!selectedResource) return;
+          const id = selectedResource.id;
+          switch (key) {
+            case "synopsis":
+              onChangeSynopsis?.(value as string, id);
+              break;
+            case "notes":
+              onChangeNotes?.(value as string, id);
+              break;
+            case "status":
+              onChangeStatus?.(
+                value as "draft" | "in-review" | "published",
+                id,
+              );
+              break;
+            case "pov":
+              onChangePOV?.(value as ResourceRef, id);
+              break;
+            case "storyDate":
+              onChangeStoryDate?.(value as string, id);
+              break;
+            case "storyDuration":
+              onChangeStoryDuration?.(value as number | null, id);
+              break;
+            case "storyEndDate":
+              onChangeStoryEndDate?.(value as string | null, id);
+              break;
+            default:
+              onChangeDynamicMetadata?.({ [key]: value as string[] }, id);
+              break;
+          }
+        }}
+      />
+    </div>
+  );
+
   return (
     <div
       className={`appshell-shell ${isDarkMode ? "appshell-theme-dark" : ""}`}
     >
-      <UpdateNotice />
+      <ShellLayoutProvider>
+        <UpdateNotice />
 
-      <ShellSettingsMenu
-        projectName={project?.name}
-        isDarkMode={isDarkMode}
-        isOpen={isSettingsMenuOpen}
-        onClose={() => setIsSettingsMenuOpen(false)}
-        onToggleOpen={() => setIsSettingsMenuOpen((prev) => !prev)}
-        hasProject={Boolean(project)}
-        isProjectMenuOpen={isProjectMenuOpen}
-        onCloseProjectMenu={() => setIsProjectMenuOpen(false)}
-        onToggleProjectMenuOpen={() => setIsProjectMenuOpen((prev) => !prev)}
-        onAction={handleSettingsMenuAction}
-        appVersion={APP_VERSION}
-        isAuthenticated={isAuthenticated}
-      />
+        <ShellSettingsMenu
+          projectName={project?.name}
+          isDarkMode={isDarkMode}
+          isOpen={isSettingsMenuOpen}
+          onClose={() => setIsSettingsMenuOpen(false)}
+          onToggleOpen={() => setIsSettingsMenuOpen((prev) => !prev)}
+          hasProject={Boolean(project)}
+          isProjectMenuOpen={isProjectMenuOpen}
+          onCloseProjectMenu={() => setIsProjectMenuOpen(false)}
+          onToggleProjectMenuOpen={() => setIsProjectMenuOpen((prev) => !prev)}
+          onAction={handleSettingsMenuAction}
+          appVersion={APP_VERSION}
+          isAuthenticated={isAuthenticated}
+          leadingSlot={
+            showSidebars ? <ShellSidebarToggle side="left" /> : undefined
+          }
+          trailingSlot={
+            showSidebars ? <ShellSidebarToggle side="right" /> : undefined
+          }
+        />
 
-      <ShellLayoutController>
-        {(layout) => (
-          <div className="appshell-body">
-            {/* Left Sidebar */}
-            {showSidebars && layout.leftOpen ? (
-              <aside
-                className="hidden sm:flex appshell-sidebar border-r"
-                style={{ width: layout.leftWidth }}
-              >
-                <div className="appshell-sidebar-header">
-                  <span className="font-mono text-gw-nano uppercase tracking-label-wide font-semibold text-gw-secondary">
-                    Resources
-                  </span>
+        <ShellLayoutController>
+          {(layout) => (
+            <div className="appshell-body">
+              {/* Left Sidebar — docked (tablet/desktop). The `md:flex` CSS gate
+                keeps the pre-hydration (tier-"desktop") paint correct at phone
+                width; the tier check swaps in the drawer once hydrated. */}
+              {showSidebars && layout.tier !== "phone" && layout.leftOpen ? (
+                <aside
+                  className="hidden md:flex appshell-sidebar border-r"
+                  style={{ width: layout.leftWidth }}
+                >
+                  <div className="appshell-sidebar-header">
+                    <span className="font-mono text-gw-nano uppercase tracking-label-wide font-semibold text-gw-secondary">
+                      Resources
+                    </span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => layout.setLeftOpen(false)}
+                      title="Close left sidebar"
+                      aria-label="Close resource sidebar"
+                    >
+                      <PanelLeftClose size={16} aria-hidden="true" />
+                    </Button>
+                  </div>
+                  {leftSidebarBody}
+                </aside>
+              ) : null}
+
+              {/* Left Sidebar Collapsed Toggle — docked (tablet/desktop) */}
+              {showSidebars && layout.tier !== "phone" && !layout.leftOpen ? (
+                <div className="hidden md:flex flex-col items-center justify-start h-full p-2 bg-gw-chrome border-r border-hairline border-gw-border">
                   <Button
-                    variant="ghost"
-                    onClick={() => layout.setLeftOpen(false)}
-                    title="Close left sidebar"
-                    aria-label="Close resource sidebar"
+                    variant="icon"
+                    className="w-10 h-10"
+                    onClick={() => layout.setLeftOpen(true)}
+                    title="Open left sidebar"
+                    aria-label="Open resource sidebar"
                   >
-                    <PanelLeftClose size={16} aria-hidden="true" />
+                    <PanelLeftOpen size={16} aria-hidden="true" />
                   </Button>
                 </div>
-                {project ? (
-                  <SidebarContextMenu
-                    className="appshell-sidebar-content"
-                    onCreateResource={() => handleResourceAction("create")}
-                    onCreateSmartFolder={handleNewQuery}
-                  >
-                    <ResourceTree
-                      debug={false}
-                      onResourceAction={handleResourceAction}
-                    />
-                    <SmartFolders
-                      selectedQueryId={activeSmartFolderId ?? undefined}
-                      onSelect={handleSmartFolderSelect}
-                      onNewQuery={handleNewQuery}
-                      onEditQuery={handleEditQuery}
-                      onDeleteQuery={handleDeleteQuery}
-                    />
-                  </SidebarContextMenu>
-                ) : (
-                  <div className="appshell-sidebar-content space-y-2">
-                    <p>Loading Resource Tree</p>
-                  </div>
-                )}
-              </aside>
-            ) : null}
+              ) : null}
 
-            {/* Left Sidebar Collapsed Toggle */}
-            {showSidebars && !layout.leftOpen ? (
-              <div className="hidden sm:flex flex-col items-center justify-start h-full p-2 bg-gw-chrome border-r border-hairline border-gw-border">
-                <Button
-                  variant="icon"
-                  className="w-10 h-10"
-                  onClick={() => layout.setLeftOpen(true)}
-                  title="Open left sidebar"
-                  aria-label="Open resource sidebar"
+              {/* Left Sidebar — phone overlay drawer */}
+              {showSidebars && layout.tier === "phone" ? (
+                <ShellDrawer
+                  side="left"
+                  open={layout.leftOpen}
+                  onClose={() => layout.setLeftOpen(false)}
+                  title="Resources"
                 >
-                  <PanelLeftOpen size={16} aria-hidden="true" />
-                </Button>
-              </div>
-            ) : null}
+                  {leftSidebarBody}
+                </ShellDrawer>
+              ) : null}
 
-            <ShellProjectTypeLoader isOpen={isProjectTypesModalOpen}>
-              {({
-                projectTypeTemplates,
-                isProjectTypesLoading,
-                projectTypesLoadError,
-              }) => (
-                <ShellModalCoordinator
-                  contextAction={contextAction}
-                  setContextAction={setContextAction}
-                  isCloseProjectConfirmOpen={isCloseProjectConfirmOpen}
-                  setIsCloseProjectConfirmOpen={setIsCloseProjectConfirmOpen}
-                  createModal={createModal}
-                  setCreateModal={setCreateModal}
-                  exportModal={exportModal}
-                  setExportModal={setExportModal}
-                  compileModal={compileModal}
-                  setCompileModal={setCompileModal}
-                  renameModal={renameModal}
-                  setRenameModal={setRenameModal}
-                  onRenameConfirm={handleRenameConfirm}
-                  isProjectSettingsOpen={isProjectSettingsOpen}
-                  setIsProjectSettingsOpen={setIsProjectSettingsOpen}
-                  initialHeadings={resolvedEditorConfig.headings}
-                  onSaveHeadingSettings={handleSaveHeadingSettings}
-                  initialBodySettings={liveEditorConfig.body}
-                  onSaveBodySettings={handleSaveBodySettings}
-                  initialDefaultRevisionName={
-                    project?.config?.defaultRevisionName ?? "Initial Draft"
-                  }
-                  onSaveDefaultRevisionName={handleSaveDefaultRevisionName}
-                  isPreferencesModalOpen={isPreferencesModalOpen}
-                  setIsPreferencesModalOpen={setIsPreferencesModalOpen}
-                  isHelpModalOpen={isHelpModalOpen}
-                  setIsHelpModalOpen={setIsHelpModalOpen}
-                  isProjectTypesModalOpen={isProjectTypesModalOpen}
-                  setIsProjectTypesModalOpen={setIsProjectTypesModalOpen}
-                  projectPath={project?.rootPath}
-                  isResourcePaletteOpen={isResourcePaletteOpen}
-                  setIsResourcePaletteOpen={setIsResourcePaletteOpen}
-                  isProjectTypesLoading={isProjectTypesLoading}
-                  projectTypesLoadError={projectTypesLoadError}
-                  projectTypeTemplates={projectTypeTemplates}
-                  resources={resources}
-                  folders={liveFolders}
-                  project={project}
-                  hasUnsavedEditorChanges={hasUnsavedEditorChanges}
-                  syncBlockers={syncBlockers}
-                  onDeleteConfirm={async (resourceId) => {
-                    if (project) {
-                      dispatch(
-                        removeResource({ projectId: project.id, resourceId }),
-                      );
+              <ShellProjectTypeLoader isOpen={isProjectTypesModalOpen}>
+                {({
+                  projectTypeTemplates,
+                  isProjectTypesLoading,
+                  projectTypesLoadError,
+                }) => (
+                  <ShellModalCoordinator
+                    contextAction={contextAction}
+                    setContextAction={setContextAction}
+                    isCloseProjectConfirmOpen={isCloseProjectConfirmOpen}
+                    setIsCloseProjectConfirmOpen={setIsCloseProjectConfirmOpen}
+                    createModal={createModal}
+                    setCreateModal={setCreateModal}
+                    exportModal={exportModal}
+                    setExportModal={setExportModal}
+                    compileModal={compileModal}
+                    setCompileModal={setCompileModal}
+                    renameModal={renameModal}
+                    setRenameModal={setRenameModal}
+                    onRenameConfirm={handleRenameConfirm}
+                    isProjectSettingsOpen={isProjectSettingsOpen}
+                    setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+                    initialHeadings={resolvedEditorConfig.headings}
+                    onSaveHeadingSettings={handleSaveHeadingSettings}
+                    initialBodySettings={liveEditorConfig.body}
+                    onSaveBodySettings={handleSaveBodySettings}
+                    initialDefaultRevisionName={
+                      project?.config?.defaultRevisionName ?? "Initial Draft"
                     }
-                    await onResourceAction?.("delete", resourceId);
-                  }}
-                  onCloseProjectConfirm={handleConfirmCloseProject}
-                  onCreateConfirmed={async (payload, parentId) => {
-                    await handleCreateConfirmed(payload, parentId);
-                  }}
-                  onMediaCreateConfirmed={onMediaCreateConfirmed}
-                  onExportConfirmed={async (
-                    resourceIds,
-                    resourceId,
-                    format,
-                  ) => {
-                    await handleExportConfirmed(
+                    onSaveDefaultRevisionName={handleSaveDefaultRevisionName}
+                    isPreferencesModalOpen={isPreferencesModalOpen}
+                    setIsPreferencesModalOpen={setIsPreferencesModalOpen}
+                    isHelpModalOpen={isHelpModalOpen}
+                    setIsHelpModalOpen={setIsHelpModalOpen}
+                    isProjectTypesModalOpen={isProjectTypesModalOpen}
+                    setIsProjectTypesModalOpen={setIsProjectTypesModalOpen}
+                    projectPath={project?.rootPath}
+                    isResourcePaletteOpen={isResourcePaletteOpen}
+                    setIsResourcePaletteOpen={setIsResourcePaletteOpen}
+                    isProjectTypesLoading={isProjectTypesLoading}
+                    projectTypesLoadError={projectTypesLoadError}
+                    projectTypeTemplates={projectTypeTemplates}
+                    resources={resources}
+                    folders={liveFolders}
+                    project={project}
+                    hasUnsavedEditorChanges={hasUnsavedEditorChanges}
+                    syncBlockers={syncBlockers}
+                    onDeleteConfirm={async (resourceId) => {
+                      if (project) {
+                        dispatch(
+                          removeResource({ projectId: project.id, resourceId }),
+                        );
+                      }
+                      await onResourceAction?.("delete", resourceId);
+                    }}
+                    onCloseProjectConfirm={handleConfirmCloseProject}
+                    onCreateConfirmed={async (payload, parentId) => {
+                      await handleCreateConfirmed(payload, parentId);
+                    }}
+                    onMediaCreateConfirmed={onMediaCreateConfirmed}
+                    onExportConfirmed={async (
                       resourceIds,
                       resourceId,
                       format,
-                    );
-                  }}
-                  onSelectResource={onResourceSelect}
-                  onBuildCompilePreview={(resourceId) => {
-                    const resource = resourceId
-                      ? resources?.find((x) => x.id === resourceId)
-                      : undefined;
-                    if (resource) {
+                    ) => {
+                      await handleExportConfirmed(
+                        resourceIds,
+                        resourceId,
+                        format,
+                      );
+                    }}
+                    onSelectResource={onResourceSelect}
+                    onBuildCompilePreview={(resourceId) => {
+                      const resource = resourceId
+                        ? resources?.find((x) => x.id === resourceId)
+                        : undefined;
+                      if (resource) {
+                        return (
+                          `Compiled package for ${getResourceName(resource)}\n\n` +
+                          JSON.stringify(resource, null, 2)
+                        );
+                      }
                       return (
-                        `Compiled package for ${getResourceName(resource)}\n\n` +
-                        JSON.stringify(resource, null, 2)
+                        "Compiled project bundle\n\n" +
+                        JSON.stringify(resources ?? [], null, 2)
                       );
-                    }
-                    return (
-                      "Compiled project bundle\n\n" +
-                      JSON.stringify(resources ?? [], null, 2)
-                    );
-                  }}
-                  onConfirmCompile={async (selectedIds, options) => {
-                    if (!project?.rootPath) return;
-                    const compileBody = {
-                      // Directory basename, not `project.id` (project.json's
-                      // independently generated internal id) — see
-                      // `selectActiveProjectDirectoryId`'s doc comment in
-                      // `projectsSlice.ts`.
-                      projectId: getProjectDirectoryId(project.rootPath),
-                      resourceIds: selectedIds,
-                      resources: (resources ?? []).map((r) => ({
-                        id: r.id,
-                        name: r.name,
-                        type: r.type,
-                      })),
-                      includeHeaders: options.includeHeaders,
-                      projectName: project.name ?? "project",
-                    };
-                    const rawName = options.compilationName.trim();
-                    try {
-                      if (options.format === "pdf") {
-                        const result = await compilePdf(compileBody);
-                        if (result.warning === "font-fallback") {
-                          toastService.info(
-                            "PDF compiled with fallback fonts — IBM Plex fonts were unreachable",
+                    }}
+                    onConfirmCompile={async (selectedIds, options) => {
+                      if (!project?.rootPath) return;
+                      const compileBody = {
+                        // Directory basename, not `project.id` (project.json's
+                        // independently generated internal id) — see
+                        // `selectActiveProjectDirectoryId`'s doc comment in
+                        // `projectsSlice.ts`.
+                        projectId: getProjectDirectoryId(project.rootPath),
+                        resourceIds: selectedIds,
+                        resources: (resources ?? []).map((r) => ({
+                          id: r.id,
+                          name: r.name,
+                          type: r.type,
+                        })),
+                        includeHeaders: options.includeHeaders,
+                        projectName: project.name ?? "project",
+                      };
+                      const rawName = options.compilationName.trim();
+                      try {
+                        if (options.format === "pdf") {
+                          const result = await compilePdf(compileBody);
+                          if (result.warning === "font-fallback") {
+                            toastService.info(
+                              "PDF compiled with fallback fonts — IBM Plex fonts were unreachable",
+                            );
+                          }
+                          triggerDownload(
+                            new Blob([result.arrayBuffer], {
+                              type: "application/pdf",
+                            }),
+                            rawName
+                              ? rawName.endsWith(".pdf")
+                                ? rawName
+                                : `${rawName}.pdf`
+                              : result.filename,
                           );
+                          return;
                         }
-                        triggerDownload(
-                          new Blob([result.arrayBuffer], {
-                            type: "application/pdf",
-                          }),
-                          rawName
-                            ? rawName.endsWith(".pdf")
-                              ? rawName
-                              : `${rawName}.pdf`
-                            : result.filename,
-                        );
-                        return;
-                      }
-                      if (options.format === "docx") {
-                        const result = await compileDocx(compileBody);
-                        triggerDownload(
-                          new Blob([result.arrayBuffer], {
-                            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                          }),
-                          rawName
-                            ? rawName.endsWith(".docx")
-                              ? rawName
-                              : `${rawName}.docx`
-                            : result.filename,
-                        );
-                        return;
-                      }
-                      if (options.format === "md") {
-                        const result = await compileMarkdown(compileBody);
-                        triggerDownload(
-                          new Blob([result.markdown], {
-                            type: "text/markdown;charset=utf-8",
-                          }),
-                          rawName
-                            ? rawName.endsWith(".md")
-                              ? rawName
-                              : `${rawName}.md`
-                            : result.filename,
-                        );
-                        if (result.warnings.length > 0) {
-                          toastService.info(
-                            `Some formatting couldn't be represented in Markdown: ${result.warnings
-                              .map((w) => w.label)
-                              .join(", ")}`,
+                        if (options.format === "docx") {
+                          const result = await compileDocx(compileBody);
+                          triggerDownload(
+                            new Blob([result.arrayBuffer], {
+                              type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            }),
+                            rawName
+                              ? rawName.endsWith(".docx")
+                                ? rawName
+                                : `${rawName}.docx`
+                              : result.filename,
                           );
+                          return;
                         }
-                        return;
+                        if (options.format === "md") {
+                          const result = await compileMarkdown(compileBody);
+                          triggerDownload(
+                            new Blob([result.markdown], {
+                              type: "text/markdown;charset=utf-8",
+                            }),
+                            rawName
+                              ? rawName.endsWith(".md")
+                                ? rawName
+                                : `${rawName}.md`
+                              : result.filename,
+                          );
+                          if (result.warnings.length > 0) {
+                            toastService.info(
+                              `Some formatting couldn't be represented in Markdown: ${result.warnings
+                                .map((w) => w.label)
+                                .join(", ")}`,
+                            );
+                          }
+                          return;
+                        }
+                        const result = await compileText(compileBody);
+                        triggerDownload(
+                          new Blob([result.text], {
+                            type: "text/plain;charset=utf-8",
+                          }),
+                          rawName
+                            ? rawName.endsWith(".txt")
+                              ? rawName
+                              : `${rawName}.txt`
+                            : result.filename,
+                        );
+                      } catch (err) {
+                        toastService.error(
+                          "Compile failed",
+                          err instanceof Error ? err.message : String(err),
+                        );
                       }
-                      const result = await compileText(compileBody);
-                      triggerDownload(
-                        new Blob([result.text], {
-                          type: "text/plain;charset=utf-8",
-                        }),
-                        rawName
-                          ? rawName.endsWith(".txt")
-                            ? rawName
-                            : `${rawName}.txt`
-                          : result.filename,
-                      );
-                    } catch (err) {
-                      toastService.error(
-                        "Compile failed",
-                        err instanceof Error ? err.message : String(err),
-                      );
-                    }
-                  }}
+                    }}
+                  />
+                )}
+              </ShellProjectTypeLoader>
+
+              {/* Left Resize Handle — docked tiers only */}
+              {showSidebars && layout.tier !== "phone" && layout.leftOpen ? (
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  onMouseDown={layout.startLeftResize}
+                  className="hidden md:block appshell-resize-handle"
                 />
-              )}
-            </ShellProjectTypeLoader>
+              ) : null}
 
-            {/* Left Resize Handle */}
-            {showSidebars && layout.leftOpen ? (
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                onMouseDown={layout.startLeftResize}
-                className="hidden sm:block appshell-resize-handle"
-              />
-            ) : null}
-
-            {/* Main Work Area */}
-            <main className="appshell-work-area">
-              <div className="appshell-work-area-content">
-                {resources ? (
-                  <div className="shrink-0 w-full">
-                    <div className="workarea-header border-b-hairline border-b-gw-border">
-                      <ViewSwitcher
-                        view={view}
-                        onChange={setView}
-                        editLabel={
-                          selectedResource?.type === "image" ||
-                          selectedResource?.type === "audio"
-                            ? "Media"
-                            : "Edit"
-                        }
-                        disabledViews={(() => {
-                          const disabled: ViewName[] = [];
-                          const type = selectedResource?.type;
-                          const isMedia = type === "image" || type === "audio";
-                          // Edit/Media tab serves text and media resources.
-                          if (type !== "text" && !isMedia) {
-                            disabled.push("edit");
+              {/* Main Work Area */}
+              <main className="appshell-work-area">
+                <div className="appshell-work-area-content">
+                  {resources ? (
+                    <div className="shrink-0 w-full">
+                      <div className="workarea-header border-b-hairline border-b-gw-border">
+                        <ViewSwitcher
+                          view={view}
+                          onChange={setView}
+                          editLabel={
+                            selectedResource?.type === "image" ||
+                            selectedResource?.type === "audio"
+                              ? "Media"
+                              : "Edit"
                           }
-                          // Diff is text-only.
-                          if (type !== "text") {
-                            disabled.push("diff");
-                          }
-                          if (type !== "folder") {
-                            disabled.push("organizer");
-                          }
-                          // The Timeline tab is gated behind its own view toggle
-                          // (separate from the timeline date fields).
-                          if (!isTimelineViewEnabled) {
-                            disabled.push("timeline");
-                          }
-                          return Array.from(new Set(disabled));
-                        })()}
-                        disabledReasons={{
-                          timeline:
-                            "The Timeline view is off. Turn it on in User Preferences → Timeline view.",
-                        }}
-                      />
-                      <div style={{ width: 320 }}>
-                        <SearchBar onSelect={(id) => onResourceSelect?.(id)} />
+                          disabledViews={(() => {
+                            const disabled: ViewName[] = [];
+                            const type = selectedResource?.type;
+                            const isMedia =
+                              type === "image" || type === "audio";
+                            // Edit/Media tab serves text and media resources.
+                            if (type !== "text" && !isMedia) {
+                              disabled.push("edit");
+                            }
+                            // Diff is text-only.
+                            if (type !== "text") {
+                              disabled.push("diff");
+                            }
+                            if (type !== "folder") {
+                              disabled.push("organizer");
+                            }
+                            // The Timeline tab is gated behind its own view toggle
+                            // (separate from the timeline date fields).
+                            if (!isTimelineViewEnabled) {
+                              disabled.push("timeline");
+                            }
+                            return Array.from(new Set(disabled));
+                          })()}
+                          disabledReasons={{
+                            timeline:
+                              "The Timeline view is off. Turn it on in User Preferences → Timeline view.",
+                          }}
+                        />
+                        <div className="w-full min-w-0 sm:w-80 sm:flex-none">
+                          <SearchBar
+                            onSelect={(id) => onResourceSelect?.(id)}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : null}
-                <div className="flex-1 min-h-0 max-w-full mx-auto w-full flex flex-col">
-                  <div
-                    className={`flex-1 min-h-0 text-gw-primary flex flex-col ${
-                      view === "edit" &&
-                      Boolean(selectedResource) &&
-                      (selectedResource?.type === "text" ||
-                        selectedResource?.type === "image" ||
-                        selectedResource?.type === "audio")
-                        ? ""
-                        : "overflow-y-auto"
-                    }`}
-                  >
-                    {/* If a resource is selected, or the data view is active, render the chosen view; otherwise render empty state or children. */}
-                    {(selectedResource && combined) || view === "data"
-                      ? (() => {
-                          if (view === "data") {
-                            const queryResources = activeSmartFolderId
-                              ? liveResources.filter((r) =>
-                                  activeQueryIds.includes(r.id),
-                                )
-                              : liveResources;
-                            return (
-                              <>
-                                {isQueryBuilderOpen && (
-                                  <div className="mb-4">
-                                    <QueryBuilder
-                                      groups={qb.groups}
-                                      globalCombinator={qb.globalCombinator}
-                                      isAdvanced={qb.isAdvanced}
-                                      rawAst={qb.rawAst}
-                                      availableFields={availableFields}
-                                      savedQueries={savedQueriesList}
-                                      resolveResourceOptions={
-                                        resolveResourceOptions
-                                      }
-                                      resolveFolderOptions={
-                                        resolveFolderOptions
-                                      }
-                                      matchCount={
-                                        activeSmartFolderId
-                                          ? queryResources.length
-                                          : undefined
-                                      }
-                                      onGlobalCombinatorChange={
-                                        qb.onGlobalCombinatorChange
-                                      }
-                                      onGroupCombinatorChange={
-                                        qb.onGroupCombinatorChange
-                                      }
-                                      onGroupAdd={qb.onGroupAdd}
-                                      onGroupDelete={qb.onGroupDelete}
-                                      onChipUpdate={qb.onChipUpdate}
-                                      onChipAdd={qb.onChipAdd}
-                                      onChipDelete={qb.onChipDelete}
-                                      onChipDuplicate={qb.onChipDuplicate}
-                                      onChipReorder={qb.onChipReorder}
-                                      onRestoreFromAdvanced={
-                                        qb.onRestoreFromAdvanced
-                                      }
-                                      onSaveRequest={handleSaveRequest}
-                                    />
-                                    <SaveQueryDialog
-                                      isOpen={isSaveDialogOpen}
-                                      definition={currentAst}
-                                      projectId={project?.id ?? ""}
-                                      onClose={() => setIsSaveDialogOpen(false)}
-                                      onSaved={handleQuerySaved}
-                                      existingQuery={editingQuery ?? undefined}
-                                    />
-                                  </div>
-                                )}
-                                <DataView
-                                  resources={queryResources}
-                                  project={project ?? undefined}
-                                  folders={liveFolders}
-                                  isEvaluating={
-                                    activeSmartFolderId
-                                      ? isQueryEvaluating
-                                      : false
-                                  }
-                                  onResourceClick={(id) => {
-                                    dispatch(setSelectedResourceId(id));
-                                    const clicked = queryResources.find(
-                                      (r) => r.id === id,
-                                    );
-                                    if (clicked?.type === "text") {
-                                      setView("edit");
-                                    }
-                                    if (activeSmartFolderId) {
-                                      setActiveSmartFolderId(null);
-                                      setIsQueryBuilderOpen(false);
-                                    }
-                                  }}
-                                  onSelectFolder={(folderId) => {
-                                    dispatch(setSelectedResourceId(folderId));
-                                    setView("organizer");
-                                  }}
-                                />
-                              </>
-                            );
-                          }
-
-                          if (!selectedResource)
-                            return (
-                              <div>
-                                <h2 className="workarea-section-title">
-                                  Work Area
-                                </h2>
-                                <p className="mt-2 text-sm text-gw-secondary">
-                                  Resource not found.
-                                </p>
-                              </div>
-                            );
-
-                          switch (view) {
-                            case "edit":
-                              if (
-                                selectedResource.type === "image" ||
-                                selectedResource.type === "audio"
-                              ) {
-                                return (
-                                  <MediaView resource={selectedResource} />
-                                );
-                              }
-                              if (selectedResource.type !== "text") {
-                                return (
-                                  <div>
-                                    <h2 className="text-2xl font-semibold">
-                                      Work Area
-                                    </h2>
-                                    <p className="mt-2 text-sm text-gw-secondary">
-                                      Selected resource is not a text resource.
-                                    </p>
-                                  </div>
-                                );
-                              }
+                  ) : null}
+                  <div className="flex-1 min-h-0 max-w-full mx-auto w-full flex flex-col">
+                    <div
+                      className={`flex-1 min-h-0 text-gw-primary flex flex-col ${
+                        view === "edit" &&
+                        Boolean(selectedResource) &&
+                        (selectedResource?.type === "text" ||
+                          selectedResource?.type === "image" ||
+                          selectedResource?.type === "audio")
+                          ? ""
+                          : "overflow-y-auto"
+                      }`}
+                    >
+                      {/* If a resource is selected, or the data view is active, render the chosen view; otherwise render empty state or children. */}
+                      {(selectedResource && combined) || view === "data"
+                        ? (() => {
+                            if (view === "data") {
+                              const queryResources = activeSmartFolderId
+                                ? liveResources.filter((r) =>
+                                    activeQueryIds.includes(r.id),
+                                  )
+                                : liveResources;
                               return (
-                                <EditView
-                                  onUnsavedChange={setHasUnsavedEditorChanges}
-                                  initialContent={getResourceContent(
-                                    selectedResource,
+                                <>
+                                  {isQueryBuilderOpen && (
+                                    <div className="mb-4">
+                                      <QueryBuilder
+                                        groups={qb.groups}
+                                        globalCombinator={qb.globalCombinator}
+                                        isAdvanced={qb.isAdvanced}
+                                        rawAst={qb.rawAst}
+                                        availableFields={availableFields}
+                                        savedQueries={savedQueriesList}
+                                        resolveResourceOptions={
+                                          resolveResourceOptions
+                                        }
+                                        resolveFolderOptions={
+                                          resolveFolderOptions
+                                        }
+                                        matchCount={
+                                          activeSmartFolderId
+                                            ? queryResources.length
+                                            : undefined
+                                        }
+                                        onGlobalCombinatorChange={
+                                          qb.onGlobalCombinatorChange
+                                        }
+                                        onGroupCombinatorChange={
+                                          qb.onGroupCombinatorChange
+                                        }
+                                        onGroupAdd={qb.onGroupAdd}
+                                        onGroupDelete={qb.onGroupDelete}
+                                        onChipUpdate={qb.onChipUpdate}
+                                        onChipAdd={qb.onChipAdd}
+                                        onChipDelete={qb.onChipDelete}
+                                        onChipDuplicate={qb.onChipDuplicate}
+                                        onChipReorder={qb.onChipReorder}
+                                        onRestoreFromAdvanced={
+                                          qb.onRestoreFromAdvanced
+                                        }
+                                        onSaveRequest={handleSaveRequest}
+                                      />
+                                      <SaveQueryDialog
+                                        isOpen={isSaveDialogOpen}
+                                        definition={currentAst}
+                                        projectId={project?.id ?? ""}
+                                        onClose={() =>
+                                          setIsSaveDialogOpen(false)
+                                        }
+                                        onSaved={handleQuerySaved}
+                                        existingQuery={
+                                          editingQuery ?? undefined
+                                        }
+                                      />
+                                    </div>
                                   )}
-                                />
+                                  <DataView
+                                    resources={queryResources}
+                                    project={project ?? undefined}
+                                    folders={liveFolders}
+                                    isEvaluating={
+                                      activeSmartFolderId
+                                        ? isQueryEvaluating
+                                        : false
+                                    }
+                                    onResourceClick={(id) => {
+                                      dispatch(setSelectedResourceId(id));
+                                      const clicked = queryResources.find(
+                                        (r) => r.id === id,
+                                      );
+                                      if (clicked?.type === "text") {
+                                        setView("edit");
+                                      }
+                                      if (activeSmartFolderId) {
+                                        setActiveSmartFolderId(null);
+                                        setIsQueryBuilderOpen(false);
+                                      }
+                                    }}
+                                    onSelectFolder={(folderId) => {
+                                      dispatch(setSelectedResourceId(folderId));
+                                      setView("organizer");
+                                    }}
+                                  />
+                                </>
                               );
-                            case "diff":
-                              return <DiffViewController />;
-                            case "organizer":
-                              return <OrganizerView />;
-                            case "timeline":
-                              // Defensive guard: the tab is disabled when the
-                              // view is off, but never mount TimelineView even
-                              // if the view state somehow lands here.
-                              return isTimelineViewEnabled ? (
-                                <TimelineView />
-                              ) : null;
-                            default:
+                            }
+
+                            if (!selectedResource)
                               return (
                                 <div>
                                   <h2 className="workarea-section-title">
                                     Work Area
                                   </h2>
+                                  <p className="mt-2 text-sm text-gw-secondary">
+                                    Resource not found.
+                                  </p>
                                 </div>
                               );
-                          }
-                        })()
-                      : project && showSidebars
-                        ? (() => {
-                            return (
-                              <section className="mx-auto w-full max-w-4xl bg-gw-chrome p-6 md:p-8">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
+
+                            switch (view) {
+                              case "edit":
+                                if (
+                                  selectedResource.type === "image" ||
+                                  selectedResource.type === "audio"
+                                ) {
+                                  return (
+                                    <MediaView resource={selectedResource} />
+                                  );
+                                }
+                                if (selectedResource.type !== "text") {
+                                  return (
+                                    <div>
+                                      <h2 className="text-2xl font-semibold">
+                                        Work Area
+                                      </h2>
+                                      <p className="mt-2 text-sm text-gw-secondary">
+                                        Selected resource is not a text
+                                        resource.
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <EditView
+                                    onUnsavedChange={setHasUnsavedEditorChanges}
+                                    initialContent={getResourceContent(
+                                      selectedResource,
+                                    )}
+                                  />
+                                );
+                              case "diff":
+                                return <DiffViewController />;
+                              case "organizer":
+                                return <OrganizerView />;
+                              case "timeline":
+                                // Defensive guard: the tab is disabled when the
+                                // view is off, but never mount TimelineView even
+                                // if the view state somehow lands here.
+                                return isTimelineViewEnabled ? (
+                                  <TimelineView />
+                                ) : null;
+                              default:
+                                return (
                                   <div>
-                                    <p className="font-mono text-gw-nano uppercase tracking-label-wide text-gw-secondary">
+                                    <h2 className="workarea-section-title">
                                       Work Area
-                                    </p>
-                                    <h2 className="mt-2 text-3xl font-semibold text-gw-primary">
-                                      {project.name}
                                     </h2>
-                                    <p className="mt-2 text-sm text-gw-secondary">
-                                      Select a file from the resource tree, or
-                                      create a new resource to continue.
-                                    </p>
+                                  </div>
+                                );
+                            }
+                          })()
+                        : project && showSidebars
+                          ? (() => {
+                              return (
+                                <section className="mx-auto w-full max-w-4xl bg-gw-chrome p-6 md:p-8">
+                                  <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                      <p className="font-mono text-gw-nano uppercase tracking-label-wide text-gw-secondary">
+                                        Work Area
+                                      </p>
+                                      <h2 className="mt-2 text-3xl font-semibold text-gw-primary">
+                                        {project.name}
+                                      </h2>
+                                      <p className="mt-2 text-sm text-gw-secondary">
+                                        Select a file from the resource tree, or
+                                        create a new resource to continue.
+                                      </p>
+                                    </div>
+
+                                    <Button
+                                      variant="secondary"
+                                      onClick={() =>
+                                        setCreateModal({
+                                          open: true,
+                                          initialTitle: "",
+                                          parentId: undefined,
+                                        })
+                                      }
+                                    >
+                                      <Plus size={14} aria-hidden="true" />
+                                      Create Resource
+                                    </Button>
                                   </div>
 
-                                  <Button
-                                    variant="secondary"
-                                    onClick={() =>
-                                      setCreateModal({
-                                        open: true,
-                                        initialTitle: "",
-                                        parentId: undefined,
-                                      })
-                                    }
-                                  >
-                                    <Plus size={14} aria-hidden="true" />
-                                    Create Resource
-                                  </Button>
-                                </div>
+                                  <div className="mt-8">
+                                    <div className="mb-3 flex items-center justify-between">
+                                      <h3 className="font-mono text-gw-nano font-semibold uppercase tracking-[0.16em] text-gw-secondary">
+                                        Recent Files
+                                      </h3>
+                                      <span className="text-xs text-gw-secondary">
+                                        {recentResources.length} shown
+                                      </span>
+                                    </div>
 
-                                <div className="mt-8">
-                                  <div className="mb-3 flex items-center justify-between">
-                                    <h3 className="font-mono text-gw-nano font-semibold uppercase tracking-[0.16em] text-gw-secondary">
-                                      Recent Files
-                                    </h3>
-                                    <span className="text-xs text-gw-secondary">
-                                      {recentResources.length} shown
-                                    </span>
-                                  </div>
+                                    {recentResources.length > 0 ? (
+                                      <ul className="divide-y divide-gw-border rounded-lg border-hairline border-gw-border bg-gw-chrome">
+                                        {recentResources.map((resource) => {
+                                          const icon =
+                                            resource.type === "image"
+                                              ? ImageIcon
+                                              : resource.type === "audio"
+                                                ? Music2
+                                                : FileText;
 
-                                  {recentResources.length > 0 ? (
-                                    <ul className="divide-y divide-gw-border rounded-lg border-hairline border-gw-border bg-gw-chrome">
-                                      {recentResources.map((resource) => {
-                                        const icon =
-                                          resource.type === "image"
-                                            ? ImageIcon
-                                            : resource.type === "audio"
-                                              ? Music2
-                                              : FileText;
+                                          const Icon = icon;
 
-                                        const Icon = icon;
-
-                                        return (
-                                          <li key={resource.id}>
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                onResourceSelect?.(resource.id)
-                                              }
-                                              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gw-chrome2"
-                                            >
-                                              <span className="flex min-w-0 items-center gap-3">
-                                                <Icon
-                                                  size={16}
-                                                  className="shrink-0 text-gw-secondary"
-                                                  aria-hidden="true"
-                                                />
-                                                <span className="min-w-0">
-                                                  <span className="block truncate text-sm font-medium text-gw-primary">
-                                                    {resource.name}
-                                                  </span>
-                                                  <span className="block text-xs text-gw-secondary">
-                                                    {resource.type}
+                                          return (
+                                            <li key={resource.id}>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  onResourceSelect?.(
+                                                    resource.id,
+                                                  )
+                                                }
+                                                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gw-chrome2"
+                                              >
+                                                <span className="flex min-w-0 items-center gap-3">
+                                                  <Icon
+                                                    size={16}
+                                                    className="shrink-0 text-gw-secondary"
+                                                    aria-hidden="true"
+                                                  />
+                                                  <span className="min-w-0">
+                                                    <span className="block truncate text-sm font-medium text-gw-primary">
+                                                      {resource.name}
+                                                    </span>
+                                                    <span className="block text-xs text-gw-secondary">
+                                                      {resource.type}
+                                                    </span>
                                                   </span>
                                                 </span>
-                                              </span>
-                                              <span className="text-xs text-gw-secondary">
-                                                {resource.updatedAt
-                                                  ? `Edited ${formatRelativeTimestamp(resource.updatedAt)}`
-                                                  : `Created ${formatRelativeTimestamp(resource.createdAt)}`}
-                                              </span>
-                                            </button>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  ) : (
-                                    <div className="rounded-lg border border-dashed border-gw-border bg-gw-chrome px-4 py-6 text-sm text-gw-secondary">
-                                      No files yet. Use{" "}
-                                      <span className="font-medium text-gw-primary">
-                                        Create Resource
-                                      </span>{" "}
-                                      to add your first text, image, or audio
-                                      item.
-                                    </div>
-                                  )}
-                                </div>
-                              </section>
-                            );
-                          })()
-                        : (children ?? (
-                            <div>
-                              <h2 className="workarea-section-title">
-                                Work Area
-                              </h2>
-                              <p className="mt-2 text-sm text-gw-secondary">
-                                Placeholder editor and views go here.
-                              </p>
-                            </div>
-                          ))}
+                                                <span className="text-xs text-gw-secondary">
+                                                  {resource.updatedAt
+                                                    ? `Edited ${formatRelativeTimestamp(resource.updatedAt)}`
+                                                    : `Created ${formatRelativeTimestamp(resource.createdAt)}`}
+                                                </span>
+                                              </button>
+                                            </li>
+                                          );
+                                        })}
+                                      </ul>
+                                    ) : (
+                                      <div className="rounded-lg border border-dashed border-gw-border bg-gw-chrome px-4 py-6 text-sm text-gw-secondary">
+                                        No files yet. Use{" "}
+                                        <span className="font-medium text-gw-primary">
+                                          Create Resource
+                                        </span>{" "}
+                                        to add your first text, image, or audio
+                                        item.
+                                      </div>
+                                    )}
+                                  </div>
+                                </section>
+                              );
+                            })()
+                          : (children ?? (
+                              <div>
+                                <h2 className="workarea-section-title">
+                                  Work Area
+                                </h2>
+                                <p className="mt-2 text-sm text-gw-secondary">
+                                  Placeholder editor and views go here.
+                                </p>
+                              </div>
+                            ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </main>
+              </main>
 
-            {/* Right Resize Handle */}
-            {showSidebars && layout.rightOpen ? (
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                onMouseDown={layout.startRightResize}
-                className="hidden lg:block appshell-resize-handle"
-              />
-            ) : null}
+              {/* Right Resize Handle — desktop only */}
+              {showSidebars && layout.tier === "desktop" && layout.rightOpen ? (
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  onMouseDown={layout.startRightResize}
+                  className="hidden lg:block appshell-resize-handle"
+                />
+              ) : null}
 
-            {/* Right Sidebar */}
-            {showSidebars && layout.rightOpen ? (
-              <aside
-                className="hidden lg:flex appshell-sidebar border-l"
-                style={{ width: layout.rightWidth }}
-              >
-                <div className="appshell-sidebar-header">
-                  <span className="font-mono text-gw-nano uppercase tracking-label-wide font-semibold text-gw-secondary">
-                    Metadata
-                  </span>
+              {/* Right Sidebar — docked (desktop). The `lg:flex` gate keeps the
+                pre-hydration paint correct below lg; the tier check swaps in
+                the drawer once hydrated. */}
+              {showSidebars && layout.tier === "desktop" && layout.rightOpen ? (
+                <aside
+                  className="hidden lg:flex appshell-sidebar border-l"
+                  style={{ width: layout.rightWidth }}
+                >
+                  <div className="appshell-sidebar-header">
+                    <span className="font-mono text-gw-nano uppercase tracking-label-wide font-semibold text-gw-secondary">
+                      Metadata
+                    </span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => layout.setRightOpen(false)}
+                      title="Close right sidebar"
+                      aria-label="Close metadata sidebar"
+                    >
+                      <PanelRightClose size={16} aria-hidden="true" />
+                    </Button>
+                  </div>
+                  {rightSidebarBody}
+                </aside>
+              ) : null}
+
+              {/* Right Sidebar Collapsed Toggle — docked (desktop) */}
+              {showSidebars &&
+              layout.tier === "desktop" &&
+              !layout.rightOpen ? (
+                <div className="hidden lg:flex flex-col items-center justify-start h-full p-2 bg-gw-chrome border-l border-hairline border-gw-border">
                   <Button
-                    variant="ghost"
-                    onClick={() => layout.setRightOpen(false)}
-                    title="Close right sidebar"
-                    aria-label="Close metadata sidebar"
+                    variant="icon"
+                    className="w-10 h-10"
+                    onClick={() => layout.setRightOpen(true)}
+                    title="Open right sidebar"
+                    aria-label="Open metadata sidebar"
                   >
-                    <PanelRightClose size={16} aria-hidden="true" />
+                    <PanelRightOpen size={16} aria-hidden="true" />
                   </Button>
                 </div>
-                <div className="appshell-sidebar-content">
-                  <MetadataSidebar
-                    onChangeField={(key, value) => {
-                      if (!selectedResource) return;
-                      const id = selectedResource.id;
-                      switch (key) {
-                        case "synopsis":
-                          onChangeSynopsis?.(value as string, id);
-                          break;
-                        case "notes":
-                          onChangeNotes?.(value as string, id);
-                          break;
-                        case "status":
-                          onChangeStatus?.(
-                            value as "draft" | "in-review" | "published",
-                            id,
-                          );
-                          break;
-                        case "pov":
-                          onChangePOV?.(value as ResourceRef, id);
-                          break;
-                        case "storyDate":
-                          onChangeStoryDate?.(value as string, id);
-                          break;
-                        case "storyDuration":
-                          onChangeStoryDuration?.(value as number | null, id);
-                          break;
-                        case "storyEndDate":
-                          onChangeStoryEndDate?.(value as string | null, id);
-                          break;
-                        default:
-                          onChangeDynamicMetadata?.(
-                            { [key]: value as string[] },
-                            id,
-                          );
-                          break;
-                      }
-                    }}
-                  />
-                </div>
-              </aside>
-            ) : null}
+              ) : null}
 
-            {/* Right Sidebar Collapsed Toggle */}
-            {showSidebars && !layout.rightOpen ? (
-              <div className="hidden lg:flex flex-col items-center justify-start h-full p-2 bg-gw-chrome border-l border-hairline border-gw-border">
-                <Button
-                  variant="icon"
-                  className="w-10 h-10"
-                  onClick={() => layout.setRightOpen(true)}
-                  title="Open right sidebar"
-                  aria-label="Open metadata sidebar"
+              {/* Right Sidebar — phone/tablet overlay drawer */}
+              {showSidebars && layout.tier !== "desktop" ? (
+                <ShellDrawer
+                  side="right"
+                  open={layout.rightOpen}
+                  onClose={() => layout.setRightOpen(false)}
+                  title="Metadata"
                 >
-                  <PanelRightOpen size={16} aria-hidden="true" />
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </ShellLayoutController>
+                  {rightSidebarBody}
+                </ShellDrawer>
+              ) : null}
+            </div>
+          )}
+        </ShellLayoutController>
+      </ShellLayoutProvider>
     </div>
   );
 }

@@ -52,6 +52,10 @@ export interface ShellSettingsMenuProps {
    * Defaults to `false`.
    */
   isAuthenticated?: boolean;
+  /** Rendered at the far left of the top bar (e.g. the mobile resources toggle). */
+  leadingSlot?: React.ReactNode;
+  /** Rendered at the start of the right-hand button cluster (e.g. the mobile metadata toggle). */
+  trailingSlot?: React.ReactNode;
 }
 
 /** Menu items that only appear when a project is open, in display order. */
@@ -80,6 +84,8 @@ export default function ShellSettingsMenu({
   onAction,
   appVersion,
   isAuthenticated = false,
+  leadingSlot,
+  trailingSlot,
 }: ShellSettingsMenuProps): JSX.Element {
   const { containerRef: settingsMenuRef } = useDismissableMenu({
     isOpen,
@@ -93,6 +99,7 @@ export default function ShellSettingsMenu({
   return (
     <header className="appshell-topbar">
       <div className="appshell-topbar-left">
+        {leadingSlot}
         <span className="appshell-topbar-wordmark" aria-label="GetWrite">
           <span className="font-display font-normal tracking-heading text-gw-secondary">
             Get
@@ -112,6 +119,7 @@ export default function ShellSettingsMenu({
       </div>
 
       <div className="flex items-center gap-1">
+        {trailingSlot}
         {hasProject ? (
           <div className="appshell-topbar-menu" ref={projectMenuRef}>
             <Button

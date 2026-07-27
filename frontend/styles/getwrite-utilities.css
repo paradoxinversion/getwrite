@@ -807,6 +807,26 @@ html.gw-theme-dark {
     outline: 1px dashed var(--color-gw-border-md);
   }
 
+  /* Per-row overflow (⋯) menu trigger. Always visible on touch; on pointer
+     devices it's revealed on row hover/focus so desktop stays uncluttered. */
+  .resource-tree-kebab {
+    opacity: 1;
+    transition: opacity 120ms ease;
+  }
+
+  @media (hover: hover) {
+    .resource-tree-kebab {
+      opacity: 0;
+    }
+
+    .resource-tree-item:hover .resource-tree-kebab,
+    .resource-tree-item:focus-within .resource-tree-kebab,
+    .resource-tree-kebab:focus-visible,
+    .resource-tree-kebab[data-state="open"] {
+      opacity: 1;
+    }
+  }
+
   .resource-tree-drag-preview {
     background-color: var(--color-gw-chrome2);
     border: 0.5px solid var(--color-gw-border);
@@ -932,6 +952,18 @@ html.gw-theme-dark {
   .resource-context-menu {
     position: fixed;
     z-index: 50;
+    min-width: 180px;
+    border: 0.5px solid var(--color-gw-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-gw-chrome2);
+    padding: 4px;
+  }
+
+  /* Kebab (⋯) popover variant: same look as the right-click menu but WITHOUT
+     `position: fixed` — Radix Popover positions its content via a transformed
+     positioner, and a fixed child would ignore that transform (its containing
+     block becomes the positioner) and mis-anchor at the trigger's corner. */
+  .resource-row-menu {
     min-width: 180px;
     border: 0.5px solid var(--color-gw-border);
     border-radius: var(--radius-md);
@@ -1992,6 +2024,82 @@ html.gw-theme-dark {
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: hidden;
+  }
+
+  /* ── MOBILE SIDEBAR DRAWERS (phone/tablet tiers, ADR-021 Phase 3) ──
+     Rendered via Radix Dialog portals to document.body, so these are global
+     (not scoped to .appshell-shell); theme tokens are mirrored on <html>. */
+  .appshell-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+  }
+
+  .appshell-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 50;
+    width: min(20rem, 84vw);
+    max-width: 84vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--color-gw-chrome);
+    outline: none;
+  }
+
+  .appshell-drawer--left {
+    left: 0;
+    border-right: 0.5px solid var(--color-gw-border);
+  }
+
+  .appshell-drawer--right {
+    right: 0;
+    border-left: 0.5px solid var(--color-gw-border);
+  }
+
+  /* Slide-in entrance. Reduced motion is neutralized globally by the
+     .gw-reduced-motion block near the top of this file. */
+  @keyframes gw-drawer-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes gw-drawer-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes gw-scrim-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .appshell-drawer--left[data-state="open"] {
+    animation: gw-drawer-in-left 200ms ease;
+  }
+
+  .appshell-drawer--right[data-state="open"] {
+    animation: gw-drawer-in-right 200ms ease;
+  }
+
+  .appshell-scrim[data-state="open"] {
+    animation: gw-scrim-in 150ms ease;
   }
 
   /* ── MODALS ── */
