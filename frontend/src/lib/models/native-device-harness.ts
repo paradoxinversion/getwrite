@@ -282,12 +282,12 @@ async function runSearchCheck(): Promise<SearchCheckReport> {
       hits,
     };
   } finally {
+    // Remove the whole isolated fixture projects tree (including the
+    // `/harness/projects` parent `seedSearchFixture` created), so a run
+    // genuinely leaves nothing behind.
     const adapter = capacitorFsAdapter(createRealCapacitorFilesystem());
     await adapter
-      .rm(`${FIXTURE_PROJECTS_DIR}/${FIXTURE_PROJECT_ID}`, {
-        recursive: true,
-        force: true,
-      })
+      .rm(FIXTURE_PROJECTS_DIR, { recursive: true, force: true })
       .catch(() => {
         /* best-effort cleanup; a leftover under /harness never reaches the UI */
       });

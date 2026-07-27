@@ -34,7 +34,6 @@ import { readFolderTree } from "./folder-utils";
 import { resolveProjectsDir } from "./projects-dir";
 import { resolveProjectRoot } from "./project-root-resolver";
 import { loadProjectFromDisk, type LoadedProject } from "./project-loader";
-import { validateProject } from "./project";
 import { createProjectFromType } from "./project-creator";
 import { generateUUID } from "./uuid";
 import { getProjectType } from "../projectTypes";
@@ -57,10 +56,31 @@ export interface CreateProjectResult {
 }
 
 /**
+ * Structural guard for a `project.json` manifest the Start screen can list.
+ *
+ * The list consumer chain (`buildProjectView` reads `project.id`; `StartPage`
+ * reads `project.createdAt`) needs exactly a string `id` and `createdAt` —
+ * every other `ProjectSchema` field is optional and unused by the listing. So
+ * this is the precise "is this a real project we can show?" predicate: narrow
+ * enough that a legitimate, loadable project with an unrelated legacy/nested
+ * field is never dropped, strict enough to skip the incomplete manifests that
+ * used to make the whole list fail.
+ */
+function isListableProjectManifest(
+  manifest: unknown,
+): manifest is { id: string; createdAt: string } {
+  if (typeof manifest !== "object" || manifest === null) return false;
+  const record = manifest as Record<string, unknown>;
+  return typeof record.id === "string" && typeof record.createdAt === "string";
+}
+
+/**
  * Lists every project under `resolveProjectsDir()`, each with its parsed
  * `project.json`, folder tree, and resources.
  *
- * Lifted verbatim from `GET /api/projects`'s `getProjects` handler body.
+ * Lifted from `GET /api/projects`'s `getProjects` handler body, hardened so a
+ * single unreadable/incomplete `project.json` is skipped (with a warning)
+ * rather than failing the entire list.
  */
 export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   const projectsDir = resolveProjectsDir();
@@ -69,29 +89,43 @@ export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   );
   const entries = await Promise.all(
     projectIds.map(async (id): Promise<ProjectListEntry | null> => {
+      const projectPath = path.join(projectsDir, id, "project.json");
+      let manifest: unknown;
       try {
-        const projectPath = path.join(projectsDir, id, "project.json");
-        const projectData = await readFile(projectPath, "utf-8");
-        // Validate the on-disk manifest before admitting it to the list. A
-        // single unreadable/corrupt/incomplete project.json (a partial write, a
-        // crash mid-save, or a stray fixture directory) must not take down the
-        // whole list via `Promise.all` rejection — skip the offender and return
-        // every healthy project instead. `validateProject` throws on a manifest
-        // the UI would reject downstream anyway (e.g. missing `createdAt`).
-        const project = validateProject(JSON.parse(projectData));
-
-        const foldersPath = path.join(projectsDir, id, "folders");
-        const folders = await readFolderTree(foldersPath);
-
-        const resources = await getLocalResources(path.join(projectsDir, id));
-        return { project, resources, folders };
+        manifest = JSON.parse(await readFile(projectPath, "utf-8"));
       } catch (error) {
+        // Unreadable or non-JSON manifest — a stray directory, or a partial /
+        // corrupt write. Skip this one project rather than failing the whole
+        // list via `Promise.all` rejection (the bug where a single bad
+        // project.json made every project vanish from the Start screen).
         console.warn(
           `Skipping unreadable project "${id}" while listing projects:`,
           error,
         );
         return null;
       }
+      if (!isListableProjectManifest(manifest)) {
+        // Parses fine but is missing a field the Start screen needs to list it
+        // (see `isListableProjectManifest`). Skip it instead of letting it
+        // poison the list — but do NOT run the full `ProjectSchema.parse`
+        // here: that would drop a legitimate, loadable project over an
+        // unrelated nested field the list never reads, and would reshape the
+        // payload the HTTP route returns verbatim.
+        console.warn(
+          `Skipping project "${id}" with an incomplete manifest while listing projects.`,
+        );
+        return null;
+      }
+
+      // Deliberately outside the guard above: a transient read failure on a
+      // healthy project's folders/resources still propagates (surfacing as an
+      // error) instead of silently dropping the project from the list.
+      const foldersPath = path.join(projectsDir, id, "folders");
+      const folders = await readFolderTree(foldersPath);
+      const resources = await getLocalResources(path.join(projectsDir, id));
+      // Return the raw parsed manifest verbatim (not a schema-parsed copy) so
+      // the payload stays byte-identical to the pre-guard behaviour.
+      return { project: manifest, resources, folders };
     }),
   );
   return entries.filter((entry): entry is ProjectListEntry => entry !== null);
