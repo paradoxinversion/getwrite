@@ -84,7 +84,7 @@ const RAW_PROJECT_TYPE_TEMPLATES: readonly unknown[] = [
 const STATIC_PROJECT_TYPES: ProjectTypeSpec[] =
   RAW_PROJECT_TYPE_TEMPLATES.reduce<ProjectTypeSpec[]>((acc, raw) => {
     const result = validateProjectType(raw);
-    if (result.success && "value" in result && result.value) {
+    if (result.success && result.value) {
       acc.push(result.value);
     }
     return acc;

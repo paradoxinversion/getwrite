@@ -67,8 +67,11 @@ describe("native-bootstrap web-bundle exclusion", () => {
     // ADR-021 Phase 2 bootstrap ready-gate). Every one of them is itself
     // excluded from the web bundle via its own next.config.mjs resolveAlias
     // web-stub, so referencing native-bootstrap from them does not leak it into
-    // the web build — the exclusion this test guards still holds.
-    const nativeBackendRe = /native-[a-z-]+-backend\.ts$/;
+    // the web build — the exclusion this test guards still holds. The shared
+    // `native-runner.ts` helper (which the backends' run<T> now delegates to)
+    // holds that same reference and is likewise reached only via those
+    // web-stubbed backends, so it is allowed too.
+    const nativeOnlyRe = /(native-[a-z-]+-backend|native-runner)\.ts$/;
 
     const offenders: string[] = [];
     for (const dir of dirsToScan) {
@@ -78,7 +81,7 @@ describe("native-bootstrap web-bundle exclusion", () => {
         if (relative === NATIVE_BOOTSTRAP_CALL_SITE_RELATIVE_PATH) continue;
         if (relative === NATIVE_BOOTSTRAP_RELATIVE_PATH) continue;
         if (relative === WEB_STUB_RELATIVE_PATH) continue;
-        if (nativeBackendRe.test(relative)) continue;
+        if (nativeOnlyRe.test(relative)) continue;
         const contents = fs.readFileSync(file, "utf8");
         if (importRe.test(contents)) {
           offenders.push(relative);

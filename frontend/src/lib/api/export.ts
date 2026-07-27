@@ -1,11 +1,15 @@
 import type { MarkdownConstructWarning } from "../export/types";
 import { createTransport } from "../../store/transport/create-transport";
 
-export interface MarkdownExportBody {
+/**
+ * Request body shared by the text and markdown export endpoints (identical
+ * shape; only their result types differ).
+ */
+export interface ExportBody {
   /**
    * The project's on-disk directory basename (see
    * `selectActiveProjectDirectoryId` in `projectsSlice.ts`), not
-   * `StoredProject.id` — `/api/export/markdown` resolves it via
+   * `StoredProject.id` — the export routes resolve it via
    * `resolveProjectsDir()/<projectId>` (ADR-017/018 tenant-route migration).
    */
   projectId: string;
@@ -14,25 +18,16 @@ export interface MarkdownExportBody {
   /** Display name of the resource or folder being exported (used for the filename). */
   exportName: string;
 }
+
+/** Alias of {@link ExportBody} — the markdown export's request body. */
+export type MarkdownExportBody = ExportBody;
+/** Alias of {@link ExportBody} — the text export's request body. */
+export type TextExportBody = ExportBody;
 
 export interface MarkdownExportResult {
   markdown: string;
   filename: string;
   warnings: MarkdownConstructWarning[];
-}
-
-export interface TextExportBody {
-  /**
-   * The project's on-disk directory basename (see
-   * `selectActiveProjectDirectoryId` in `projectsSlice.ts`), not
-   * `StoredProject.id` — `/api/export/text` resolves it via
-   * `resolveProjectsDir()/<projectId>` (ADR-017/018 tenant-route migration).
-   */
-  projectId: string;
-  resourceIds: string[];
-  resources: Array<{ id: string; name: string; type: string }>;
-  /** Display name of the resource or folder being exported (used for the filename). */
-  exportName: string;
 }
 
 export interface TextExportResult {

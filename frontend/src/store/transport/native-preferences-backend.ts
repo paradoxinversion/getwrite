@@ -16,14 +16,13 @@
  * server-side preferences core and storage layer, which must never enter
  * the web client bundle.
  *
- * **Storage context binding.** Mirrors `native-project-backend.ts`:
- * `deps.fs` is a test-injection seam — when supplied, this module binds a
- * fresh, one-off {@link runInStorageContext} scope for that call. In
- * production, `deps.fs` is omitted and the ambient default
- * {@link StorageContext} installed once by `native-bootstrap.ts` is used
- * instead, with no per-operation rebinding. `nativeFilesystem()` remains a
- * defensive fallback for the (unsupported) case where no bootstrap has run
- * yet.
+ * **Storage context binding.** Every operation runs through the shared
+ * `createNativeRunner(deps)` helper (`native-runner.ts`): `deps.fs` (tests)
+ * binds a one-off {@link runInStorageContext} scope over the injected fake;
+ * in production it awaits the memoized native bootstrap
+ * (`ensureNativeStorageContext()` — context bound + projects dir created) and
+ * resolves against the ambient default {@link StorageContext}, with no
+ * per-operation rebinding.
  *
  * **`savePreferences` fire-and-forget parity.** The HTTP transport's
  * `savePreferences` never inspects `fetch`'s response — a failed request
@@ -37,36 +36,12 @@
  * transport's `body?.error ?? "Failed to save default revision name."`
  * fallback) propagate to the caller.
  */
-import type { CapacitorFilesystemLike } from "../../lib/models/capacitor-filesystem";
-import { createRealCapacitorFilesystem } from "../../lib/models/capacitor-filesystem-real";
-import { capacitorFsAdapter } from "../../lib/models/capacitorFsAdapter";
-import {
-  getStorageContext,
-  runInStorageContext,
-} from "../../lib/models/storage-context";
-import { ensureNativeStorageContext } from "../../lib/models/native-bootstrap";
+import { createNativeRunner, type NativeBackendDeps } from "./native-runner";
 import {
   saveProjectPreferencesCore,
   saveRevisionSettingsCore,
 } from "../../lib/models/project-preferences-core";
 import type { PreferencesTransport } from "../../lib/api/preferences";
-
-/** Injectable dependencies — omitted in production, supplied by tests. */
-export interface NativePreferencesDeps {
-  /** The device filesystem. Production: the real `@capacitor/filesystem` plugin. */
-  fs?: CapacitorFilesystemLike;
-  /** On-device projects root (the native analogue of `GETWRITE_PROJECTS_DIR`). */
-  projectsDir?: string;
-}
-
-/**
- * Resolves the real Capacitor Filesystem plugin, scoped to the default
- * `Directory.Data` root. This is the production path: the native runtime
- * never supplies `deps.fs`, so every real device call flows through here.
- */
-function nativeFilesystem(): CapacitorFilesystemLike {
-  return createRealCapacitorFilesystem();
-}
 
 /**
  * Builds the in-process preferences transport for a native build.
@@ -74,42 +49,9 @@ function nativeFilesystem(): CapacitorFilesystemLike {
  * @param deps - Test/injection seam; omit in production.
  */
 export function createNativePreferencesTransport(
-  deps: NativePreferencesDeps = {},
+  deps: NativeBackendDeps = {},
 ): PreferencesTransport {
-  const projectsDir = deps.projectsDir ?? "/projects";
-
-  async function run<T>(fn: () => Promise<T>): Promise<T> {
-    if (deps.fs) {
-      // Explicit test injection: bind a fresh, one-off context for this
-      // call only, matching how the project native backend tests exercise
-      // this transport standalone, without any global native bootstrap
-      // having run.
-      const adapter = capacitorFsAdapter(deps.fs);
-      return runInStorageContext({ tenantRoot: projectsDir, adapter }, fn);
-    }
-
-    // ADR-021 Phase 2: gate the production path on native bootstrap completing
-    // (default context bound + projects dir created). A data fetch that races
-    // ahead of app-startup bootstrap awaits that one memoized bootstrap here
-    // instead of hitting an unbootstrapped filesystem — closing the
-    // bootstrap-vs-first-fetch race. Never re-runs (memoized).
-    await ensureNativeStorageContext();
-
-    if (getStorageContext()) {
-      // Production path: an ambient StorageContext is already active —
-      // either the process-wide default installed once at native app
-      // startup (native-bootstrap.ts), or an explicit scope some caller
-      // already established. Resolve directly; do not rebind.
-      return fn();
-    }
-
-    // Defensive fallback: no ambient context yet. Bind a one-off context
-    // against the real plugin so the call still resolves against the real
-    // device filesystem instead of silently falling through to io.ts's
-    // Node `fs/promises` default, which is meaningless on Android.
-    const adapter = capacitorFsAdapter(nativeFilesystem());
-    return runInStorageContext({ tenantRoot: projectsDir, adapter }, fn);
-  }
+  const run = createNativeRunner(deps);
 
   return {
     async savePreferences(projectId, preferences) {
