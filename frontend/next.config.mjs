@@ -129,6 +129,23 @@ const nextConfig = {
       // above.
       "../../store/transport/native-editor-config-backend":
         "./src/store/transport/native-editor-config-backend.web-stub",
+      // ADR-021 Phase 2 (Task 5): lib/api/project-types.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-project-types-backend" — same rule as
+      // above.
+      "../../store/transport/native-project-types-backend":
+        "./src/store/transport/native-project-types-backend.web-stub",
+      // ADR-021 Phase 2 (Task 5): lib/api/compile.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-compile-backend" — same rule as
+      // above.
+      "../../store/transport/native-compile-backend":
+        "./src/store/transport/native-compile-backend.web-stub",
+      // ADR-021 Phase 2 (Task 5): lib/api/export.ts also lives in
+      // src/lib/api/, so its dynamic import's literal specifier is
+      // "../../store/transport/native-export-backend" — same rule as above.
+      "../../store/transport/native-export-backend":
+        "./src/store/transport/native-export-backend.web-stub",
     },
   },
 };

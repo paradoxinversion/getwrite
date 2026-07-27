@@ -37,6 +37,7 @@ import { loadProjectFromDisk, type LoadedProject } from "./project-loader";
 import { createProjectFromType } from "./project-creator";
 import { generateUUID } from "./uuid";
 import { getProjectType } from "../projectTypes";
+import { getStaticProjectType } from "./project-types-static";
 import { reindexMissingResources } from "./inverted-index";
 import type { AnyResource, Folder, Project } from "./types";
 
@@ -125,6 +126,51 @@ export async function createProjectCore(
     spec: entry.filePath,
     name,
   });
+
+  return {
+    project: result.project,
+    folders: result.folders,
+    resources: result.resources,
+  };
+}
+
+/**
+ * Creates a new project from a project-type template, resolved from the
+ * **native-safe static registry** (`./project-types-static.ts`) instead of
+ * `getProjectType`'s `node:fs` directory scan.
+ *
+ * **ADR-021 Phase 2 (Task 5) — FR15.** `createProjectCore`'s `getProjectType`
+ * call reads `getwrite-config/templates/project-types` off the real
+ * filesystem at a repo-relative path that does not exist on a native
+ * device; `native-project-backend.ts`'s `create` operation must never take
+ * that path. This is the byte-for-byte behavioral twin of
+ * `createProjectCore`, differing only in how it resolves `projectType` to a
+ * spec — every other step (id generation, `projectRoot` join,
+ * `createProjectFromType` call, result shape) is identical, and it throws
+ * the same {@link MissingProjectFieldsError} / {@link ProjectTypeNotFoundError}
+ * for the same invalid inputs.
+ *
+ * `createProjectCore` itself is untouched — the HTTP route
+ * (`app/api/projects/route.ts`) keeps using it, and keeps using
+ * `getProjectType`'s fs-based resolution, unaffected by this addition.
+ */
+export async function createProjectCoreNative(
+  name: string | undefined,
+  projectType: string | undefined,
+): Promise<CreateProjectResult> {
+  if (!name || !projectType) {
+    throw new MissingProjectFieldsError();
+  }
+
+  const spec = getStaticProjectType(projectType);
+  if (!spec) {
+    throw new ProjectTypeNotFoundError();
+  }
+
+  const id = generateUUID();
+  const projectRoot = path.join(resolveProjectsDir(), id);
+
+  const result = await createProjectFromType({ projectRoot, spec, name });
 
   return {
     project: result.project,

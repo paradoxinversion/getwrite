@@ -30,6 +30,15 @@
  * body and its `void reindexProject(...)` call site
  * (`components/SearchBar/SearchBar.tsx`). This backend preserves that by
  * swallowing any error the core throws, rather than rejecting.
+ *
+ * **`create` divergence (ADR-021 Phase 2, Task 5, FR15).** `create` calls
+ * `createProjectCoreNative`, not `createProjectCore` — the HTTP-path core
+ * resolves `projectType` via `getProjectType`'s `node:fs` scan of a
+ * repo-relative template directory that does not exist on-device.
+ * `createProjectCoreNative` is byte-for-byte the same otherwise, resolving
+ * `projectType` from the static, build-time-imported template registry
+ * (`lib/models/project-types-static.ts`) instead. See that function's doc
+ * comment in `project-crud-core.ts` for the full rationale.
  */
 import type { CapacitorFilesystemLike } from "../../lib/models/capacitor-filesystem";
 import { createRealCapacitorFilesystem } from "../../lib/models/capacitor-filesystem-real";
@@ -39,7 +48,7 @@ import {
   runInStorageContext,
 } from "../../lib/models/storage-context";
 import {
-  createProjectCore,
+  createProjectCoreNative,
   listProjectsCore,
   loadProjectCore,
   reindexProjectByInternalIdCore,
@@ -119,7 +128,13 @@ export function createNativeProjectsTransport(
 
     async create(name, projectType) {
       return run(async () => {
-        const result = await createProjectCore(name, projectType);
+        // ADR-021 Phase 2 (Task 5, FR15): uses the native-safe static
+        // template registry (`project-types-static.ts`) rather than
+        // `createProjectCore`, which resolves `projectType` via
+        // `getProjectType`'s `node:fs` scan of a repo-relative directory
+        // that does not exist on-device. See `createProjectCoreNative`'s
+        // doc comment for the full rationale.
+        const result = await createProjectCoreNative(name, projectType);
         return result as unknown as ProjectApiEntry;
       });
     },
