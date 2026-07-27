@@ -1,4 +1,5 @@
-// ADR-021 Phase 2 — ensures a global `Buffer` exists in the native WebView.
+// ADR-021 Phase 2 — ensures Node globals the model layer relies on (`Buffer`,
+// `setImmediate`/`clearImmediate`) exist in the native WebView.
 //
 // The storage adapter (capacitorFsAdapter) uses Node's global `Buffer` for all
 // base64 encode/decode. A WebView has no `Buffer`, so without this the first
@@ -67,4 +68,12 @@ class BufferPolyfill extends Uint8Array {
 
 if (typeof globalThis.Buffer === "undefined") {
   globalThis.Buffer = BufferPolyfill;
+}
+
+// `setImmediate`/`clearImmediate` are Node globals (used by sidecar.ts and
+// tiptap-utils.ts to defer a write to the next tick) that a WebView lacks.
+// Polyfill via setTimeout(…, 0). Guarded so Node (tests/build) is untouched.
+if (typeof globalThis.setImmediate === "undefined") {
+  globalThis.setImmediate = (fn, ...args) => setTimeout(() => fn(...args), 0);
+  globalThis.clearImmediate = (id) => clearTimeout(id);
 }
