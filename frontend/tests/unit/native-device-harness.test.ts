@@ -110,7 +110,65 @@ describe("native-device-harness", () => {
     expect(renameCollision.scenario.length).toBeGreaterThan(0);
   });
 
-  it("returns one report with a valid ISO timestamp covering all three checks", async () => {
+  it("FR9: the image throughput check returns sensible, non-negative, finite numbers for every representative size with no asserted threshold", async () => {
+    const { runNativeDeviceHarness } =
+      await import("../../src/lib/models/native-device-harness");
+
+    const report = await runNativeDeviceHarness();
+    const { imageThroughput } = report;
+
+    expect(imageThroughput.sizes.map((s) => s.label)).toEqual([
+      "small",
+      "typical",
+      "large",
+    ]);
+    expect(imageThroughput.sizes.map((s) => s.payloadBytes)).toEqual([
+      200 * 1024,
+      2 * 1024 * 1024,
+      8 * 1024 * 1024,
+    ]);
+    for (const size of imageThroughput.sizes) {
+      expect(Number.isFinite(size.writeMs)).toBe(true);
+      expect(size.writeMs).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.readMs)).toBe(true);
+      expect(size.readMs).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.writeMBps)).toBe(true);
+      expect(size.writeMBps).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.readMBps)).toBe(true);
+      expect(size.readMBps).toBeGreaterThanOrEqual(0);
+      expect(size.roundTripIntegrityOk).toBe(true);
+    }
+  });
+
+  it("FR9: the audio throughput check returns sensible, non-negative, finite numbers for every representative size with no asserted threshold", async () => {
+    const { runNativeDeviceHarness } =
+      await import("../../src/lib/models/native-device-harness");
+
+    const report = await runNativeDeviceHarness();
+    const { audioThroughput } = report;
+
+    expect(audioThroughput.sizes.map((s) => s.label)).toEqual([
+      "short",
+      "long",
+    ]);
+    expect(audioThroughput.sizes.map((s) => s.payloadBytes)).toEqual([
+      512 * 1024,
+      4 * 1024 * 1024,
+    ]);
+    for (const size of audioThroughput.sizes) {
+      expect(Number.isFinite(size.writeMs)).toBe(true);
+      expect(size.writeMs).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.readMs)).toBe(true);
+      expect(size.readMs).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.writeMBps)).toBe(true);
+      expect(size.writeMBps).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(size.readMBps)).toBe(true);
+      expect(size.readMBps).toBeGreaterThanOrEqual(0);
+      expect(size.roundTripIntegrityOk).toBe(true);
+    }
+  });
+
+  it("returns one report with a valid ISO timestamp covering all five checks", async () => {
     const { runNativeDeviceHarness } =
       await import("../../src/lib/models/native-device-harness");
 
@@ -120,5 +178,7 @@ describe("native-device-harness", () => {
     expect(report.search).toBeDefined();
     expect(report.throughput).toBeDefined();
     expect(report.renameCollision).toBeDefined();
+    expect(report.imageThroughput).toBeDefined();
+    expect(report.audioThroughput).toBeDefined();
   });
 });
