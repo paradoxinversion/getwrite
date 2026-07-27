@@ -44,3 +44,10 @@ export async function bootstrapNativeStorageContext(): Promise<void> {
       "never be invoked — see this file's module doc.",
   );
 }
+
+/**
+ * Same export shape as the real module's {@link ensureNativeStorageContext}
+ * (awaited by native transport backends). Never invoked on web/desktop for the
+ * same reason as above.
+ */
+export const ensureNativeStorageContext = bootstrapNativeStorageContext;

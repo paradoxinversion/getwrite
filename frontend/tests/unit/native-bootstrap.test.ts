@@ -224,24 +224,28 @@ describe("native-bootstrap", () => {
     });
   });
 
-  it("running bootstrap twice does not re-resolve or re-install a second default context (bound exactly once)", async () => {
-    const { bootstrapNativeStorageContext } =
+  it("running bootstrap twice returns the same memoized promise and never re-runs (bound exactly once)", async () => {
+    const { bootstrapNativeStorageContext, ensureNativeStorageContext } =
       await import("../../src/lib/models/native-bootstrap");
     const { getStorageContext } =
       await import("../../src/lib/models/storage-context");
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await bootstrapNativeStorageContext();
+    const p1 = bootstrapNativeStorageContext();
+    await p1;
     const first = getStorageContext();
     expect(mocks.mkdir).toHaveBeenCalledTimes(1); // ensured the projects dir once
 
-    await bootstrapNativeStorageContext();
+    // Both a second bootstrap call and the ensureNativeStorageContext alias
+    // (awaited by every native backend) return the SAME memoized promise — the
+    // one-time bootstrap never re-runs, which is what makes the ready-gate
+    // race-free.
+    const p2 = bootstrapNativeStorageContext();
+    expect(p2).toBe(p1);
+    expect(ensureNativeStorageContext()).toBe(p1);
+    await p2;
     const second = getStorageContext();
 
-    expect(mocks.mkdir).toHaveBeenCalledTimes(1); // second bootstrap is a no-op
+    expect(mocks.mkdir).toHaveBeenCalledTimes(1); // not re-run
     expect(second).toBe(first); // same object identity -- not re-installed
-    expect(warnSpy).toHaveBeenCalledTimes(1);
-
-    warnSpy.mockRestore();
   });
 });

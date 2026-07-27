@@ -57,11 +57,18 @@ function collectSourceFiles(dir: string): string[] {
 describe("native-bootstrap web-bundle exclusion", () => {
   const frontendRoot = path.resolve(__dirname, "..", "..");
 
-  it("is referenced (statically or dynamically) only from NativeBootstrap.tsx", () => {
+  it("is referenced only from NativeBootstrap.tsx and the (themselves web-stubbed) native transport backends", () => {
     const dirsToScan = ["src", "app", "components"].map((d) =>
       path.join(frontendRoot, d),
     );
     const importRe = /native-bootstrap(?!\.web-stub)["']/;
+    // The native transport backends legitimately reference native-bootstrap:
+    // each awaits ensureNativeStorageContext() before touching storage (the
+    // ADR-021 Phase 2 bootstrap ready-gate). Every one of them is itself
+    // excluded from the web bundle via its own next.config.mjs resolveAlias
+    // web-stub, so referencing native-bootstrap from them does not leak it into
+    // the web build — the exclusion this test guards still holds.
+    const nativeBackendRe = /native-[a-z-]+-backend\.ts$/;
 
     const offenders: string[] = [];
     for (const dir of dirsToScan) {
@@ -71,6 +78,7 @@ describe("native-bootstrap web-bundle exclusion", () => {
         if (relative === NATIVE_BOOTSTRAP_CALL_SITE_RELATIVE_PATH) continue;
         if (relative === NATIVE_BOOTSTRAP_RELATIVE_PATH) continue;
         if (relative === WEB_STUB_RELATIVE_PATH) continue;
+        if (nativeBackendRe.test(relative)) continue;
         const contents = fs.readFileSync(file, "utf8");
         if (importRe.test(contents)) {
           offenders.push(relative);

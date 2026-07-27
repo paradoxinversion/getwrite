@@ -34,6 +34,7 @@ import {
   getStorageContext,
   runInStorageContext,
 } from "../../lib/models/storage-context";
+import { ensureNativeStorageContext } from "../../lib/models/native-bootstrap";
 import { resolveProjectRoot } from "../../lib/models/project-root-resolver";
 import { executeEvaluate } from "../../lib/models/query-evaluate-core";
 import { dispatchSavedQueryAction } from "../../lib/models/saved-query-dispatch-core";
@@ -93,6 +94,13 @@ export function createNativeQueryTransport(
       const adapter = capacitorFsAdapter(deps.fs);
       return runInStorageContext({ tenantRoot: projectsDir, adapter }, fn);
     }
+
+    // ADR-021 Phase 2: gate the production path on native bootstrap completing
+    // (default context bound + projects dir created). A data fetch that races
+    // ahead of app-startup bootstrap awaits that one memoized bootstrap here
+    // instead of hitting an unbootstrapped filesystem — closing the
+    // bootstrap-vs-first-fetch race. Never re-runs (memoized).
+    await ensureNativeStorageContext();
 
     if (getStorageContext()) {
       // Production path: an ambient StorageContext is already active —

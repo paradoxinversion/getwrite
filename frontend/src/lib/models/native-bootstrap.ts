@@ -47,35 +47,17 @@ import { setDefaultStorageContext } from "./storage-context";
 const PROJECTS_SUBPATH = "projects";
 
 /**
- * Guards {@link bootstrapNativeStorageContext} against being invoked more
- * than once per process — FR5 requires the storage context be bound exactly
- * once, for the process's lifetime.
+ * Memoized in-flight/settled bootstrap promise. `null` until the first call;
+ * thereafter every caller ({@link NativeBootstrap} at startup, and every native
+ * transport backend's production path via {@link ensureNativeStorageContext})
+ * awaits this SAME promise — which resolves only after the default context is
+ * installed AND the projects dir is created. That shared promise is what makes
+ * the "bind once, everyone waits for it" gate race-free (FR5).
  */
-let isBootstrapped = false;
+let bootstrapPromise: Promise<void> | null = null;
 
-/**
- * Resolves the on-device app-private data directory root and installs it,
- * together with the real Capacitor filesystem adapter, as the process-wide
- * default {@link StorageContext}.
- *
- * Must be called exactly once, at native app startup, for the lifetime of
- * the process (FR5). A second call is a no-op (logged as a warning) rather
- * than re-resolving and re-installing a new default — re-running startup
- * resolution mid-process is not a supported flow, and silently swapping the
- * ambient context out from under already-in-flight work would be worse than
- * refusing.
- */
-export async function bootstrapNativeStorageContext(): Promise<void> {
-  if (isBootstrapped) {
-    console.warn(
-      "[native-bootstrap] bootstrapNativeStorageContext() called more than " +
-        "once; ignoring. It must run exactly once at app startup " +
-        "(ADR-021 Phase 0, FR5).",
-    );
-    return;
-  }
-  isBootstrapped = true;
-
+/** The one-time bootstrap work; run at most once, guarded by {@link bootstrapPromise}. */
+async function doBootstrap(): Promise<void> {
   const { Directory } = await import("@capacitor/filesystem");
 
   // The adapter is rooted at Directory.Data (app-private storage); every path it
@@ -101,10 +83,34 @@ export async function bootstrapNativeStorageContext(): Promise<void> {
 }
 
 /**
+ * Installs the process-wide default {@link StorageContext} and ensures the
+ * projects dir exists. Idempotent: triggers the one-time bootstrap on first
+ * call and returns the same memoized promise thereafter, so it can be called
+ * eagerly at startup ({@link NativeBootstrap}) and awaited before every native
+ * transport operation without ever re-running (FR5).
+ */
+export function bootstrapNativeStorageContext(): Promise<void> {
+  if (!bootstrapPromise) {
+    bootstrapPromise = doBootstrap();
+  }
+  return bootstrapPromise;
+}
+
+/**
+ * Alias of {@link bootstrapNativeStorageContext}, awaited by each native
+ * transport backend's production path before it touches storage. Because it
+ * returns the same memoized promise the startup call uses, a data fetch that
+ * races ahead of app-startup bootstrap simply waits for that one bootstrap to
+ * finish (context bound + projects dir created) instead of hitting an
+ * unbootstrapped filesystem — closing the bootstrap-vs-first-fetch race.
+ */
+export const ensureNativeStorageContext = bootstrapNativeStorageContext;
+
+/**
  * Test-only reset of the single-invocation guard, so unit tests can prove
  * {@link bootstrapNativeStorageContext}'s "runs exactly once" behavior
  * without cross-test leakage.
  */
 export function __resetNativeBootstrapForTests(): void {
-  isBootstrapped = false;
+  bootstrapPromise = null;
 }

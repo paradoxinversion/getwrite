@@ -40,6 +40,7 @@ import {
   getStorageContext,
   runInStorageContext,
 } from "../../lib/models/storage-context";
+import { ensureNativeStorageContext } from "../../lib/models/native-bootstrap";
 import {
   executeSearch,
   findProjectRoot,
@@ -111,6 +112,12 @@ export function createNativeSearchTransport(
           runSearch,
         );
       }
+
+      // ADR-021 Phase 2: gate the production path on native bootstrap completing
+      // (default context bound + projects dir created), so a search racing ahead
+      // of app-startup bootstrap awaits that one memoized bootstrap here instead
+      // of hitting an unbootstrapped filesystem. Never re-runs (memoized).
+      await ensureNativeStorageContext();
 
       if (getStorageContext()) {
         // Production path: an ambient StorageContext is already active —

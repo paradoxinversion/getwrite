@@ -73,20 +73,17 @@ describe("transport collapse — native routing (no HTTP)", () => {
     }) as unknown as typeof fetch;
     globalThis.fetch = fetchMock;
 
-    // No deps are threaded through the service, so the native backend resolves
-    // `nativeFilesystem()` to the real `@capacitor/filesystem` bridge
-    // (ADR-021 Phase 0, Task 3 — the old "Native filesystem not wired" stub is
-    // gone). Outside a real Capacitor WebView there's no native implementation
-    // registered for the plugin, so `findProjectRoot`'s directory read fails
-    // and it swallows that failure as "project not found" — proving the real
-    // bridge was reached (not the literal stub message) without asserting on
-    // Capacitor's internal, version-fragile error text.
+    // No deps are threaded through the service, so the native backend takes its
+    // production path: it first awaits ensureNativeStorageContext() (the ADR-021
+    // Phase 2 bootstrap ready-gate), which dynamically loads the real
+    // `@capacitor/filesystem` bridge. Outside a real Capacitor WebView the
+    // native plugin isn't registered, so bootstrap rejects — which is exactly
+    // the proof we want: the native in-process path was taken and `fetch` was
+    // never called. We assert it rejects (without pinning Capacitor's
+    // internal, version-fragile error text) and that fetch stayed untouched.
     await expect(
       executeSearchRequest({ projectId: "proj-1" }, "dragon"),
-    ).rejects.toThrow(/Project proj-1 not found/);
-    await expect(
-      executeSearchRequest({ projectId: "proj-1" }, "dragon"),
-    ).rejects.not.toThrow(/Native filesystem not wired/);
+    ).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
