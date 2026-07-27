@@ -49,6 +49,7 @@ import { cpSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureConfigLink } from "./ensure-config-link.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = join(__dirname, "..");
@@ -184,6 +185,10 @@ function verifyOutput() {
 }
 
 function main() {
+  // The native template imports resolve through frontend/getwrite-config (a
+  // generated, gitignored link — see ensure-config-link.mjs). Guarantee it
+  // exists before assembling the shadow root, which mirrors it inward.
+  ensureConfigLink();
   cleanPreviousBuild();
   assembleShadowRoot();
   runNativeBuild();

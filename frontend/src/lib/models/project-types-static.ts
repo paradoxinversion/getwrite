@@ -37,21 +37,25 @@
  * loop.
  *
  * **Import path mechanics.** The imports below go through
- * `frontend/getwrite-config` — a tracked symlink to the repo-root
- * `getwrite-config/` (see `.claude/skills/shadcn` for prior art tracking a
- * symlink in this repo) — rather than a longer `"../../../../getwrite-config"`
- * relative path straight to the repo root. This matters specifically for the
- * native build: `scripts/build-native-static.mjs` builds against a *shadow*
- * project root (`frontend/.native-build/`) that symlinks every top-level
- * `frontend/` entry (including this new `getwrite-config` symlink) into
- * itself, but nests `src/` one directory level deeper than the real
- * `frontend/`. A relative import computed for the real `frontend/src/lib/
- * models/` depth would therefore resolve to the wrong directory when
- * compiled from `frontend/.native-build/src/lib/models/` instead. Routing
- * through a `getwrite-config` symlink that exists at the top level of
- * *both* `frontend/` and the shadow root keeps the relative depth
- * (`"../../../getwrite-config"`, three levels up to whichever project root
- * is currently building) identical in both cases.
+ * `frontend/getwrite-config` — a **generated, gitignored** link to the
+ * repo-root `getwrite-config/` directory — rather than a longer
+ * `"../../../../getwrite-config"` relative path straight to the repo root.
+ * This matters specifically for the native build:
+ * `scripts/build-native-static.mjs` builds against a *shadow* project root
+ * (`frontend/.native-build/`) that mirrors every top-level `frontend/` entry
+ * into itself but sits one directory level deeper than the real `frontend/`.
+ * A relative import computed for the real `frontend/src/lib/models/` depth
+ * would therefore resolve to the wrong directory when compiled from
+ * `frontend/.native-build/src/lib/models/` instead. Routing through a
+ * `getwrite-config` link that exists at the top level of *both* `frontend/`
+ * and the shadow root keeps the relative depth (`"../../../getwrite-config"`,
+ * three levels up to whichever project root is currently building) identical
+ * in both cases.
+ *
+ * The link is created by `scripts/ensure-config-link.mjs` (run via
+ * `postinstall`, `prebuild`, `pretypecheck`, and the native build) — a real
+ * symlink on POSIX and a directory junction on Windows — rather than being
+ * committed as a git symlink, which is fragile on Windows checkouts.
  */
 import { validateProjectType, type ProjectTypeSpec } from "./schemas";
 import articleProjectType from "../../../getwrite-config/templates/project-types/article_project_type.json";
