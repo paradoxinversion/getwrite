@@ -61,7 +61,19 @@ const appDest = join(buildDir, "app");
 // Excluded natively-dead app/ subtrees (FR4): API route handlers (no server
 // on device) and the three hosted-auth pages (hosted auth never runs
 // natively).
-const EXCLUDED_APP_SUBPATHS = ["api", "login", "reset-password", "verify-email"];
+// Note: `project-types` is the standalone project-type *management* page — a
+// server component that reads template JSON via node:fs at prerender time, which
+// can't coexist with the client bundle's shimmed fs in a static export. It's
+// excluded from the native export; the create-project flow does NOT need it (it
+// lists types via the client transport → the static-import registry). Converting
+// that page to a client-fetch for native parity is deferred follow-up work.
+const EXCLUDED_APP_SUBPATHS = [
+  "api",
+  "login",
+  "reset-password",
+  "verify-email",
+  "project-types",
+];
 
 // Never symlinked or copied into the shadow root: build outputs and the
 // shadow root itself.

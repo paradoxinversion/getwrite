@@ -76,18 +76,28 @@ export async function bootstrapNativeStorageContext(): Promise<void> {
   }
   isBootstrapped = true;
 
-  const { Filesystem, Directory } = await import("@capacitor/filesystem");
-  const { uri } = await Filesystem.getUri({
-    path: "",
-    directory: Directory.Data,
-  });
-  const tenantRoot = `${uri.replace(/\/+$/, "")}/${PROJECTS_SUBPATH}`;
+  const { Directory } = await import("@capacitor/filesystem");
+
+  // The adapter is rooted at Directory.Data (app-private storage); every path it
+  // receives is resolved *relative to that root* (leading slash stripped). So
+  // tenantRoot must be the Directory.Data-relative "/projects" — NOT an absolute
+  // `file://…/files/projects` URI. Passing an absolute URI here would make the
+  // adapter re-root it under Directory.Data (Directory.Data/file:/data/…), so
+  // every read/write would land in a mangled path and project create/list would
+  // silently fail. This matches the "/projects" convention the on-device search
+  // harness and native-search-backend already use successfully.
+  const tenantRoot = `/${PROJECTS_SUBPATH}`;
 
   const adapter = capacitorFsAdapter(
     createRealCapacitorFilesystem(Directory.Data),
   );
 
   setDefaultStorageContext({ tenantRoot, adapter });
+
+  // Ensure the projects dir exists so the first `listProjectsCore` readdir on a
+  // fresh device returns an empty list rather than ENOENT (desktop/hosted have
+  // this directory pre-created at setup). mkdir is idempotent (recursive).
+  await adapter.mkdir(tenantRoot, { recursive: true });
 }
 
 /**

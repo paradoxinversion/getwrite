@@ -55,8 +55,32 @@ const nextConfig = {
   // dynamic-import discipline the transport-collapse spike established.
   // Tests and `tsc` are unaffected: this is a Turbopack-only resolution
   // rule, not a TypeScript path mapping.
+  // ADR-021 Phase 2 FIX: these web-stub aliases must apply ONLY to the
+  // web/desktop build. In the NATIVE export (`isNativeTarget`) the app IS the
+  // Capacitor client and MUST bundle the REAL native backends — aliasing them to
+  // their web-stubs there makes every native transport hit its
+  // "should never be invoked" guard on-device. So the stub map is gated below.
   turbopack: {
-    resolveAlias: {
+    resolveAlias: isNativeTarget
+      ? {
+          // ADR-021 Phase 2 FIX: the native export bundles the REAL model layer,
+          // which imports node builtins a WebView has no equivalent for. Alias
+          // each to a browser-safe shim (the same set the Phase 0 esbuild harness
+          // proved makes the model layer run on-device): a POSIX `path`, an
+          // `AsyncLocalStorage` whose getStore() returns undefined (native uses
+          // the module-scoped default StorageContext), and throwing `fs`/
+          // `fs/promises` stubs (native I/O goes through capacitorFsAdapter, never
+          // node:fs). Buffer is provided as a global by NativeBootstrap.
+          "node:path": "./src/native-shims/path.mjs",
+          path: "./src/native-shims/path.mjs",
+          "node:async_hooks": "./src/native-shims/async-hooks.mjs",
+          async_hooks: "./src/native-shims/async-hooks.mjs",
+          "node:fs/promises": "./src/native-shims/fs-promises.mjs",
+          "fs/promises": "./src/native-shims/fs-promises.mjs",
+          "node:fs": "./src/native-shims/fs.mjs",
+          fs: "./src/native-shims/fs.mjs",
+        }
+      : {
       "./native-search-backend": "./src/store/transport/native-search-backend.web-stub",
       // revision-transport-service.ts lives in src/store/ (not
       // src/store/transport/, unlike search-transport.ts), so its dynamic
