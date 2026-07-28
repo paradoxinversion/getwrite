@@ -9,3 +9,11 @@ body,
 #__next {
   height: 100%;
 }
+
+/* Guard against accidental horizontal page scroll (e.g. an over-wide tooltip
+   or popover portaled to <body>): clip x-overflow without creating a scroll
+   container, so the page can never scroll sideways into an unstyled void.
+   `clip` (not `hidden`) keeps sticky/inner scrolling behavior intact. */
+body {
+  overflow-x: clip;
+}

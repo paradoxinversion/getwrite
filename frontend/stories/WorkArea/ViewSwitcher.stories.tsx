@@ -28,6 +28,28 @@ export const MediaResource: Story = {
   },
 };
 
+/**
+ * The Timeline tab disabled with its explanatory tooltip, rendered in a
+ * phone-width frame. The reason string is long; the tooltip must wrap within
+ * the viewport rather than overflow it (which previously let the page scroll
+ * sideways into an unstyled void on mobile).
+ */
+export const DisabledTimeline: Story = {
+  render: () => (
+    <div style={{ width: 360, overflowX: "auto" }}>
+      <ViewSwitcher
+        view="edit"
+        disabledViews={["timeline"]}
+        disabledReasons={{
+          timeline:
+            "The Timeline view is off. Turn it on in User Preferences → Timeline view.",
+        }}
+        onChange={(v) => console.log("view changed", v)}
+      />
+    </div>
+  ),
+};
+
 export const Interactive: Story = {
   render: () => {
     const [view, setView] = React.useState<
