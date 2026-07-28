@@ -57,7 +57,11 @@ export default function ViewSwitcher({
 
   return (
     <>
-      <Tabs value={view} onValueChange={(v) => onChange(v as ViewName)}>
+      <Tabs
+        value={view}
+        onValueChange={(v) => onChange(v as ViewName)}
+        className="workarea-view-tabs-scroll"
+      >
         <TabsList
           aria-label="Work area views"
           className={`workarea-view-tabs ${className}`}

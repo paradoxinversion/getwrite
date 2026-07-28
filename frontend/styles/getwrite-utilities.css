@@ -573,11 +573,20 @@ html.gw-theme-dark {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    /* Scroll the tab row horizontally when the tabs overflow a narrow work
-       area (e.g. on phones) instead of clipping the trailing tabs. min/max
-       width let the row shrink to the available space so overflow scrolls
-       internally rather than pushing the header wide. */
+    /* Keep the tabs on one line at their natural width; the horizontal scroll
+       lives on the .workarea-view-tabs-scroll wrapper (the Tabs root), which is
+       the width-constrained ancestor. Explicit max-content keeps this row wider
+       than the clamped scroller so it actually overflows and scrolls. */
     flex-wrap: nowrap;
+    width: max-content;
+  }
+
+  /* The view-switcher's Tabs root doubles as the horizontal scroll container so
+     the tab row scrolls when it overflows a narrow work-area pane (e.g. on
+     phones) instead of the trailing tabs being clipped. Clamped to the pane
+     width (min/max) so the overflow scrolls internally rather than pushing the
+     header wide. Applied via <Tabs className="workarea-view-tabs-scroll">. */
+  .workarea-view-tabs-scroll {
     min-width: 0;
     max-width: 100%;
     overflow-x: auto;
@@ -588,7 +597,7 @@ html.gw-theme-dark {
      fade its right edge to signal it scrolls. Scoped away from desktop, where
      all tabs fit and the fade would otherwise dim the last (Timeline) tab. */
   @media (max-width: 1023px) {
-    .workarea-view-tabs {
+    .workarea-view-tabs-scroll {
       -webkit-mask-image: linear-gradient(
         to right,
         #000 calc(100% - 24px),
