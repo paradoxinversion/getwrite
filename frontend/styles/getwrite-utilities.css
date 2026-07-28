@@ -573,6 +573,33 @@ html.gw-theme-dark {
     display: flex;
     align-items: flex-end;
     gap: 8px;
+    /* Scroll the tab row horizontally when the tabs overflow a narrow work
+       area (e.g. on phones) instead of clipping the trailing tabs. min/max
+       width let the row shrink to the available space so overflow scrolls
+       internally rather than pushing the header wide. */
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* Below desktop (phone + tablet) the tab row can overflow the narrow pane;
+     fade its right edge to signal it scrolls. Scoped away from desktop, where
+     all tabs fit and the fade would otherwise dim the last (Timeline) tab. */
+  @media (max-width: 1023px) {
+    .workarea-view-tabs {
+      -webkit-mask-image: linear-gradient(
+        to right,
+        #000 calc(100% - 24px),
+        transparent
+      );
+      mask-image: linear-gradient(
+        to right,
+        #000 calc(100% - 24px),
+        transparent
+      );
+    }
   }
 
   /* Tab button — D9: no blue fill */
@@ -587,6 +614,9 @@ html.gw-theme-dark {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
+    /* Keep tabs at natural width so the row overflows into a scroll rather
+       than squishing labels to fit. */
+    flex-shrink: 0;
     transition:
       background-color 150ms ease,
       color 150ms ease,
