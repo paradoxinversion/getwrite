@@ -69,7 +69,11 @@ export default function MoveResourceModal({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="secondary" onClick={() => onConfirm(destination)}>
+          <Button
+            variant="secondary"
+            disabled={destination === currentParentId}
+            onClick={() => onConfirm(destination)}
+          >
             Move
           </Button>
         </DialogFooter>

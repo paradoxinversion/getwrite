@@ -23,5 +23,8 @@ export const TOOLTIP_STYLE: CSSProperties = {
   // phone an unbounded tooltip pushed the page's horizontal scroll into a void.
   maxWidth: "min(260px, calc(100vw - 24px))",
   whiteSpace: "normal",
-  overflowWrap: "anywhere",
+  // break-word (not anywhere): wrap between words normally and only break a
+  // single word when it alone can't fit — avoids splitting ordinary words mid
+  // character in short tooltips.
+  overflowWrap: "break-word",
 };

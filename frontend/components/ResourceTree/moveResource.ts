@@ -52,8 +52,9 @@ export function collectDescendantIds(
  * re-sequencing both the destination and (if different) the old parent so
  * `orderIndex` stays contiguous.
  *
- * Returns `null` when the move is invalid — the item is missing, or a folder
- * would be dropped into itself or a descendant.
+ * Returns `null` when the move is a no-op or invalid — the item is missing, the
+ * destination is already the item's parent, or a folder would be dropped into
+ * itself or a descendant.
  */
 export function computeMovePayload(
   all: AnyResource[],
@@ -62,6 +63,11 @@ export function computeMovePayload(
 ): MovePayload | null {
   const moving = all.find((r) => r.id === movingId);
   if (!moving) return null;
+
+  // No-op: dropping the item into the folder it already lives in would only
+  // re-sequence its siblings and shuffle it to the bottom. Reparenting is the
+  // point of "Move to…"; same-folder reordering happens via drag.
+  if (effectiveParentId(moving) === destParentId) return null;
 
   if (destParentId !== null) {
     if (destParentId === movingId) return null;

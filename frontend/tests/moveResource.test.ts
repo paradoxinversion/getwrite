@@ -107,6 +107,23 @@ describe("computeMovePayload", () => {
     });
   });
 
+  it("returns null for a no-op move into the item's current folder", () => {
+    const all = [
+      folder("f1", null, 0),
+      doc("a", "f1", 0),
+      doc("moving", "f1", 1),
+      doc("b", "f1", 2),
+    ];
+    // Destination equals the moving item's current parent — must not re-sequence
+    // siblings or shuffle the item to the bottom.
+    expect(computeMovePayload(all, "moving", "f1")).toBeNull();
+  });
+
+  it("returns null for a no-op move within the project root", () => {
+    const all = [doc("a", null, 0), doc("moving", null, 1)];
+    expect(computeMovePayload(all, "moving", null)).toBeNull();
+  });
+
   it("returns null when moving a folder into itself", () => {
     const all = [folder("f1", null, 0)];
     expect(computeMovePayload(all, "f1", "f1")).toBeNull();

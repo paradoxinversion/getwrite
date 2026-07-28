@@ -593,10 +593,11 @@ html.gw-theme-dark {
     overflow-y: hidden;
   }
 
-  /* Below desktop (phone + tablet) the tab row can overflow the narrow pane;
-     fade its right edge to signal it scrolls. Scoped away from desktop, where
-     all tabs fit and the fade would otherwise dim the last (Timeline) tab. */
-  @media (max-width: 1023px) {
+  /* On phones the ~5 tabs overflow the full-width pane; fade the right edge to
+     signal the row scrolls. Scoped to phones only: on tablet/desktop the tabs
+     fit, so a fade there would wrongly dim the last (Timeline) tab. (The editor
+     menubar, which is far wider, keeps its own tablet-inclusive fade.) */
+  @media (max-width: 767px) {
     .workarea-view-tabs-scroll {
       -webkit-mask-image: linear-gradient(
         to right,

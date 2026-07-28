@@ -5,12 +5,22 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import useViewportTier, {
   type ViewportTier,
 } from "../../src/lib/hooks/useViewportTier";
+
+/**
+ * `useLayoutEffect` on the client, `useEffect` on the server. Lets the
+ * tier-default correction run before the browser paints (avoiding a drawer
+ * flash) without emitting the server-side `useLayoutEffect` warning during the
+ * static-export prerender.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export interface ShellLayoutRenderState {
   /** Active responsive tier — drives docked-vs-drawer rendering in AppShell. */
@@ -93,9 +103,13 @@ export function ShellLayoutProvider({
   tierRef.current = tier;
 
   // Reapply tier defaults only when the tier actually changes (not on every
-  // render), so user toggles within a tier are preserved.
+  // render), so user toggles within a tier are preserved. Runs as a layout
+  // effect so the corrected open-state is committed before paint — otherwise a
+  // mobile cold-load (tier flips desktop→phone/tablet after mount, while the
+  // open-state is still the desktop default `true`) would paint one frame with
+  // the overlay drawer(s) sliding open before this closes them.
   const prevTierRef = useRef<ViewportTier>(tier);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (prevTierRef.current === tier) return;
     prevTierRef.current = tier;
     const next = defaultsForTier(tier);
