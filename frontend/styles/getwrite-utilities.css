@@ -601,12 +601,12 @@ html.gw-theme-dark {
     .workarea-view-tabs-scroll {
       -webkit-mask-image: linear-gradient(
         to right,
-        #000 calc(100% - 24px),
+        black calc(100% - 24px),
         transparent
       );
       mask-image: linear-gradient(
         to right,
-        #000 calc(100% - 24px),
+        black calc(100% - 24px),
         transparent
       );
     }
@@ -2263,10 +2263,10 @@ html.gw-theme-dark {
     .editor-menubar {
       -webkit-mask-image: linear-gradient(
         to right,
-        #000 calc(100% - 24px),
+        black calc(100% - 24px),
         transparent
       );
-      mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+      mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
     }
   }
 
