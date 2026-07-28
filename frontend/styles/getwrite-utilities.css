@@ -2210,6 +2210,24 @@ html.gw-theme-dark {
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Below desktop (phone + tablet) the editor pane is narrow and the toolbar
+     always overflows, so fade its right edge to signal it scrolls horizontally.
+     The mask lives in the element's own box, so the fade stays pinned to the
+     visible right edge as content scrolls under it. Scoped away from desktop
+     (>=1024px), where the toolbar fits and a mask would otherwise leave a faint
+     seam by making the bar's own trailing background translucent. */
+  @media (max-width: 1023px) {
+    .editor-menubar {
+      -webkit-mask-image: linear-gradient(
+        to right,
+        #000 calc(100% - 24px),
+        transparent
+      );
+      mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    }
   }
 
   .editor-menu-group {
@@ -2222,6 +2240,9 @@ html.gw-theme-dark {
     gap: 2px;
     padding: 0 4px;
     border-right: 0.5px solid var(--color-gw-border);
+    /* Keep groups at their natural width so the bar reliably overflows into a
+       horizontal scroll rather than squishing controls to fit. */
+    flex-shrink: 0;
   }
 
   .editor-menu-group-root:last-child {
