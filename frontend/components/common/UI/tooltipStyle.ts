@@ -18,4 +18,13 @@ export const TOOLTIP_STYLE: CSSProperties = {
   textTransform: "uppercase",
   borderRadius: "1px",
   padding: "4px 8px",
+  // Bound the width so long tooltips (e.g. the disabled-Timeline explanation)
+  // wrap instead of rendering as one line that overflows the viewport — on a
+  // phone an unbounded tooltip pushed the page's horizontal scroll into a void.
+  maxWidth: "min(260px, calc(100vw - 24px))",
+  whiteSpace: "normal",
+  // break-word (not anywhere): wrap between words normally and only break a
+  // single word when it alone can't fit — avoids splitting ordinary words mid
+  // character in short tooltips.
+  overflowWrap: "break-word",
 };

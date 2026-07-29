@@ -289,3 +289,46 @@
 .filter-chip--error .filter-chip__overflow-wrapper {
   border-left-color: var(--color-gw-red-border);
 }
+
+/* ── Phone reflow (< md / 768px) ──
+   The chip is a compact single-line pill on desktop, but the widest
+   conditions — date/number ranges (two inputs + separator) — overflow the
+   narrow single-pane work area on phones. Below md, let the chip wrap and
+   drop the value onto its own full-width line: the drag/field/operator/menu
+   stay on the first line (overflow menu reordered before the value so it is
+   not stranded on a line of its own), and the value's slot divider flips
+   from a left border to a top border to read as a continuation of the chip. */
+@media (max-width: 767px) {
+  .filter-chip {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  /* Keep the actions menu on the first line at the right edge, ahead of the
+     wrapped value. The auto-margin separates it, so drop its left divider. */
+  .filter-chip__overflow-wrapper {
+    order: 1;
+    margin-left: auto;
+    border-left: none;
+  }
+
+  .filter-chip__slot--value {
+    order: 2;
+    flex-basis: 100%;
+    /* Replace the inter-slot left divider with a top divider once wrapped. */
+    border-left: none;
+    border-top: 0.5px solid var(--color-gw-border);
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+
+  .filter-chip--error .filter-chip__slot--value {
+    border-top-color: var(--color-gw-red-border);
+  }
+
+  /* Let range inputs shrink to share the value line instead of clipping. */
+  .filter-chip__value-range,
+  .filter-chip__value-relative {
+    flex-wrap: wrap;
+  }
+}

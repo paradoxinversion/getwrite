@@ -39,12 +39,20 @@ import { useTree } from "@headless-tree/react";
 import useAppSelector, { useAppDispatch } from "../../src/store/hooks";
 import {
   selectFoldersAndResources,
+  updateResources,
+  updateFolders,
+  persistReorder,
   setSelectedResourceId,
 } from "../../src/store/resourcesSlice";
+import { selectActiveProjectDirectoryId } from "../../src/store/projectsSlice";
 import ResourceContextMenu, {
   ResourceContextAction,
 } from "./ResourceContextMenu";
-import { useMemo, useEffect } from "react";
+import ResourceRowMenu from "./ResourceRowMenu";
+import MoveResourceModal from "./MoveResourceModal";
+import { computeMovePayload, collectDescendantIds } from "./moveResource";
+import type { Folder } from "../../src/lib/models/types";
+import { useMemo, useEffect, useState } from "react";
 import { shallowEqual } from "react-redux";
 import {
   ChevronDown,
@@ -197,6 +205,59 @@ export default function ResourceTree({
     rootItemId: ROOT_ITEM_ID,
   });
 
+  // On-disk directory basename used for the reorder route URL segment — the
+  // same source `useResourceReorder` uses (never `currentProject.id`).
+  const projectDirectoryId = useAppSelector(selectActiveProjectDirectoryId);
+
+  // "Move to…" (touch reparenting) — replaces drag-and-drop on touch.
+  const [moveTarget, setMoveTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const moveTargetItem = moveTarget
+    ? rawResources.find((r) => r.id === moveTarget.id)
+    : undefined;
+
+  // Destinations offered in the picker: all folders, minus (when moving a
+  // folder) the folder itself and its descendants so it can't nest in itself.
+  const moveDestinationFolders = useMemo<Folder[]>(() => {
+    const folders = rawResources.filter(
+      (r): r is Folder => r.type === "folder",
+    );
+    if (!moveTarget || moveTargetItem?.type !== "folder") return folders;
+    const excluded = collectDescendantIds(rawResources, moveTarget.id);
+    return folders.filter((f) => f.id !== moveTarget.id && !excluded.has(f.id));
+  }, [rawResources, moveTarget, moveTargetItem]);
+
+  const handleMoveConfirm = (destParentId: string | undefined): void => {
+    if (!moveTarget) return;
+    const payload = computeMovePayload(
+      rawResources,
+      moveTarget.id,
+      destParentId ?? null,
+    );
+    if (payload) {
+      if (payload.folderOrder.length > 0) {
+        dispatch(updateFolders(payload.folderOrder));
+      }
+      if (payload.resourceOrder.length > 0) {
+        dispatch(updateResources(payload.resourceOrder));
+      }
+      if (currentProject && projectDirectoryId) {
+        dispatch(
+          persistReorder({
+            projectId: projectDirectoryId,
+            projectRoot: currentProject.rootPath,
+            folderOrder: payload.folderOrder,
+            resourceOrder: payload.resourceOrder,
+          }),
+        );
+      }
+    }
+    setMoveTarget(null);
+  };
+
   /**
    * Handles a primary (left) click on a tree item.
    *
@@ -319,6 +380,16 @@ export default function ResourceTree({
                 <div className="truncate">{item.getItemName()}</div>
               </div>
             </button>
+            <ResourceRowMenu
+              resourceId={item.getId()}
+              resourceName={item.getItemName()}
+              onAction={(action, resourceId) =>
+                onResourceAction?.(action, resourceId, item.getItemName())
+              }
+              onMove={(resourceId) =>
+                setMoveTarget({ id: resourceId, name: item.getItemName() })
+              }
+            />
           </div>
         </ResourceContextMenu>
       ))}
@@ -339,6 +410,22 @@ export default function ResourceTree({
         {(draggedItems?.length ?? 0) > 3 &&
           ` and ${(draggedItems?.length ?? 0) - 3} more`}
       </div>
+      {moveTarget ? (
+        <MoveResourceModal
+          open
+          itemName={moveTarget.name}
+          folders={moveDestinationFolders}
+          currentParentId={
+            moveTargetItem?.type === "folder"
+              ? ((moveTargetItem as Folder).parentId ??
+                moveTargetItem?.folderId ??
+                undefined)
+              : (moveTargetItem?.folderId ?? undefined)
+          }
+          onClose={() => setMoveTarget(null)}
+          onConfirm={handleMoveConfirm}
+        />
+      ) : null}
     </div>
   );
 }

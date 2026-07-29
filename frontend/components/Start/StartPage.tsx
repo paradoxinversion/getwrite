@@ -516,7 +516,7 @@ export default function StartPage({
           </div>
         </div>
 
-        <div className="mt-2 px-10 flex items-end justify-between gap-4">
+        <div className="mt-2 px-6 lg:px-10 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <p className="text-gw-label uppercase tracking-label-xl text-gw-secondary">
               Library
@@ -528,14 +528,14 @@ export default function StartPage({
               Projects
             </h2>
           </div>
-          <div className="max-w-xl text-right text-gw-small leading-6 text-gw-secondary">
+          <div className="max-w-xl text-left sm:text-right text-gw-small leading-6 text-gw-secondary">
             {localProjects.length === 0
               ? "Create your first project to begin writing."
               : "Open a project or manage its packaging and metadata."}
           </div>
         </div>
 
-        <div className="px-10 mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="px-6 lg:px-10 mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {localProjects.length === 0 ? (
             <article className="border-hairline border-gw-border start-page-fade-in p-6 md:col-span-2 xl:col-span-3">
               <p className="text-gw-label uppercase tracking-label-xl text-gw-secondary">
@@ -648,7 +648,7 @@ export default function StartPage({
                   </div>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between gap-3">
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button
                     variant="secondary"
                     onClick={() => {
