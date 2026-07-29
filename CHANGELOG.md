@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.8.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.7.0...getwrite-v1.8.0) (2026-07-29)
+
+
+### Features
+
+* **mobile:** ADR-021 Phase 3 — mobile/phone UX (drawers, touch actions, responsive fixes) ([568a210](https://github.com/saboteur-works/getwrite/commit/568a2100d87568d4a0bad1b9a3c010fb8dd8466b))
+* **mobile:** responsive phone/tablet shell — drawers, toggles, touch actions (ADR-021 P3) ([d3ca78f](https://github.com/saboteur-works/getwrite/commit/d3ca78f7ee5d18941068f1a660bf3a2a976ebf75))
+
+
+### Bug Fixes
+
+* **ci:** use `black` keyword instead of [#000](https://github.com/saboteur-works/getwrite/issues/000) in mask gradients ([ec3fa11](https://github.com/saboteur-works/getwrite/commit/ec3fa1198b48b4ead761280d6fcd0238303a45b8))
+* **mobile:** address code-review findings on the P3 mobile-UX branch ([8c092bb](https://github.com/saboteur-works/getwrite/commit/8c092bbdcca92018060213c151431e12a7034815))
+* **mobile:** make editor toolbar's horizontal scroll discoverable on phones ([8e230b3](https://github.com/saboteur-works/getwrite/commit/8e230b3192bcb2817db88d539c96c3bb97e96686))
+* **mobile:** make the work-area view-switcher tabs scroll horizontally ([33e356c](https://github.com/saboteur-works/getwrite/commit/33e356c7a7c506d527fc53b3e8ecf5530fdb12c6))
+* **mobile:** reflow QueryBuilder filter chips onto two lines on phones ([67cec35](https://github.com/saboteur-works/getwrite/commit/67cec353651b680898253e290d7b368b17aea6aa))
+* **mobile:** scroll view-switcher on the Tabs root, not the inner list ([d380298](https://github.com/saboteur-works/getwrite/commit/d3802984924528b7dd3456baef4d6addccdcfe2f))
+* **mobile:** stack StartPage library header and project-card footer on phones ([c2f7db5](https://github.com/saboteur-works/getwrite/commit/c2f7db5ba4e36c620ecd06d8ef1709e7840818c8))
+* **mobile:** stop long tooltips overflowing the viewport into a scroll void ([fb6a841](https://github.com/saboteur-works/getwrite/commit/fb6a841d2c0808b454c41ee0ec40a8df037c4008))
+
 ## [1.7.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.6.0...getwrite-v1.7.0) (2026-07-27)
 
 
