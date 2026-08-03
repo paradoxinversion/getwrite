@@ -148,7 +148,15 @@ store — proving composition with ADR-019 (FR10, FR11).
 **Notes:** The suite is already parameterized by fixture factory, so this is
 additive. If any existing conformance assertion fails, that is a real defect in
 Task 4, not a reason to weaken the suite.
-**Done:** [ ]
+**Done:** [x] — 42 → 84 tests (14 assertions × 6 fixtures). The decorator passed
+every assertion unchanged over the in-memory tree, the object store, and the
+object store on disk, so encryption is transparent to the model layer and stacks
+with ADR-019 rather than competing with it. Fixtures use a random data key rather
+than a passphrase-derived one: this suite exercises adapter behaviour, and an
+Argon2id run per fixture would add seconds while proving nothing the keyring
+tests do not. **Verified the suite has teeth** by mutating the decorator to write
+plaintext through — 27 of the 84 assertions fail, confirming the pass is
+meaningful rather than vacuous.
 
 ### Task 7: Project marker and sealed name index
 
