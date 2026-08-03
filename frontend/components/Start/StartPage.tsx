@@ -32,6 +32,7 @@ import {
 import { getProjectDirectoryId } from "../../src/store/projectsSlice";
 import { formatRelativeTimestamp } from "../../src/lib/timestamp-utils";
 import Button from "../common/UI/Button";
+import UnlockModal from "../common/UnlockModal";
 
 /**
  * Project card data shape displayed on the start page.
@@ -159,6 +160,21 @@ export interface StartPageProps {
    * `resolveProjectsDir()/<projectId>` (ADR-017/018 tenant-route migration).
    */
   onOpen?: (projectId: string) => void;
+  /**
+   * Whether the workspace holds encrypted projects, and whether it is open.
+   *
+   * `"locked"` is the only value that produces a prompt: a workspace that never
+   * had encryption set up must never be asked for a passphrase (FR4).
+   */
+  lockStatus?: "absent" | "locked" | "unlocked";
+  /** How many projects the workspace passphrase would open. */
+  encryptedProjectCount?: number;
+  /** Whether an unlock attempt is in flight. */
+  isUnlocking?: boolean;
+  /** Failure text from a previous unlock attempt. */
+  unlockErrorMessage?: string;
+  /** Called with the entered passphrase. Absent means no gate is shown. */
+  onUnlock?: (passphrase: string) => void;
 }
 
 /**
@@ -183,7 +199,19 @@ export default function StartPage({
   projects = [],
   onCreate,
   onOpen,
+  lockStatus = "absent",
+  encryptedProjectCount = 0,
+  isUnlocking = false,
+  unlockErrorMessage,
+  onUnlock,
 }: StartPageProps): JSX.Element {
+  /**
+   * Whether the user chose to carry on without unlocking this session.
+   *
+   * Declining must not be sticky across a real unlock, but it must survive
+   * re-renders, or the prompt would reappear the moment anything changed.
+   */
+  const [hasDeclinedUnlock, setHasDeclinedUnlock] = useState<boolean>(false);
   /** Locally synchronized project list used for optimistic UI updates. */
   const [localProjects, setLocalProjects] =
     useState<StartPageProjectEntry[]>(projects);
@@ -319,6 +347,17 @@ export default function StartPage({
       aria-labelledby="start-projects"
       className="min-h-full text-gw-primary bg-gw-chrome px-6 py-8"
     >
+      <UnlockModal
+        isOpen={
+          Boolean(onUnlock) && lockStatus === "locked" && !hasDeclinedUnlock
+        }
+        encryptedProjectCount={encryptedProjectCount}
+        isBusy={isUnlocking}
+        errorMessage={unlockErrorMessage}
+        onUnlock={(passphrase) => onUnlock?.(passphrase)}
+        onDecline={() => setHasDeclinedUnlock(true)}
+      />
+
       <CreateProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

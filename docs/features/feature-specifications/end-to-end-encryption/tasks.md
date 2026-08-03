@@ -397,7 +397,26 @@ must not hold the user's other work hostage. Wrong-passphrase must be
 distinguishable from data-integrity failure (Task 15) in the UI copy. Estimate
 raised from 3 to 5 for the gate and its declined state; dependency on Task 9
 added, since the gate and the list's locked shape are the same surface.
-**Done:** [ ]
+**Done:** [x] — 13 tests, 5 Storybook stories. `UnlockModal` is presentational;
+`StartPage` gains `lockStatus` / `encryptedProjectCount` / `isUnlocking` /
+`unlockErrorMessage` / `onUnlock` props and owns only the declined-this-session
+flag. Keeping Redux out of `StartPage` preserves its prop-driven testability —
+the `cryptoSlice` wiring belongs to whatever renders it.
+
+**Declining is a first-class button, not a dismissal** ("Continue without
+unlocking"), and the prompt says outright that unencrypted projects stay
+available. That is FR20's decline path, and it is what stops one encrypted
+project holding the rest of a writer's work hostage.
+
+The gate is triple-guarded so FR4 cannot regress: it needs an `onUnlock` handler,
+`lockStatus === "locked"`, and no prior decline. Mutation-verified — ignoring the
+decline fails 2 tests, prompting regardless of lock status fails 2.
+
+Brand rules hold: no red anywhere in the prompt, `check:no-hex` clean.
+
+**Not covered here:** unlock-on-open for an individual locked project. The gate
+plus decline is the session-level flow; per-project unlock has no entry point
+until a locked card offers an open action, which it deliberately does not yet.
 
 ### Task 13: Exclusive project write barrier
 
