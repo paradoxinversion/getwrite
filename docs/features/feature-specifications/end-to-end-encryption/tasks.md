@@ -74,7 +74,18 @@ unwrapped key; per-project data keys are independently random (FR5, FR6).
 **Estimate:** 5
 **Notes:** Store salt + KDF params in plaintext (FR5). The keyring file lives at
 the workspace (projects-dir) root, not inside any project.
-**Done:** [ ]
+**Done:** [x] — 34 tests. Keyring at `<projectsDir>/.getwrite-keyring.json`,
+read/written through the plain adapter (it must be readable *before* any project
+can be decrypted, so it can never sit behind the encrypting adapter).
+Wrong-passphrase detection uses a sealed known-plaintext verifier.
+`changePassphrase` re-seals from the *wrapped* material rather than the in-memory
+handles, since `CryptoKey`s are non-extractable by design — that is what makes a
+passphrase change a rewrap and not a data migration.
+**Side effect on `listProjectsCore`:** it treated every entry under the projects
+dir as a project, so the new dotfile would have been probed and warned about on
+every listing. Its filter now skips all dot-prefixed entries (was `.DS_Store`
+only); regression test in `tests/unit/project-crud-core-listing.test.ts`,
+verified to fail without the fix.
 
 ### Task 4: `encryptingAdapter` decorator
 

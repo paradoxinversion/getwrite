@@ -84,8 +84,12 @@ function isListableProjectManifest(
  */
 export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   const projectsDir = resolveProjectsDir();
+  // Project ids are UUIDs, so nothing listable is ever dot-prefixed. Skipping
+  // dotfiles wholesale covers `.DS_Store` as before and also the workspace-level
+  // `.getwrite-keyring.json`, which would otherwise be probed as a project and
+  // warn on every listing.
   const projectIds = (await readdir(projectsDir)).filter(
-    (file) => file !== ".DS_Store",
+    (file) => !file.startsWith("."),
   );
   const entries = await Promise.all(
     projectIds.map(async (id): Promise<ProjectListEntry | null> => {
