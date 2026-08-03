@@ -161,16 +161,6 @@ export default function Home(): JSX.Element {
    *
    * @param passphrase - The passphrase the user entered.
    */
-  const handleUnlock = useCallback(
-    (passphrase: string) => {
-      void dispatch(unlockWorkspace(passphrase))
-        .unwrap()
-        // Finish anything a crash left half-done, now that keys are available.
-        .then(() => dispatch(resumeConversions()))
-        .catch(() => undefined);
-    },
-    [dispatch],
-  );
 
   /**
    * Loads all projects from the API and maps them into
@@ -197,6 +187,21 @@ export default function Home(): JSX.Element {
       console.error("Error fetching projects:", err);
     }
   }, [dispatch]);
+
+  const handleUnlock = useCallback(
+    (passphrase: string) => {
+      void dispatch(unlockWorkspace(passphrase))
+        .unwrap()
+        // Finish anything a crash left half-done, now that keys are available.
+        .then(() => dispatch(resumeConversions()))
+        // Re-list: the entries currently on screen were fetched while locked,
+        // so they carry no name by design (FR18). Without this the project
+        // stays "Untitled Project" until something else refreshes the list.
+        .then(() => refreshProjects())
+        .catch(() => undefined);
+    },
+    [dispatch, refreshProjects],
+  );
 
   // Fetch existing projects on mount
   useEffect(() => {
