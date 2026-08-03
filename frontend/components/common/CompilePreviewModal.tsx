@@ -31,6 +31,14 @@ export interface CompilePreviewModalProps {
   onClose?: () => void;
   /** Called with tree-ordered selected resource ids and compile options. */
   onConfirmCompile?: (selectedIds: string[], options: CompileOptions) => void;
+  /**
+   * Whether the source project is encrypted.
+   *
+   * When it is, this output leaves the project's protection behind: the file
+   * written is plaintext, wherever it lands (FR27). The user is told before it
+   * happens, not after.
+   */
+  isSourceEncrypted?: boolean;
 }
 
 export default function CompilePreviewModal(
@@ -92,6 +100,13 @@ export default function CompilePreviewModal(
         <p className="compile-modal-description">
           Select which resources to include in the compiled output.
         </p>
+
+        {props.isSourceEncrypted ? (
+          <p className="mt-2 text-[12px] leading-relaxed text-gw-primary">
+            This project is encrypted. The compiled file will not be — it is
+            readable by anyone who can open it.
+          </p>
+        ) : null}
 
         <div className="flex gap-2 mb-2">
           <Button

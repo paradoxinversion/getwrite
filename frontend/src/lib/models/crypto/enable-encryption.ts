@@ -37,6 +37,7 @@ import {
   requireSessionKeyring,
 } from "./keyring-session";
 import { setProjectName } from "./name-index";
+import { assertEncryptionAvailable } from "./encryption-availability";
 
 /** Options accepted by {@link enableProjectEncryption}. */
 export interface EnableEncryptionOptions {
@@ -72,6 +73,10 @@ export async function enableProjectEncryption(
   options: EnableEncryptionOptions,
 ): Promise<ConversionResult> {
   const { projectId, projectName, passphrase, onProgress } = options;
+  // Fail closed before any key or file is touched (FR23). Checked here rather
+  // than in the UI, because a client-side gate leaves the path reachable.
+  assertEncryptionAvailable();
+
   const adapter = options.adapter ?? getStorageAdapter();
   const workspaceRoot = options.workspaceRoot ?? resolveProjectsDir();
 

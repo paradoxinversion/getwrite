@@ -650,7 +650,9 @@ that is Task 22's desktop end-to-end job.
 before writing, and the warning is absent for unencrypted projects (FR27).
 **Depends on:** 18
 **Estimate:** 2
-**Done:** [ ]
+**Done:** [x] — 4 tests. Both modals take `isSourceEncrypted` and warn that the
+output "is readable by anyone who can open it". Warning carries no red — red
+stays a position/canonical marker, never an alert.
 
 ### Task 20: Hosted fail-closed
 
@@ -663,7 +665,12 @@ server-side attempt to enable encryption is rejected (FR23).
 **Estimate:** 2
 **Notes:** Fail-closed on the *server* signal, not a client check — a client-only
 gate would leave the API reachable.
-**Done:** [ ]
+**Done:** [x] — 4 tests, in `crypto/encryption-availability.ts`.
+`assertEncryptionAvailable()` runs at the top of `enableProjectEncryption`,
+before any key or file is touched, so the code path itself is closed rather than
+a button being hidden. Keyed on `isHostedAuthActive()` — both `DATABASE_URL` and
+`BETTER_AUTH_SECRET` — so a partially-configured environment does not
+accidentally disable encryption on desktop.
 
 ### Task 21: Android adoption and performance
 

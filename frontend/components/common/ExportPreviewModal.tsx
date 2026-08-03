@@ -12,6 +12,14 @@ export interface ExportPreviewModalProps {
   onClose?: () => void;
   onConfirmExport?: (format: ExportFormat) => void;
   onShowCompile?: () => void;
+  /**
+   * Whether the source project is encrypted.
+   *
+   * When it is, this output leaves the project's protection behind: the file
+   * written is plaintext, wherever it lands (FR27). The user is told before it
+   * happens, not after.
+   */
+  isSourceEncrypted?: boolean;
 }
 
 /** Lead summary line for the export dialog (kept newline-free for HTML). */
@@ -30,6 +38,7 @@ export default function ExportPreviewModal({
   onClose,
   onConfirmExport,
   onShowCompile,
+  isSourceEncrypted = false,
 }: ExportPreviewModalProps): JSX.Element | null {
   const [format, setFormat] = useState<ExportFormat>("txt");
 
@@ -42,6 +51,12 @@ export default function ExportPreviewModal({
   // a single run-on line because the dialog body has no `white-space` styling.)
   const details = (
     <div className="space-y-3 text-sm text-gw-secondary">
+      {isSourceEncrypted ? (
+        <p className="text-gw-primary">
+          This project is encrypted. The file this produces will not be — it is
+          readable by anyone who can open it.
+        </p>
+      ) : null}
       {names.length > 0 ? (
         <ul
           className="list-disc space-y-1 pl-5"
