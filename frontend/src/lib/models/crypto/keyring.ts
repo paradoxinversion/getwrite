@@ -132,6 +132,17 @@ export interface Keyring {
    */
   projectKey(projectId: string): CryptoKey;
   /**
+   * The workspace key, for sealing workspace-scoped artefacts that belong to no
+   * single project — currently just the project-name index (FR21).
+   *
+   * Prefer {@link Keyring.projectKey} for anything project-scoped: this key can
+   * unwrap every project key, so passing it around widens the blast radius of a
+   * mistake.
+   *
+   * @throws {KeyringLockedError} When the keyring is locked.
+   */
+  workspaceKey(): CryptoKey;
+  /**
    * Generates and wraps a fresh data key for a project.
    *
    * @throws {KeyringLockedError} When the keyring is locked.
@@ -290,6 +301,8 @@ function buildKeyring(
       if (!key) throw new UnknownProjectError(projectId);
       return key;
     },
+
+    workspaceKey: () => requireUnlocked().workspaceKey,
 
     addProject: async (projectId) => {
       const live = requireUnlocked();

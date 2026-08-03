@@ -179,7 +179,30 @@ because writers' project titles are often the most sensitive text they have. The
 index is a second source of truth for names, so create/rename/delete must all
 update it; a rename that updates `project.json` but not the index is the obvious
 defect to test for. Estimate raised from 3 to 5 for the added index.
-**Done:** [ ]
+**Done:** [x] — 27 tests (+2 keyring). Marker `<projectRoot>/.encrypted.json`
+holds only `version`/`encrypted`/`encryptedAt` — no name, no id. Index
+`<workspaceRoot>/.getwrite-names`, sealed under the workspace key.
+
+Both take an **explicit adapter** rather than the ambient storage context: each
+must be legible *before* a project can be decrypted, and during Task 8's adapter
+resolution the ambient adapter is not yet the one the project will use. Writes
+reuse `runForTenant`/`runInStorageContext` so the tested atomic+durable path is
+shared rather than reimplemented.
+
+Corruption is an error, never a silent downgrade — a corrupt marker read as
+"unencrypted" invites overwriting ciphertext with plaintext, and a corrupt index
+read as empty blanks every name on the Start screen.
+
+Index mutations are serialised with `withMetaLock` on the workspace root:
+verified by mutation that two concurrent `setProjectName` calls lose a write
+without it.
+
+Added `Keyring.workspaceKey()` for workspace-scoped sealed artefacts (FR21),
+documented as preferring `projectKey` since it can unwrap every project key.
+
+**Still unwired:** create/rename/delete do not yet call `setProjectName` /
+`removeProjectName` — that needs the unlocked-session state from Task 10, so it
+lands with Task 9's listing work. Until then the desync hazard is latent.
 
 ### Task 8: Per-project adapter selection
 

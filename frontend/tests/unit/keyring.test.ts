@@ -157,6 +157,25 @@ describe("keyring — per-project data keys", () => {
     expect(() => keyring.projectKey(PROJECT_A)).toThrow(UnknownProjectError);
   });
 
+  it("exposes a workspace key distinct from any project key", async () => {
+    const keyring = await createKeyring(PASS);
+    await keyring.addProject(PROJECT_A);
+
+    // Used to seal workspace-scoped artefacts (the name index, FR21). It must
+    // not be interchangeable with a project key.
+    const sealed = await seal(keyring.workspaceKey(), bytes("workspace data"));
+    expect(text(await open(keyring.workspaceKey(), sealed))).toBe(
+      "workspace data",
+    );
+    await expect(open(keyring.projectKey(PROJECT_A), sealed)).rejects.toThrow();
+  });
+
+  it("denies the workspace key once locked", async () => {
+    const keyring = await createKeyring(PASS);
+    keyring.lock();
+    expect(() => keyring.workspaceKey()).toThrow(KeyringLockedError);
+  });
+
   it("forgets a project on removal", async () => {
     const keyring = await createKeyring(PASS);
     await keyring.addProject(PROJECT_A);
