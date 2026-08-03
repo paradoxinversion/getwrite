@@ -29,6 +29,9 @@
  */
 import path from "node:path";
 import { readFile, readdir, writeFile, rm } from "./io";
+import { readProjectMarker } from "./crypto/project-marker";
+import { getSessionKeyring } from "./crypto/keyring-session";
+import { runInProjectContext } from "./crypto/adapter-selection";
 import { getLocalResources } from "./resource";
 import { readFolderTree } from "./folder-utils";
 import { resolveProjectsDir } from "./projects-dir";
@@ -46,6 +49,16 @@ export interface ProjectListEntry {
   project: unknown;
   resources: AnyResource[];
   folders: unknown[];
+  /**
+   * Present and `true` when the project is encrypted and the workspace is
+   * locked, so nothing inside it could be read.
+   *
+   * Such an entry carries only the project's id and the time it was encrypted —
+   * no name, no resources, no folders. The Start screen renders it as a locked
+   * card rather than dropping it, so a writer can see the project exists and
+   * knows to unlock (FR20).
+   */
+  isLocked?: boolean;
 }
 
 /** Result shape of `createProjectCore` — mirrors `POST /api/projects`'s payload shape. */
@@ -93,6 +106,14 @@ export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   );
   const entries = await Promise.all(
     projectIds.map(async (id): Promise<ProjectListEntry | null> => {
+      const projectRoot = path.join(projectsDir, id);
+
+      // The encryption marker is plaintext by design, so this is answerable
+      // before anything inside the project can be read.
+      const marker = await readProjectMarker(projectRoot);
+      if (marker)
+        return readEncryptedProject(id, projectRoot, marker.encryptedAt);
+
       const projectPath = path.join(projectsDir, id, "project.json");
       let manifest: unknown;
       try {
@@ -133,6 +154,62 @@ export async function listProjectsCore(): Promise<ProjectListEntry[]> {
     }),
   );
   return entries.filter((entry): entry is ProjectListEntry => entry !== null);
+}
+
+/**
+ * Builds a list entry for an encrypted project.
+ *
+ * Locked, nothing inside the project is readable, so the entry carries only its
+ * id and the time it was encrypted — enough to render a locked card without
+ * leaking a title (FR18, FR20). Unlocked, the project is read exactly as any
+ * other, through the project-scoped encrypting adapter.
+ *
+ * @param id - The project's directory id.
+ * @param projectRoot - The project directory.
+ * @param encryptedAt - Timestamp from the plaintext marker, used as the card's
+ *   date while locked since the real manifest cannot be read.
+ * @returns The list entry, or `null` when the project cannot be listed.
+ */
+async function readEncryptedProject(
+  id: string,
+  projectRoot: string,
+  encryptedAt: string,
+): Promise<ProjectListEntry | null> {
+  const keyring = getSessionKeyring();
+
+  if (!keyring || keyring.isLocked() || !keyring.hasProject(id)) {
+    return {
+      isLocked: true,
+      project: { id, createdAt: encryptedAt },
+      resources: [],
+      folders: [],
+    };
+  }
+
+  try {
+    return await runInProjectContext(projectRoot, keyring, async () => {
+      const manifest: unknown = JSON.parse(
+        await readFile(path.join(projectRoot, "project.json"), "utf-8"),
+      );
+      if (!isListableProjectManifest(manifest)) return null;
+      return {
+        isLocked: false,
+        project: manifest,
+        resources: await getLocalResources(projectRoot),
+        folders: await readFolderTree(path.join(projectRoot, "folders")),
+      };
+    });
+  } catch (error) {
+    // An unreadable encrypted project must still appear, locked, rather than
+    // vanish from the list — FR26 forbids treating it as absent.
+    console.warn(`Listing encrypted project "${id}" as locked:`, error);
+    return {
+      isLocked: true,
+      project: { id, createdAt: encryptedAt },
+      resources: [],
+      folders: [],
+    };
+  }
 }
 
 /** Thrown by {@link createProjectCore} when `name` or `projectType` is missing. */

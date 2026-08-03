@@ -264,7 +264,29 @@ normal `ProjectListEntry`. This needs a discriminated locked/unlocked entry
 shape flowing through `buildProjectView` and `StartPage`, which is why the
 estimate rose from 3 to 5. Note the existing skip-on-unparseable path: an
 encrypted manifest would silently vanish through it today.
-**Done:** [ ]
+**Done:** [x] — 14 tests (9 core, 5 StartPage).
+
+**Shape decision:** an optional `isLocked?: boolean` on `ProjectListEntry`
+rather than a discriminated union. A union would have rippled through the HTTP
+payload, the native backend, `projectsSlice`, and 688 lines of `StartPage` for a
+case only encryption cares about; the optional flag leaves every existing
+consumer byte-identical and lets `StartPage` branch in one place. A locked entry
+carries only `{ id, createdAt }` — `createdAt` taken from the marker's
+`encryptedAt`, since the real manifest cannot be read.
+
+Mutation-verified both halves: ignoring the marker in the core, and ignoring
+`isLocked` in `StartPage`, each fail 3 tests.
+
+**FR21 finding — the sealed name index is not used by the list, and its premise
+does not hold.** FR21 assumes rendering costs "one decryption rather than one per
+project", but `listProjectsCore` also reads `folders/` and every resource per
+project. Once unlocked, those reads decrypt anyway, so reading the name from
+`project.json` costs one more decrypt out of many and the index saves nothing.
+While locked, the index is itself unreadable (sealed under the workspace key).
+The index therefore only becomes worthwhile if encrypted projects are made lazy
+on the Start screen — listing name and date without enumerating contents. Left
+in place, unused by the list, pending that decision. **Needs a call from the spec
+owner: make encrypted projects lazy, or drop FR21.**
 
 ### Task 10: Session lock lifecycle
 

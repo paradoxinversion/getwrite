@@ -43,6 +43,14 @@ export interface StartPageProjectEntry {
   resources: AnyResource[];
   /** Folder tree entries for the project. */
   folders: Folder[];
+  /**
+   * True when the project is encrypted and the workspace is locked.
+   *
+   * Such an entry carries no name, resources, or folders — nothing inside it
+   * could be read — so its card shows that the project exists and is closed,
+   * and offers no actions that would need its contents (FR20).
+   */
+  isLocked?: boolean;
 }
 
 /**
@@ -562,6 +570,32 @@ export default function StartPage({
           ) : null}
 
           {sortedProjects.map((projectEntry) => {
+            if (projectEntry.isLocked) {
+              return (
+                <article
+                  key={projectEntry.project.id}
+                  className="border-hairline border-gw-border start-page-fade-in flex flex-col justify-between p-5"
+                  aria-labelledby={`proj-${projectEntry.project.id}-title`}
+                >
+                  <div>
+                    <p className="font-mono text-gw-label uppercase tracking-label text-gw-secondary">
+                      Project · Locked
+                    </p>
+                    <h3
+                      id={`proj-${projectEntry.project.id}-title`}
+                      className="mt-3 text-gw-h1 font-semibold text-gw-secondary"
+                    >
+                      Encrypted project
+                    </h3>
+                    <p className="mt-3 text-gw-body text-gw-secondary">
+                      Unlock this workspace to see this project&rsquo;s name and
+                      open it.
+                    </p>
+                  </div>
+                </article>
+              );
+            }
+
             /** Non-folder resources shown in summaries and package flow. */
             const resourceList =
               projectEntry.resources.filter(isRenderableResource);
