@@ -41,6 +41,11 @@ import type { MetadataValue, ResourceRef } from "../../src/lib/models/types";
 import { buildProjectView } from "../../src/lib/models/project-view";
 import { listProjects, openProject } from "../../src/lib/api/projects";
 import {
+  checkWorkspaceLock,
+  resumeConversions,
+  unlockWorkspace,
+} from "../../src/store/cryptoSlice";
+import {
   createResource,
   copyResource,
   deleteResource,
@@ -136,6 +141,37 @@ export default function Home(): JSX.Element {
 
   const dispatch = useAppDispatch();
 
+  // ── Encryption lock state ───────────────────────────────────────────────
+  // The keyring lives server-side on web and desktop, so this mirrors what
+  // `/api/encryption` reports. No key material is ever held here.
+  const lockStatus = useAppSelector((state) => state.crypto.status);
+  const encryptedProjectCount = useAppSelector(
+    (state) => state.crypto.encryptedProjectIds.length,
+  );
+  const isUnlocking = useAppSelector((state) => state.crypto.isUnlocking);
+  const unlockErrorMessage = useAppSelector(
+    (state) => state.crypto.errorMessage,
+  );
+
+  /**
+   * Asks the server to open the workspace.
+   *
+   * Failures are surfaced through the slice's `errorMessage`, so the prompt
+   * stays open with the reason rather than closing on a wrong passphrase.
+   *
+   * @param passphrase - The passphrase the user entered.
+   */
+  const handleUnlock = useCallback(
+    (passphrase: string) => {
+      void dispatch(unlockWorkspace(passphrase))
+        .unwrap()
+        // Finish anything a crash left half-done, now that keys are available.
+        .then(() => dispatch(resumeConversions()))
+        .catch(() => undefined);
+    },
+    [dispatch],
+  );
+
   /**
    * Loads all projects from the API and maps them into
    * {@link StartPageProjectEntry}-compatible view objects.
@@ -166,6 +202,12 @@ export default function Home(): JSX.Element {
   useEffect(() => {
     void refreshProjects();
   }, [refreshProjects]);
+
+  // Establish whether this workspace is encrypted at all. Until this resolves
+  // the gate stays closed, so a user with no encryption is never prompted (FR4).
+  useEffect(() => {
+    void dispatch(checkWorkspaceLock());
+  }, [dispatch]);
 
   /**
    * Called by {@link StartPage} after a new project has been successfully
@@ -725,6 +767,15 @@ export default function Home(): JSX.Element {
           projects={projects}
           onCreate={handleCreate}
           onOpen={handleOpen}
+          lockStatus={
+            lockStatus === "locked" || lockStatus === "unlocked"
+              ? lockStatus
+              : "absent"
+          }
+          encryptedProjectCount={encryptedProjectCount}
+          isUnlocking={isUnlocking}
+          unlockErrorMessage={unlockErrorMessage}
+          onUnlock={handleUnlock}
         />
       ) : (
         <section className="p-6">

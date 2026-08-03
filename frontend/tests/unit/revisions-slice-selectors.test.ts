@@ -94,6 +94,7 @@ function createRootState(overrides?: {
       status: "absent",
       encryptedProjectIds: [],
       isUnlocking: false,
+      isConverting: false,
       errorMessage: "",
     },
   } as RootState;

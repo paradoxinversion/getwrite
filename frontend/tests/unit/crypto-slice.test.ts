@@ -1,50 +1,48 @@
 // Last Updated: 2026-08-03
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { configureStore } from "@reduxjs/toolkit";
-import * as io from "../../src/lib/models/io";
-import type { StorageAdapter } from "../../src/lib/models/io";
-import { createMemoryAdapter } from "../../src/lib/models/memoryAdapter";
-import { runInStorageContext } from "../../src/lib/models/storage-context";
-import {
-  __resetKeyringSessionForTests,
-  isSessionUnlocked,
-  registerProject,
-} from "../../src/lib/models/crypto/keyring-session";
 import cryptoReducer, {
   checkWorkspaceLock,
-  createWorkspaceLock,
+  encryptProject,
+  lockWorkspace,
   unlockWorkspace,
-  workspaceLocked,
 } from "../../src/store/cryptoSlice";
 
-const WORKSPACE = "/ws";
 const PROJECT_A = "11111111-1111-4111-8111-111111111111";
 const PASS = "correct horse battery staple";
 
-let adapter: StorageAdapter;
-const previousAdapter = io.getStorageAdapter();
+/** The status payload `/api/encryption` returns. */
+function status(overrides: Record<string, unknown> = {}) {
+  return {
+    isAvailable: true,
+    hasKeyring: true,
+    isUnlocked: false,
+    encryptedProjectIds: [PROJECT_A],
+    ...overrides,
+  };
+}
 
-/** A store holding only this slice, run inside a workspace storage context. */
+/** Stubs `fetch` with a single JSON response. */
+function stubFetch(body: unknown, ok = true, statusCode = 200): void {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue({ ok, status: statusCode, json: async () => body }),
+  );
+}
+
 function makeStore() {
   return configureStore({ reducer: { crypto: cryptoReducer } });
 }
 
-/** Runs a thunk with the workspace bound, as the app does per request. */
-function inWorkspace<T>(fn: () => Promise<T>): Promise<T> {
-  return runInStorageContext({ tenantRoot: WORKSPACE, adapter }, fn);
-}
-
-beforeEach(async () => {
-  adapter = createMemoryAdapter();
-  io.setStorageAdapter(adapter);
-  await adapter.mkdir(WORKSPACE, { recursive: true });
-  __resetKeyringSessionForTests();
+beforeEach(() => {
+  vi.unstubAllGlobals();
 });
 
 afterEach(() => {
-  io.setStorageAdapter(previousAdapter);
-  __resetKeyringSessionForTests();
+  vi.unstubAllGlobals();
 });
 
 describe("cryptoSlice — lock status", () => {
@@ -52,110 +50,126 @@ describe("cryptoSlice — lock status", () => {
     expect(makeStore().getState().crypto.status).toBe("unknown");
   });
 
-  it("reports a workspace with no keyring as absent", async () => {
+  it("reports a deployment that cannot offer encryption", async () => {
+    stubFetch(
+      status({
+        isAvailable: false,
+        hasKeyring: false,
+        encryptedProjectIds: [],
+      }),
+    );
     const store = makeStore();
-    await inWorkspace(() => store.dispatch(checkWorkspaceLock()).unwrap());
+    await store.dispatch(checkWorkspaceLock()).unwrap();
+
+    // FR23: hosted is excluded, and the UI must not offer it.
+    expect(store.getState().crypto.status).toBe("unavailable");
+  });
+
+  it("reports a workspace with no keyring as absent", async () => {
+    stubFetch(status({ hasKeyring: false, encryptedProjectIds: [] }));
+    const store = makeStore();
+    await store.dispatch(checkWorkspaceLock()).unwrap();
 
     // FR4: nothing here should make the UI prompt for a passphrase.
     expect(store.getState().crypto.status).toBe("absent");
-    expect(store.getState().crypto.encryptedProjectIds).toEqual([]);
   });
 
-  it("reports a fresh keyring as unlocked", async () => {
+  it("reports an existing keyring as locked", async () => {
+    stubFetch(status());
     const store = makeStore();
-    await inWorkspace(() => store.dispatch(createWorkspaceLock(PASS)).unwrap());
+    await store.dispatch(checkWorkspaceLock()).unwrap();
 
-    expect(store.getState().crypto.status).toBe("unlocked");
-    expect(isSessionUnlocked()).toBe(true);
-  });
-
-  it("reports an existing keyring as locked after a lock", async () => {
-    const store = makeStore();
-    await inWorkspace(async () => {
-      await store.dispatch(createWorkspaceLock(PASS)).unwrap();
-      await registerProject(PROJECT_A, WORKSPACE, adapter);
-    });
-    store.dispatch(workspaceLocked());
-
-    await inWorkspace(() => store.dispatch(checkWorkspaceLock()).unwrap());
     expect(store.getState().crypto.status).toBe("locked");
     expect(store.getState().crypto.encryptedProjectIds).toEqual([PROJECT_A]);
   });
 });
 
 describe("cryptoSlice — unlocking", () => {
-  beforeEach(async () => {
-    const store = makeStore();
-    await inWorkspace(async () => {
-      await store.dispatch(createWorkspaceLock(PASS)).unwrap();
-      await registerProject(PROJECT_A, WORKSPACE, adapter);
-    });
-    store.dispatch(workspaceLocked());
-  });
-
   it("unlocks with the right passphrase", async () => {
+    stubFetch(status({ isUnlocked: true }));
     const store = makeStore();
-    await inWorkspace(() => store.dispatch(unlockWorkspace(PASS)).unwrap());
+    await store.dispatch(unlockWorkspace(PASS)).unwrap();
 
     expect(store.getState().crypto.status).toBe("unlocked");
     expect(store.getState().crypto.errorMessage).toBe("");
-    expect(isSessionUnlocked()).toBe(true);
   });
 
-  it("stays locked and reports a failure on the wrong passphrase", async () => {
+  it("stays locked and reports the server's message on a wrong passphrase", async () => {
+    stubFetch({ error: "Incorrect passphrase." }, false, 401);
     const store = makeStore();
-    await inWorkspace(() =>
-      store
-        .dispatch(unlockWorkspace("wrong"))
-        .unwrap()
-        .catch(() => undefined),
-    );
+    await store
+      .dispatch(unlockWorkspace("wrong"))
+      .unwrap()
+      .catch(() => undefined);
 
     expect(store.getState().crypto.status).toBe("locked");
-    expect(store.getState().crypto.errorMessage).not.toBe("");
-    expect(isSessionUnlocked()).toBe(false);
+    expect(store.getState().crypto.errorMessage).toBe("Incorrect passphrase.");
+  });
+
+  it("locks again on request", async () => {
+    stubFetch(status({ isUnlocked: false }));
+    const store = makeStore();
+    await store.dispatch(lockWorkspace()).unwrap();
+    expect(store.getState().crypto.status).toBe("locked");
+  });
+});
+
+describe("cryptoSlice — encrypting a project", () => {
+  it("tracks the conversion and folds in the new status", async () => {
+    stubFetch(status({ isUnlocked: true }));
+    const store = makeStore();
+
+    const pending = store.dispatch(
+      encryptProject({
+        projectId: PROJECT_A,
+        projectName: "X",
+        passphrase: PASS,
+      }),
+    );
+    expect(store.getState().crypto.isConverting).toBe(true);
+
+    await pending.unwrap();
+    expect(store.getState().crypto.isConverting).toBe(false);
+    expect(store.getState().crypto.status).toBe("unlocked");
+  });
+
+  it("reports a failure without leaving the UI stuck converting", async () => {
+    stubFetch({ error: "Could not encrypt." }, false, 400);
+    const store = makeStore();
+    await store
+      .dispatch(
+        encryptProject({
+          projectId: PROJECT_A,
+          projectName: "X",
+          passphrase: null,
+        }),
+      )
+      .unwrap()
+      .catch(() => undefined);
+
+    expect(store.getState().crypto.isConverting).toBe(false);
+    expect(store.getState().crypto.errorMessage).toBe("Could not encrypt.");
   });
 });
 
 describe("cryptoSlice — no key material reaches the store", () => {
   it("holds nothing but status, ids, and display text", async () => {
+    stubFetch(status({ isUnlocked: true }));
     const store = makeStore();
-    await inWorkspace(async () => {
-      await store.dispatch(createWorkspaceLock(PASS)).unwrap();
-      await registerProject(PROJECT_A, WORKSPACE, adapter);
-      await store.dispatch(checkWorkspaceLock()).unwrap();
-    });
+    await store.dispatch(unlockWorkspace(PASS)).unwrap();
 
     const state = store.getState().crypto;
     expect(Object.keys(state).sort()).toEqual([
       "encryptedProjectIds",
       "errorMessage",
+      "isConverting",
       "isUnlocking",
       "status",
     ]);
-
-    // The decisive check: the whole slice must survive JSON serialisation, so
-    // devtools and any future persistence middleware can never capture a key.
+    // Survives serialisation, so devtools and any persistence middleware can
+    // never capture a key.
     const serialised = JSON.stringify(state);
     expect(serialised).not.toContain(PASS);
     expect(JSON.parse(serialised)).toEqual(state);
-  });
-
-  it("keeps the passphrase out of a failure message", async () => {
-    const store = makeStore();
-    await inWorkspace(async () => {
-      await store.dispatch(createWorkspaceLock(PASS)).unwrap();
-    });
-    store.dispatch(workspaceLocked());
-
-    const secret = "hunter2-the-actual-passphrase";
-    await inWorkspace(() =>
-      store
-        .dispatch(unlockWorkspace(secret))
-        .unwrap()
-        .catch(() => undefined),
-    );
-
-    expect(store.getState().crypto.errorMessage).not.toContain(secret);
   });
 });

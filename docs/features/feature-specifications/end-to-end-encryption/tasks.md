@@ -583,6 +583,42 @@ The modal is non-dismissible while converting (Escape included), since the write
 barrier refuses every write to that project meanwhile and escaping into the
 editor would only produce "being converted" errors.
 
+### Task 16b: Wire the encryption UI into the running app
+
+**What:** Mount the encryption components, add the HTTP surface they need, and
+bootstrap lock state, so encryption is reachable in the running application.
+**Files:** `frontend/app/api/encryption/route.ts` (new),
+`frontend/src/lib/api/encryption.ts` (new),
+`frontend/components/preferences/ProjectEncryptionPanel.tsx` (new),
+`frontend/src/store/cryptoSlice.ts`, `frontend/app/(app)/page.tsx`,
+`frontend/components/SchemaManager/SchemaManager.tsx`
+**Done when:** A user can reach encryption from project settings, the unlock gate
+appears on the Start screen for an encrypted workspace, and interrupted
+conversions resume after unlocking.
+**Depends on:** 11, 12, 16
+**Estimate:** 5
+**Notes:** **Added mid-flight, not in the original breakdown.** Tasks 11, 12 and
+16 each delivered a tested component or core and each Done-when was satisfied
+honestly, but none said "mount it" — so the components existed with no parent,
+no dispatcher, and no caller. The hole only became visible when T22 asked how to
+convert. Any future feature split this way needs an explicit integration task.
+**Done:** [x] — 10 slice tests rewritten against the HTTP surface.
+
+The keyring is **server-side** on web and desktop: the model layer needs
+`node:fs`, so the browser cannot call `keyring-session.ts` directly. `cryptoSlice`
+now goes through `/api/encryption`, which returns lock *state* and never key
+material. One route with an action discriminator, since every operation shares
+the same guard, failure mapping, and lifecycle.
+
+**Native is not wired here.** Android runs these modules in-process and needs the
+`createTransport` HTTP/native pair — that belongs with Task 21.
+
+Two bugs found while wiring: Redux Toolkit hands reducers a *serialised* error,
+so the `instanceof Error` check in `getErrorMessage` discarded every server
+message; and a `checkWorkspaceLock` dispatch inside the settings panel added a
+`fetch` to every screen hosting it, breaking 8 existing tests. Lock state is now
+bootstrapped once, on the page.
+
 ### Task 17: Integrity-failure handling
 
 **What:** Distinct, non-destructive handling of files that fail AEAD verification
