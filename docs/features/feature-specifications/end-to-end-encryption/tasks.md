@@ -221,7 +221,29 @@ encrypted project decrypt transparently (FR3, FR12).
 `tenantRoot`, but encryption is per *project*. Project-scoped entry points can
 resolve per project; `listProjectsCore` spans all projects and needs the marker
 (Task 7) rather than a per-project adapter.
-**Done:** [ ]
+**Done:** [x] — 15 tests, in `crypto/adapter-selection.ts`.
+
+**File deviation:** added a new module instead of editing `storage-context.ts`,
+`io.ts`, and `project-root-resolver.ts` as sketched. Widening the
+one-adapter-per-`tenantRoot` seam to be project-aware would have changed a
+contract every existing caller depends on; `resolveProjectAdapter` +
+`runInProjectContext` compose over it instead, and nothing pre-existing changed.
+
+FR12 is satisfied *by identity* — an unencrypted project gets `baseAdapter`
+itself, not a pass-through wrapper. Mutation-verified: returning `{...base}`
+(behaviourally identical) fails three tests.
+
+Failure is loud and inert. A marked project with no available key raises
+(`ProjectLockedError` when locked, `MissingProjectKeyError` when the key is
+genuinely absent) and touches nothing, per FR26 — falling back to the base
+adapter would hand ciphertext to code that would treat it as content.
+
+A locked workspace still serves unencrypted projects normally, which is the
+mechanism FR20's decline path will rely on.
+
+**Not wired into routes/cores yet** — this is the seam plus its tests. Task 9
+(listing) is the first consumer; the keyring still arrives as a parameter until
+Task 10 supplies session state.
 
 ### Task 9: Project listing in locked and unlocked states
 
