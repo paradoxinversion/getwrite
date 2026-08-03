@@ -138,8 +138,10 @@ export async function runInProjectContext<T>(
     baseAdapter,
     keyring,
   );
+  // `projectRoot` is what lets `io.ts`'s mutating wrappers enforce a write
+  // barrier held on this project (see `write-barrier.ts`).
   return runInStorageContext(
-    { tenantRoot: path.dirname(projectRoot), adapter },
+    { tenantRoot: path.dirname(projectRoot), adapter, projectRoot },
     fn,
   );
 }

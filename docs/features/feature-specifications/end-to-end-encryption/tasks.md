@@ -336,7 +336,33 @@ the real difficulty in the old Task 13 actually lived. `withMetaLock` is *not*
 sufficient: `resource-persistence.ts`, the content save path, does not use it,
 so editor autosaves bypass it entirely. Prefer failing fast with a clear "project
 is being converted" error over silent blocking.
-**Done:** [ ]
+**Done:** [x] — 13 tests, in `src/lib/models/write-barrier.ts`.
+
+**Two deviations, both deliberate:**
+
+1. *Module location* — `models/write-barrier.ts`, not `crypto/`. It is a
+   concurrency primitive (sibling to `locks.ts`/`meta-locks.ts`), and having
+   `io.ts` import from `crypto/` would invert the layering.
+2. *Enforcement point* — the check lives in `io.ts`'s mutating wrappers, keyed
+   off a new optional `StorageContext.projectRoot`, rather than in
+   `resource-persistence.ts` and friends. Enumerating write paths is exactly
+   what these notes warned is easy to leave 90% done; every write already
+   funnels through these wrappers, so this catches all of them by construction.
+   It also has to be checked at *write* time — a barrier acquired after a
+   request resolved its adapter would otherwise miss that request's writes.
+
+FR12's identity guarantee survives: the adapter chain is untouched, so an
+unencrypted project still resolves to the base adapter by reference.
+
+The seven mutating wrappers became `async` so a refusal surfaces as a rejected
+promise; a synchronous throw would escape a caller's `.catch()` and changed the
+existing contract. Reads are never barred — a half-converted project must stay
+readable (FR22), and blocking reads would freeze the UI for the whole sweep.
+
+Mutation-verified twice: removing the `assertWritable` call fails 3 tests, and
+the holder's own writes are permitted via async-scope identity (`AsyncLocalStorage`),
+which the sweep depends on. Full suite green (2823) after the `io.ts` change; the
+6 lint warnings there are pre-existing, confirmed by comparing against HEAD.
 
 ### Task 14: Direction-agnostic conversion sweep
 

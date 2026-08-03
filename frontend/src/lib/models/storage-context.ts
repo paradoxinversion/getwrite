@@ -45,8 +45,18 @@ import type { StorageAdapter } from "./io";
  * The values scoped to a single request/task: the tenant's project root
  * directory and the storage adapter to use for filesystem operations
  * within that scope.
+ *
+ * `projectRoot` names the single project the scope operates on, when there is
+ * one. It is what lets `io.ts`'s mutating wrappers consult the write barrier
+ * (`write-barrier.ts`) at write time. Left unset by scopes that span projects
+ * (a project listing) or belong to none (the keyring, the project-name index) —
+ * neither of which is ever barred.
  */
-export type StorageContext = { tenantRoot: string; adapter: StorageAdapter };
+export type StorageContext = {
+  tenantRoot: string;
+  adapter: StorageAdapter;
+  projectRoot?: string;
+};
 
 /**
  * Module-level `AsyncLocalStorage` instance holding the active

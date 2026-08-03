@@ -25,6 +25,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Dirent, Stats } from "node:fs";
 import { getStorageContext, runInStorageContext } from "./storage-context";
+import { assertWritable } from "./write-barrier";
 
 /**
  * Result type for directory listings.
@@ -208,6 +209,27 @@ function currentAdapter(): StorageAdapter {
 }
 
 /**
+ * Resolves the adapter for a *mutating* call, first enforcing any write barrier
+ * held on the scope's project.
+ *
+ * Every write path in the model layer funnels through the wrappers below, so
+ * checking here catches all of them by construction rather than by enumerating
+ * call sites — see `write-barrier.ts` for why that matters.
+ *
+ * The wrappers that use this are declared `async` so a refused write surfaces
+ * as a rejected promise rather than a synchronous throw — callers that do not
+ * `await` immediately would otherwise see an exception escape past their
+ * `.catch()`.
+ *
+ * @returns The {@link StorageAdapter} to use for this call.
+ * @throws {ProjectBusyError} When the scope's project is mid-conversion.
+ */
+function mutatingAdapter(): StorageAdapter {
+  assertWritable(getStorageContext()?.projectRoot);
+  return currentAdapter();
+}
+
+/**
  * Returns the storage adapter that would be used for the current call.
  *
  * Resolves via {@link currentAdapter}: the ambient context adapter (if a
@@ -260,8 +282,8 @@ export function runForTenant<T>(
  * @param o - Optional creation options.
  * @returns Resolves when the directory operation completes.
  */
-export const mkdir = (p: string, o?: { recursive?: boolean }) =>
-  currentAdapter().mkdir(p, o);
+export const mkdir = async (p: string, o?: { recursive?: boolean }) =>
+  mutatingAdapter().mkdir(p, o);
 
 /**
  * Writes file data using the active storage adapter.
@@ -271,8 +293,11 @@ export const mkdir = (p: string, o?: { recursive?: boolean }) =>
  * @param o - Optional write options.
  * @returns Resolves when the write completes.
  */
-export const writeFile = (p: string, d: string | Buffer, o?: string | object) =>
-  currentAdapter().writeFile(p, d, o);
+export const writeFile = async (
+  p: string,
+  d: string | Buffer,
+  o?: string | object,
+) => mutatingAdapter().writeFile(p, d, o);
 
 /**
  * Reads a text file using the active storage adapter.
@@ -333,8 +358,10 @@ export const stat = (p: string) => currentAdapter().stat(p);
  * @param o - Optional removal options.
  * @returns Resolves when removal completes.
  */
-export const rm = (p: string, o?: { recursive?: boolean; force?: boolean }) =>
-  currentAdapter().rm(p, o);
+export const rm = async (
+  p: string,
+  o?: { recursive?: boolean; force?: boolean },
+) => mutatingAdapter().rm(p, o);
 
 /**
  * Renames or moves a file/directory using the active storage adapter.
@@ -343,7 +370,8 @@ export const rm = (p: string, o?: { recursive?: boolean; force?: boolean }) =>
  * @param b - Destination path.
  * @returns Resolves when rename completes.
  */
-export const rename = (a: string, b: string) => currentAdapter().rename(a, b);
+export const rename = async (a: string, b: string) =>
+  mutatingAdapter().rename(a, b);
 
 /**
  * Copies a single file using the active storage adapter (binary-safe).
@@ -352,8 +380,8 @@ export const rename = (a: string, b: string) => currentAdapter().rename(a, b);
  * @param d - Destination file path.
  * @returns Resolves when the copy completes.
  */
-export const copyFile = (s: string, d: string) =>
-  currentAdapter().copyFile(s, d);
+export const copyFile = async (s: string, d: string) =>
+  mutatingAdapter().copyFile(s, d);
 
 /**
  * Recursively copies a file or directory tree using the active storage
@@ -364,8 +392,8 @@ export const copyFile = (s: string, d: string) =>
  * @param o - Optional copy flags.
  * @returns Resolves when the copy completes.
  */
-export const cp = (s: string, d: string, o?: { recursive?: boolean }) =>
-  currentAdapter().cp(s, d, o);
+export const cp = async (s: string, d: string, o?: { recursive?: boolean }) =>
+  mutatingAdapter().cp(s, d, o);
 
 /**
  * Appends data to a file using the active storage adapter, creating it when
@@ -375,8 +403,8 @@ export const cp = (s: string, d: string, o?: { recursive?: boolean }) =>
  * @param d - Data to append as text or binary.
  * @returns Resolves when the append completes.
  */
-export const appendFile = (p: string, d: string | Buffer) =>
-  currentAdapter().appendFile(p, d);
+export const appendFile = async (p: string, d: string | Buffer) =>
+  mutatingAdapter().appendFile(p, d);
 
 /**
  * Reports whether a path exists, using the active storage adapter.
