@@ -18,6 +18,7 @@ import {
   requireSessionKeyring,
   unlockSession,
 } from "../../src/lib/models/crypto/keyring-session";
+import { workspaceEncryptionAdapter } from "../../src/lib/models/crypto/workspace-adapter";
 import {
   enableProjectEncryption,
   resumeInterruptedConversions,
@@ -267,5 +268,51 @@ describe("resumeInterruptedConversions", () => {
     expect(
       await inWorkspace(() => resumeInterruptedConversions(WORKSPACE, adapter)),
     ).toEqual([]);
+  });
+});
+
+describe("an encrypted project opens through the workspace adapter", () => {
+  it("loads project.json after encryption, as the open route does", async () => {
+    await inWorkspace(() =>
+      enableProjectEncryption({
+        projectId: PROJECT_ID,
+        projectName: "The Whistleblower",
+        passphrase: PASS,
+        workspaceRoot: WORKSPACE,
+        adapter,
+      }),
+    );
+
+    // Reproduces the bug that made an encrypted project unopenable: the load
+    // path reads project.json with whatever adapter the request bound, so the
+    // request-level adapter has to route per project.
+    const loaded = await runInStorageContext(
+      {
+        tenantRoot: WORKSPACE,
+        adapter: workspaceEncryptionAdapter(
+          adapter,
+          WORKSPACE,
+          requireSessionKeyring(),
+        ),
+      },
+      () => io.readFile(`${ROOT}/project.json`, "utf-8"),
+    );
+
+    expect(JSON.parse(loaded).name).toBe("The Whistleblower");
+  });
+
+  it("still fails with a plain adapter, which is what broke", async () => {
+    await inWorkspace(() =>
+      enableProjectEncryption({
+        projectId: PROJECT_ID,
+        projectName: "The Whistleblower",
+        passphrase: PASS,
+        workspaceRoot: WORKSPACE,
+        adapter,
+      }),
+    );
+
+    const raw = await adapter.readFile(`${ROOT}/project.json`, "utf-8");
+    expect(() => JSON.parse(raw)).toThrow();
   });
 });

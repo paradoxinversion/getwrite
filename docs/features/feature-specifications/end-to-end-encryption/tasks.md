@@ -619,6 +619,40 @@ message; and a `checkWorkspaceLock` dispatch inside the settings panel added a
 `fetch` to every screen hosting it, breaking 8 existing tests. Lock state is now
 bootstrapped once, on the page.
 
+### Task 8b: Route every project-scoped operation through encryption
+
+**What:** Bind one workspace-routing adapter per request, so every path is handled
+with its own project's key.
+**Files:** `frontend/src/lib/models/crypto/workspace-adapter.ts` (new),
+`frontend/app/api/_tenant/with-storage-context.ts`
+**Done when:** An encrypted project opens, saves, searches and exports through
+the ordinary routes; an unencrypted project is byte-identical to before.
+**Depends on:** 8, 16b
+**Estimate:** 5
+**Notes:** **Added mid-flight after a user-reported bug: encrypting a project made
+it unopenable.** Task 8 built `runInProjectContext` and proved it in isolation,
+but nothing said "adopt it", so it had exactly one caller and every route — open,
+save, search, revisions, compile, export — still ran on the plain adapter and
+read ciphertext as content. The same shape of miss as Task 16b: a seam built and
+never wired.
+**Done:** [x] — 8 tests (6 adapter, 2 regression).
+
+Routing by path rather than by caller is the point: every path is
+`<tenantRoot>/<projectId>/…` (ADR-017/018), so the project id is recoverable
+without the caller knowing anything. Requiring each route to opt in is what
+failed, and would have failed again for every route added later.
+
+**FR12 amended, deliberately.** The spec asked that an unencrypted project's
+chain contain no crypto code, asserted by reference identity — and that literal
+guarantee is what pushed selection to the call site and cost the feature its
+correctness. The routing adapter sits in the chain for every project but runs no
+cryptographic operation without a key, and a test asserts byte-identical
+passthrough. Intent kept, identity check dropped. **The spec's FR12 wording needs
+updating to match.**
+
+Workspace-level files (keyring, sealed name index) are never routed through a
+project key — they must stay readable before any project can be opened.
+
 ### Task 17: Integrity-failure handling
 
 **What:** Distinct, non-destructive handling of files that fail AEAD verification
