@@ -8,6 +8,7 @@ import { runInStorageContext } from "../../src/lib/models/storage-context";
 import { listProjectsCore } from "../../src/lib/models/project-crud-core";
 import { writeProjectMarker } from "../../src/lib/models/crypto/project-marker";
 import { runInProjectContext } from "../../src/lib/models/crypto/adapter-selection";
+import { setProjectName } from "../../src/lib/models/crypto/name-index";
 import {
   __resetKeyringSessionForTests,
   createWorkspaceKeyring,
@@ -144,6 +145,54 @@ describe("listProjectsCore — workspace unlocked", () => {
     const entries = await listProjects();
     expect(entries).toHaveLength(2);
     expect(entries.filter((entry) => entry.isLocked)).toHaveLength(0);
+  });
+});
+
+describe("listProjectsCore — encrypted projects are listed lazily", () => {
+  beforeEach(async () => {
+    await encryptSecondProject();
+  });
+
+  it("takes the name from the sealed index without opening the project", async () => {
+    await setProjectName(
+      SEALED_ID,
+      "Indexed Title",
+      (await unlockSession(PASS, WORKSPACE, adapter)).workspaceKey(),
+      WORKSPACE,
+      adapter,
+    );
+
+    const entries = await listProjects();
+    const sealed = entries.find(
+      (entry) => (entry.project as { id: string }).id === SEALED_ID,
+    );
+
+    // FR21: one decryption for the whole list, not one per project.
+    expect((sealed?.project as { name: string }).name).toBe("Indexed Title");
+  });
+
+  it("does not enumerate resources or folders", async () => {
+    const entries = await listProjects();
+    const sealed = entries.find(
+      (entry) => (entry.project as { id: string }).id === SEALED_ID,
+    );
+
+    // Empty because nothing was read, not because nothing exists — opening a
+    // whole project to draw one card would cross the Capacitor bridge per file.
+    expect(sealed?.isEncrypted).toBe(true);
+    expect(sealed?.resources).toEqual([]);
+    expect(sealed?.folders).toEqual([]);
+  });
+
+  it("falls back to the manifest when the index has no entry", async () => {
+    // Projects encrypted before a name was recorded must still show one.
+    const entries = await listProjects();
+    const sealed = entries.find(
+      (entry) => (entry.project as { id: string }).id === SEALED_ID,
+    );
+    expect((sealed?.project as { name: string }).name).toBe(
+      "The Whistleblower",
+    );
   });
 });
 

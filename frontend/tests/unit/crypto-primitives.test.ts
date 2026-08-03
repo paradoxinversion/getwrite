@@ -162,7 +162,13 @@ describe("crypto primitives — AES-256-GCM", () => {
     const nonce = generateNonce();
     const plaintext = randomBytes(2 * 1024 * 1024);
     const sealed = await encrypt(key, nonce, plaintext);
-    expect(await decrypt(key, nonce, sealed)).toEqual(plaintext);
+    // `toEqual` walks two million elements one at a time and can exceed the
+    // 5s timeout on a loaded machine; a native byte compare is O(n) in C.
+    expect(
+      Buffer.from(await decrypt(key, nonce, sealed)).equals(
+        Buffer.from(plaintext),
+      ),
+    ).toBe(true);
   });
 
   it("appends a 16-byte authentication tag", async () => {

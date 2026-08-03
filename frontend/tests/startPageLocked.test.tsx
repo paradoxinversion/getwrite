@@ -44,6 +44,37 @@ function renderStart(projects: StartPageProjectEntry[]) {
   );
 }
 
+/** An unlocked but lazily-listed encrypted project. */
+function lazyEncryptedEntry(): StartPageProjectEntry {
+  return {
+    isEncrypted: true,
+    isLocked: false,
+    project: {
+      id: SEALED_ID,
+      name: "The Whistleblower",
+      createdAt: "2026-02-01T00:00:00.000Z",
+    },
+    resources: [],
+    folders: [],
+  } as unknown as StartPageProjectEntry;
+}
+
+describe("StartPage — lazily listed encrypted projects", () => {
+  it("shows the name but no counts it never read", () => {
+    renderStart([lazyEncryptedEntry()]);
+
+    expect(screen.getByText("The Whistleblower")).toBeInTheDocument();
+    // "0 resources" would be a lie: nothing was read, so nothing is claimed.
+    expect(screen.queryByText(/0 resources/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^encrypted$/i)).toBeInTheDocument();
+  });
+
+  it("still shows counts for an unencrypted project", () => {
+    renderStart([plainEntry()]);
+    expect(screen.getByText(/0 resources · 0 folders/i)).toBeInTheDocument();
+  });
+});
+
 describe("StartPage — locked project cards", () => {
   it("shows a locked project without revealing its name", () => {
     renderStart([plainEntry(), lockedEntry()]);

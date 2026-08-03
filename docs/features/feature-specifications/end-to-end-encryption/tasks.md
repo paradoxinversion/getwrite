@@ -283,10 +283,26 @@ project", but `listProjectsCore` also reads `folders/` and every resource per
 project. Once unlocked, those reads decrypt anyway, so reading the name from
 `project.json` costs one more decrypt out of many and the index saves nothing.
 While locked, the index is itself unreadable (sealed under the workspace key).
-The index therefore only becomes worthwhile if encrypted projects are made lazy
-on the Start screen — listing name and date without enumerating contents. Left
-in place, unused by the list, pending that decision. **Needs a call from the spec
-owner: make encrypted projects lazy, or drop FR21.**
+**Resolved: encrypted projects are now listed lazily.** An encrypted project
+contributes name and date only — no manifest walk, no folder tree, no resource
+enumeration. The name comes from the sealed index in a single decryption for the
+whole list, which is what FR21 was for. A per-project manifest read remains as a
+fallback for projects absent from the index, so the index is a fast path rather
+than a hard dependency.
+
+Consequences, both deliberate: encrypted cards show "Encrypted" instead of
+resource/folder counts — reporting "0 resources" would state something never
+read — and `createdAt` is the marker's `encryptedAt`, since the real manifest is
+not opened. `renameProjectCore` and `deleteProjectCore` now maintain the index,
+closing the desync hazard flagged in Task 7; enable-time population lands with
+Task 16, until then the fallback covers it.
+
+**Also fixed a flaky test of my own making.** The two multi-megabyte round-trip
+tests (Tasks 1–2) compared 2 MB `Uint8Array`s with `toEqual`, which walks two
+million elements individually and exceeded the 5s timeout whenever the machine
+was loaded — almost certainly the unidentified single-test failure seen during
+Task 7. Now a native `Buffer.equals`; suite time for those two files dropped to
+~4s and two consecutive full runs are clean.
 
 ### Task 10: Session lock lifecycle
 

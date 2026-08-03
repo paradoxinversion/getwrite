@@ -41,7 +41,13 @@ describe("envelope — round trip", () => {
   it("round-trips a multi-megabyte payload", async () => {
     const key = await freshKey();
     const payload = randomBytes(2 * 1024 * 1024);
-    expect(await open(key, await seal(key, payload))).toEqual(payload);
+    // Native byte compare, not `toEqual`: element-wise deep equality over two
+    // million entries is slow enough to time out under load.
+    expect(
+      Buffer.from(await open(key, await seal(key, payload))).equals(
+        Buffer.from(payload),
+      ),
+    ).toBe(true);
   });
 
   it("round-trips arbitrary binary payloads", async () => {

@@ -44,6 +44,13 @@ export interface StartPageProjectEntry {
   /** Folder tree entries for the project. */
   folders: Folder[];
   /**
+   * True for an encrypted project, locked or not.
+   *
+   * Its `resources` and `folders` are empty because they were never read, not
+   * because they are empty — so the card shows no counts.
+   */
+  isEncrypted?: boolean;
+  /**
    * True when the project is encrypted and the workspace is locked.
    *
    * Such an entry carries no name, resources, or folders — nothing inside it
@@ -657,11 +664,19 @@ export default function StartPage({
                   </div>
 
                   <p className="mt-0 text-gw-label tracking-label leading-7 text-gw-secondary">
-                    {resourceList.length} resource
-                    {resourceList.length === 1 ? "" : "s"}
-                    {" · "}
-                    {projectEntry.folders.length} folder
-                    {projectEntry.folders.length === 1 ? "" : "s"}
+                    {projectEntry.isEncrypted ? (
+                      // Encrypted projects are listed lazily, so no counts were
+                      // read. Showing "0 resources" would be a lie, not a fact.
+                      "Encrypted"
+                    ) : (
+                      <>
+                        {resourceList.length} resource
+                        {resourceList.length === 1 ? "" : "s"}
+                        {" · "}
+                        {projectEntry.folders.length} folder
+                        {projectEntry.folders.length === 1 ? "" : "s"}
+                      </>
+                    )}
                   </p>
 
                   <p className="mt-2 text-gw-label uppercase tracking-label-wide text-gw-secondary">
