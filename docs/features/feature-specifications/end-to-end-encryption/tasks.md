@@ -382,7 +382,32 @@ share one loop with a flipped predicate. Protocol: write conversion marker →
 sweep → flip state marker → delete conversion marker. Port the spike's exhaustive
 crash-injection harness into the real test; it found no failures across 232
 scenarios and is the proof FR22 needs.
-**Done:** [ ]
+**Done:** [x] — 11 tests in `crypto/convert-project.ts`. The spike's design held
+against the real adapter: no journal, resume is re-running, one loop for both
+directions.
+
+Crash injected at **every one of the 42 operations** a sweep performs, in both
+directions — 84 partial-run-plus-resume cycles. A `toBeGreaterThan(30)` guard on
+the operation count keeps that coverage from silently collapsing if the sweep
+ever stopped finding files.
+
+**Mutation testing found a real hole in my own invariants.** Reordering step 3
+and step 4 (deleting the conversion marker before flipping the project marker)
+passed all 11 tests, because the mid-crash check read files in *either* form and
+so never verified that a reader *following the markers* could open them. Added
+the missing invariant: with no conversion marker present, the project's declared
+state must agree with the actual form of every file. That now catches the
+reordering at crash point 41. Removing the already-in-target-form skip fails 3
+tests.
+
+Two files are never converted — the project marker and the conversion marker —
+since sealing either makes the project's own state unknowable. Orphan `.tmp`
+files from an interrupted atomic write are deleted and the file redone; the
+original is always intact, because the rename never ran.
+
+The sweep works on raw bytes through the plain adapter, never the encrypting
+decorator: it is the thing that *produces* ciphertext, so it cannot also read
+through something that assumes ciphertext exists.
 
 ### Task 15: Tolerant-read mode
 
