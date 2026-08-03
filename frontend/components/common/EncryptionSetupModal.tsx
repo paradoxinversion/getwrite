@@ -31,6 +31,8 @@ export interface EncryptionSetupModalProps {
   isBusy?: boolean;
   /** Failure text from a previous attempt. */
   errorMessage?: string;
+  /** Files converted so far, shown while the sweep runs. */
+  progress?: { done: number; total: number };
   /** Called with the new passphrase, or `null` when one already exists. */
   onConfirm: (passphrase: string | null) => void;
   /** Called when the user backs out. */
@@ -52,6 +54,7 @@ export default function EncryptionSetupModal({
   needsPassphrase,
   isBusy = false,
   errorMessage,
+  progress,
   onConfirm,
   onCancel,
 }: EncryptionSetupModalProps): JSX.Element {
@@ -88,7 +91,10 @@ export default function EncryptionSetupModal({
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open) onCancel();
+        // Non-dismissible while converting. The write barrier (Task 13) refuses
+        // every write to this project meanwhile, so letting the user back into
+        // the editor would only produce "project is being converted" errors.
+        if (!open && !isBusy) onCancel();
       }}
     >
       <DialogContent maxWidth="max-w-[520px]" className="p-6">
@@ -158,6 +164,12 @@ export default function EncryptionSetupModal({
             </span>
           </label>
         </div>
+
+        {isBusy && progress ? (
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-label text-gw-secondary">
+            Encrypting {progress.done} of {progress.total} files
+          </p>
+        ) : null}
 
         {errorMessage ? (
           <p className="mt-3 font-mono text-[10px] text-gw-secondary">

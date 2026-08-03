@@ -15,6 +15,8 @@ export interface EncryptionSettingsProps {
   isBusy?: boolean;
   /** Failure text from a previous attempt. */
   errorMessage?: string;
+  /** Files converted so far, shown while the sweep runs. */
+  progress?: { done: number; total: number };
   /** Called with the new passphrase, or `null` when the workspace has one. */
   onEnableEncryption: (passphrase: string | null) => void;
 }
@@ -36,12 +38,15 @@ export default function EncryptionSettings({
   needsPassphrase,
   isBusy = false,
   errorMessage,
+  progress,
   onEnableEncryption,
 }: EncryptionSettingsProps): JSX.Element {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   function handleConfirm(passphrase: string | null): void {
-    setIsModalOpen(false);
+    // Deliberately left open: the modal owns the non-dismissible progress state
+    // while the sweep runs, and closing here would drop the user into an editor
+    // whose every write the barrier refuses.
     onEnableEncryption(passphrase);
   }
 
@@ -89,6 +94,7 @@ export default function EncryptionSettings({
         projectName={projectName}
         needsPassphrase={needsPassphrase}
         isBusy={isBusy}
+        progress={progress}
         onConfirm={handleConfirm}
         onCancel={() => setIsModalOpen(false)}
       />

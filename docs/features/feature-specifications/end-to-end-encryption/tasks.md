@@ -561,7 +561,27 @@ afterward, and interrupting mid-conversion resumes cleanly on next launch (FR22)
 stays capability-only per the spec's deferred list. The non-dismissible state
 pairs with Task 13's barrier — the user must not be able to start editing into a
 blocked project.
-**Done:** [ ]
+**Done:** [x] — 11 tests (8 integration, 3 modal). Added
+`crypto/enable-encryption.ts`, the orchestrator the UI calls: establish the
+keyring → persist the project's data key → record its name in the sealed index →
+sweep.
+
+**Order is load-bearing:** the key is persisted *before* any file is sealed. The
+reverse would leave a crash window producing ciphertext no key can open — the one
+genuinely unrecoverable failure this feature could cause.
+
+**Closes the Task 7 gap:** enable-time population of the sealed name index now
+happens here, so lazy listing (Task 9) reads real names rather than falling back
+to a per-project manifest decrypt.
+
+`resumeInterruptedConversions` finishes anything a crash left half-done, at
+startup. It needs no special recovery path — the sweep is idempotent, so it just
+runs again (FR22). Covered end to end: interrupt mid-sweep, resume, every file
+sealed and readable, conversion marker gone.
+
+The modal is non-dismissible while converting (Escape included), since the write
+barrier refuses every write to that project meanwhile and escaping into the
+editor would only produce "being converted" errors.
 
 ### Task 17: Integrity-failure handling
 

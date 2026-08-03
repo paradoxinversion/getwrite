@@ -5,6 +5,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EncryptionSettings from "../components/preferences/EncryptionSettings";
+import EncryptionSetupModal from "../components/common/EncryptionSetupModal";
 
 const PROJECT = "The Whistleblower";
 const PASS = "correct horse battery staple";
@@ -219,5 +220,51 @@ describe("EncryptionSettings — confirming", () => {
     expect(
       screen.getByRole("button", { name: /encrypt this project/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("EncryptionSetupModal — the in-progress state", () => {
+  function renderModal(
+    overrides: Partial<React.ComponentProps<typeof EncryptionSetupModal>> = {},
+  ) {
+    const onCancel = vi.fn();
+    render(
+      <EncryptionSetupModal
+        isOpen
+        projectName={PROJECT}
+        needsPassphrase
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+        {...overrides}
+      />,
+    );
+    return { onCancel, user: userEvent.setup() };
+  }
+
+  it("reports how far the conversion has got", () => {
+    renderModal({ isBusy: true, progress: { done: 2, total: 7 } });
+    // The counts are interpolated, so the sentence spans several text nodes —
+    // and the confirm button also reads "Encrypting…", hence the tag filter.
+    const line = screen
+      .getAllByText(/encrypting/i)
+      .find((element: HTMLElement) => element.tagName === "P");
+    expect(line?.textContent).toContain("2");
+    expect(line?.textContent).toContain("7");
+    expect(line?.textContent).toMatch(/files/i);
+  });
+
+  it("cannot be dismissed with Escape while converting", async () => {
+    const { onCancel, user } = renderModal({ isBusy: true });
+    await user.keyboard("{Escape}");
+
+    // The write barrier refuses every write to this project meanwhile, so
+    // escaping into the editor would only produce "being converted" errors.
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("can be dismissed with Escape when idle", async () => {
+    const { onCancel, user } = renderModal();
+    await user.keyboard("{Escape}");
+    expect(onCancel).toHaveBeenCalled();
   });
 });
