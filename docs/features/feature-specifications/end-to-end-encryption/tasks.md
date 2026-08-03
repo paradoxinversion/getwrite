@@ -279,7 +279,30 @@ lock and app exit clear keys; no key material is ever persisted or logged (FR7).
 **Estimate:** 3
 **Notes:** Follow the existing slice + transport-service + guards pattern. Ensure
 keys are excluded from any Redux devtools/state serialization.
-**Done:** [ ]
+**Done:** [x] — 21 tests (13 session, 8 slice).
+
+**The split matters:** `crypto/keyring-session.ts` is a plain module holding the
+unlocked `Keyring`; `store/cryptoSlice.ts` holds only `status` /
+`encryptedProjectIds` / `isUnlocking` / `errorMessage`. `CryptoKey` handles are
+not serialisable, and anything in the store reaches devtools, state snapshots,
+and any persistence middleware added later. A test asserts the whole slice
+survives a JSON round trip, so a key can never be smuggled in.
+
+**A footgun found by a failing test and closed rather than documented.**
+`Keyring.addProject` only mutates memory and returns a snapshot the caller must
+persist — forget it and that project's data key is silently unrecoverable at the
+next unlock. Added `registerProject()`, which does both. Nothing outside the
+session module should have to remember that.
+
+`lockSession()` locks the underlying keyring, not just the module reference, so
+anything still holding one finds it unusable — otherwise locking is cosmetic.
+`NoKeyringError` is distinct from `WrongPassphraseError` so the UI can tell
+"never set up" from "wrong passphrase" (FR4 vs. a prompt).
+
+Registering the slice changed `RootState`, which broke a full-state literal in
+`revisions-slice-selectors.test.ts`; its fixture now includes the crypto slice.
+Five speculative exports (two selectors, one action, two types) were trimmed
+after knip flagged them — Task 12 can export what it consumes.
 
 ### Task 11: Enable-encryption flow
 

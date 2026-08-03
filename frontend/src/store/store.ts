@@ -5,6 +5,7 @@ import resourcesReducer from "./resourcesSlice";
 import editorConfigReducer from "./editorConfigSlice";
 import searchReducer from "./searchSlice";
 import queryReducer from "./querySlice";
+import cryptoReducer from "./cryptoSlice";
 /**
  * @deprecated This is a temporary store instance for development and testing. In production, use makeStore to create a new store instance for each client.
  */
@@ -16,6 +17,7 @@ export const store = configureStore({
     editorConfig: editorConfigReducer,
     search: searchReducer,
     queries: queryReducer,
+    crypto: cryptoReducer,
   },
 });
 
@@ -28,6 +30,7 @@ export const makeStore = () => {
       editorConfig: editorConfigReducer,
       search: searchReducer,
       queries: queryReducer,
+      crypto: cryptoReducer,
     },
   });
 };
