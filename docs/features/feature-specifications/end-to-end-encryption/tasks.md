@@ -424,7 +424,27 @@ rejected as a downgrade (FR22).
 conversion openable, but a tolerant *default* would be a permanent downgrade
 vector. Gate it on marker presence only; the exposure window is then bounded by
 conversion duration (seconds, for a ~75-file project).
-**Done:** [ ]
+**Done:** [x] — 16 tests (7 adapter, 3 resolution, plus existing strict-mode
+coverage). `encryptingAdapter(inner, key, { tolerant })`, off by default.
+
+**Tolerance is narrow on purpose:** only `EnvelopeFormatError` ("this is not
+encrypted") is passed through. `EnvelopeIntegrityError` ("encrypted and
+untrustworthy") still throws, tolerant or not — the first is an expected
+mid-conversion state, the second never is.
+
+**The conversion marker, not the project marker, decides.** Mid-*encrypt* the
+project marker does not exist yet, so consulting it alone would hand a
+half-sealed project to the base adapter and read ciphertext as content.
+`resolveProjectAdapter` now reads both, and an in-flight conversion is decisive
+on its own — including requiring the key even with no project marker present.
+
+Mutation-verified three ways: tolerance on by default fails 4 tests; tolerating
+integrity errors fails 2; ignoring the conversion marker fails 2.
+
+**Fixes a lint error committed in Task 14** — `wantSealed` violated the
+naming-convention rule (`is/has/should/...` prefix) and slipped through because
+that run's output was truncated. Renamed to `shouldSeal`; `src/lib/models/` is
+now error-free.
 
 ### Task 16: Convert-to-encrypted entry point
 

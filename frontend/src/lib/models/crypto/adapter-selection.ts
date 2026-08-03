@@ -38,6 +38,7 @@ import { encryptingAdapter } from "../encryptingAdapter";
 import type { StorageAdapter } from "../io";
 import { getStorageAdapter } from "../io";
 import { readProjectMarker } from "./project-marker";
+import { readConversionMarker } from "./convert-project";
 import { UnknownProjectError, type Keyring } from "./keyring";
 
 /**
@@ -92,17 +93,24 @@ export async function resolveProjectAdapter(
   baseAdapter: StorageAdapter,
   keyring: Keyring | null,
 ): Promise<StorageAdapter> {
+  // An in-flight conversion is decisive on its own. Mid-*encrypt* the project
+  // marker does not exist yet, so consulting it alone would hand a half-sealed
+  // project to the base adapter and read ciphertext as content.
+  const converting = await readConversionMarker(projectRoot, baseAdapter);
   const marker = await readProjectMarker(projectRoot, baseAdapter);
 
   // The identity return: an unencrypted project never meets crypto code, and a
   // locked workspace does not stop the user working on it (FR20's decline path).
-  if (marker === null) return baseAdapter;
+  if (converting === null && marker === null) return baseAdapter;
 
   const projectId = path.basename(projectRoot);
   if (!keyring || keyring.isLocked()) throw new ProjectLockedError(projectId);
 
   try {
-    return encryptingAdapter(baseAdapter, keyring.projectKey(projectId));
+    return encryptingAdapter(baseAdapter, keyring.projectKey(projectId), {
+      // Tolerance lasts exactly as long as the conversion marker does (FR22).
+      tolerant: converting !== null,
+    });
   } catch (error) {
     if (error instanceof UnknownProjectError) {
       throw new MissingProjectKeyError(projectId);

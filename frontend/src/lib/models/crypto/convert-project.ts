@@ -248,13 +248,13 @@ async function convertOneFile(
   }
 
   const raw = await adapter.readFileBuffer(file);
-  const wantSealed = direction === "encrypt";
-  if (isEnvelope(raw) === wantSealed) {
+  const shouldSeal = direction === "encrypt";
+  if (isEnvelope(raw) === shouldSeal) {
     result.filesSkipped += 1;
     return;
   }
 
-  const next = wantSealed ? await seal(key, raw) : await open(key, raw);
+  const next = shouldSeal ? await seal(key, raw) : await open(key, raw);
   await writeThrough(projectRoot, adapter, () =>
     atomicWriteFile(file, Buffer.from(next)),
   );

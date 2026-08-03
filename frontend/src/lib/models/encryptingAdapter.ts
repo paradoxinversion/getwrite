@@ -31,30 +31,50 @@
  * `size`, so the discrepancy is inert — a property Task 6's conformance run
  * keeps honest.
  *
- * **Reads are strict.** A file that is not a well-formed envelope is rejected,
- * never returned as-is: silently accepting plaintext where ciphertext is
- * expected would let an attacker with write access downgrade a file and have it
- * read back. The tolerant read mode a half-finished conversion needs is
- * deliberately *not* here — it arrives in Task 15, gated on an active conversion
- * marker.
+ * **Reads are strict by default.** A file that is not a well-formed envelope is
+ * rejected, never returned as-is: silently accepting plaintext where ciphertext
+ * is expected would let an attacker with write access downgrade a file and have
+ * it read back.
+ *
+ * **Tolerant mode is the one exception, and it is deliberately narrow.** While a
+ * conversion is in flight a project legitimately holds both forms at once, and
+ * FR22 requires it stay openable. `tolerant: true` therefore passes a
+ * non-envelope through unchanged — but *only* that case. A well-formed envelope
+ * that fails authentication is still an error in tolerant mode: "this is not
+ * encrypted" is an expected mid-conversion state, while "this is encrypted and
+ * cannot be trusted" never is. Callers must gate tolerance on an active
+ * conversion marker; a tolerant default would be a standing downgrade vector.
  */
 import type { Dirent, Stats } from "node:fs";
 import type { ReaddirResult, StorageAdapter } from "./io";
-import { open, seal } from "./crypto/envelope";
+import { EnvelopeFormatError, open, seal } from "./crypto/envelope";
 
 /** Encodings this decorator can honour when decoding a decrypted body. */
 const SUPPORTED_ENCODINGS = new Set(["utf8", "utf-8"]);
+
+/** Options accepted by {@link encryptingAdapter}. */
+export interface EncryptingAdapterOptions {
+  /**
+   * Accept an unsealed file instead of rejecting it.
+   *
+   * Valid *only* while a conversion marker is present on the project, where a
+   * mixture of forms is expected (FR22). Never enable it as a default.
+   */
+  tolerant?: boolean;
+}
 
 /**
  * Wraps a storage adapter so every file body is encrypted at rest.
  *
  * @param inner - The adapter that performs the actual storage operations.
  * @param key - The project data key to seal and open bodies with.
+ * @param options - See {@link EncryptingAdapterOptions}.
  * @returns An adapter with identical semantics and encrypted contents.
  */
 export function encryptingAdapter(
   inner: StorageAdapter,
   key: CryptoKey,
+  options: EncryptingAdapterOptions = {},
 ): StorageAdapter {
   /**
    * Reads and opens a file's sealed body.
@@ -63,7 +83,15 @@ export function encryptingAdapter(
    * @returns The recovered plaintext bytes.
    */
   async function readOpened(path: string): Promise<Uint8Array> {
-    return open(key, await inner.readFileBuffer(path));
+    const raw = await inner.readFileBuffer(path);
+    try {
+      return await open(key, raw);
+    } catch (error) {
+      // Only "this is not an envelope" is tolerable, and only mid-conversion.
+      // An envelope that fails authentication stays an error either way.
+      if (options.tolerant && error instanceof EnvelopeFormatError) return raw;
+      throw error;
+    }
   }
 
   /**

@@ -167,6 +167,82 @@ describe("encryptingAdapter — refuses to trust unsealed or altered data", () =
   });
 });
 
+describe("encryptingAdapter — tolerant mode", () => {
+  it("passes an unsealed file through unchanged", async () => {
+    await inner.writeFile("/proj/plain.txt", "not yet converted");
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+
+    expect(await tolerant.readFile("/proj/plain.txt", "utf-8")).toBe(
+      "not yet converted",
+    );
+  });
+
+  it("still opens sealed files", async () => {
+    await io.writeFile("/proj/sealed.txt", "already converted");
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+
+    expect(await tolerant.readFile("/proj/sealed.txt", "utf-8")).toBe(
+      "already converted",
+    );
+  });
+
+  it("reads a half-converted project end to end", async () => {
+    // Exactly the state an interrupted conversion leaves behind (FR22).
+    await io.writeFile("/proj/done.txt", "sealed already");
+    await inner.writeFile("/proj/pending.txt", "still plaintext");
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+
+    expect(await tolerant.readFile("/proj/done.txt", "utf-8")).toBe(
+      "sealed already",
+    );
+    expect(await tolerant.readFile("/proj/pending.txt", "utf-8")).toBe(
+      "still plaintext",
+    );
+  });
+
+  it("does not tolerate a tampered envelope", async () => {
+    await io.writeFile("/proj/a.txt", "secret manuscript");
+    const raw = Buffer.from(await inner.readFileBuffer("/proj/a.txt"));
+    raw[raw.length - 1] ^= 0xff;
+    await inner.writeFile("/proj/a.txt", raw);
+
+    // "Not encrypted" is an expected mid-conversion state; "encrypted and
+    // untrustworthy" never is, tolerant or not.
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+    await expect(
+      tolerant.readFile("/proj/a.txt", "utf-8"),
+    ).rejects.toBeInstanceOf(EnvelopeIntegrityError);
+  });
+
+  it("does not tolerate another project's ciphertext", async () => {
+    const foreign = encryptingAdapter(inner, keyB);
+    await foreign.writeFile("/proj/foreign.txt", "other project");
+
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+    await expect(
+      tolerant.readFile("/proj/foreign.txt", "utf-8"),
+    ).rejects.toBeInstanceOf(EnvelopeIntegrityError);
+  });
+
+  it("tolerates through readFileBuffer as well as readFile", async () => {
+    await inner.writeFile("/proj/bin", Buffer.from([1, 2, 3]));
+    const tolerant = encryptingAdapter(inner, keyA, { tolerant: true });
+
+    expect(Buffer.from(await tolerant.readFileBuffer("/proj/bin"))).toEqual(
+      Buffer.from([1, 2, 3]),
+    );
+  });
+
+  it("is off unless asked for", async () => {
+    await inner.writeFile("/proj/plain.txt", "downgrade attempt");
+    // The default must stay strict: a tolerant default would be a standing
+    // downgrade vector rather than a bounded, conversion-scoped one.
+    await expect(
+      io.readFile("/proj/plain.txt", "utf-8"),
+    ).rejects.toBeInstanceOf(EnvelopeFormatError);
+  });
+});
+
 describe("encryptingAdapter — path and directory semantics pass through", () => {
   it("lists directory entries unchanged", async () => {
     await io.writeFile("/proj/a.txt", "a");

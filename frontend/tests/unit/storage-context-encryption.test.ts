@@ -11,6 +11,8 @@ import {
 } from "../../src/lib/models/crypto/keyring";
 import { isEnvelope } from "../../src/lib/models/crypto/envelope";
 import { writeProjectMarker } from "../../src/lib/models/crypto/project-marker";
+import { convertProject } from "../../src/lib/models/crypto/convert-project";
+import { __resetWriteBarriersForTests } from "../../src/lib/models/write-barrier";
 import {
   MissingProjectKeyError,
   ProjectLockedError,
@@ -183,6 +185,72 @@ describe("adapter selection — refuses to proceed without the key", () => {
     await expect(
       resolveProjectAdapter(PLAIN_ROOT, base, keyring),
     ).rejects.toThrow(/marker/i);
+  });
+});
+
+describe("adapter selection — a project mid-conversion", () => {
+  /** Leaves PLAIN_ROOT half-encrypted, exactly as a crashed conversion would. */
+  async function interruptEncryptionOf(projectRoot: string): Promise<void> {
+    await base.writeFile(`${projectRoot}/done.txt`, "will be sealed");
+    await base.writeFile(`${projectRoot}/pending.txt`, "will stay plaintext");
+    await keyring.addProject(PLAIN_ID);
+
+    let calls = 0;
+    await convertProject({
+      projectRoot,
+      direction: "encrypt",
+      key: keyring.projectKey(PLAIN_ID),
+      adapter: base,
+      onProgress: () => {
+        // Abandon the sweep partway, leaving the conversion marker in place.
+        if (++calls === 1) throw new Error("interrupted");
+      },
+    }).catch(() => undefined);
+    __resetWriteBarriersForTests();
+  }
+
+  it("reads a half-converted project in both forms", async () => {
+    await interruptEncryptionOf(PLAIN_ROOT);
+
+    // FR22: openable, despite holding a mixture — and note the project marker
+    // does not exist yet, so the conversion marker is what makes this work.
+    const readBack = await runInProjectContext(
+      PLAIN_ROOT,
+      keyring,
+      async () => [
+        await io.readFile(`${PLAIN_ROOT}/done.txt`, "utf-8"),
+        await io.readFile(`${PLAIN_ROOT}/pending.txt`, "utf-8"),
+      ],
+    );
+
+    expect(readBack).toEqual(["will be sealed", "will stay plaintext"]);
+  });
+
+  it("needs the key even though the project marker is absent", async () => {
+    await interruptEncryptionOf(PLAIN_ROOT);
+    keyring.lock();
+
+    await expect(
+      resolveProjectAdapter(PLAIN_ROOT, base, keyring),
+    ).rejects.toBeInstanceOf(ProjectLockedError);
+  });
+
+  it("returns to strict reads once the conversion finishes", async () => {
+    await interruptEncryptionOf(PLAIN_ROOT);
+    await convertProject({
+      projectRoot: PLAIN_ROOT,
+      direction: "encrypt",
+      key: keyring.projectKey(PLAIN_ID),
+      adapter: base,
+    });
+
+    // Tolerance must last exactly as long as the conversion marker did.
+    await base.writeFile(`${PLAIN_ROOT}/downgraded.txt`, "attacker plaintext");
+    await expect(
+      runInProjectContext(PLAIN_ROOT, keyring, () =>
+        io.readFile(`${PLAIN_ROOT}/downgraded.txt`, "utf-8"),
+      ),
+    ).rejects.toThrow();
   });
 });
 
