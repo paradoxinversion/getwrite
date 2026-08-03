@@ -317,7 +317,28 @@ enables encryption (FR2, FR9).
 **Estimate:** 3
 **Notes:** FR2's exclusion list (upgrade, project type, template, import, config,
 env) should each get an explicit negative test.
-**Done:** [ ]
+**Done:** [x] — 15 tests, 11 Storybook stories across two components. Reuses the
+existing UI kit (`Dialog`, `Button`, `Input`, `Checkbox`) rather than hand-rolled
+classNames, matching `ConfirmDialog`'s precedent.
+
+**Brand rule observed:** the irreversibility warning uses no red. Red is reserved
+for position and canonical state in this product — never alerts — so the weight
+is carried by plain copy ("no reset, no backup key") and a required
+acknowledgement instead. `check:no-hex` passes; no `font-serif`, shadows, or
+gradients outside the editor surface.
+
+Mutation-verified the three gates: dropping the acknowledgement fails 2 tests,
+accepting mismatched passphrases fails 1, retaining a typed passphrase between
+openings fails 1.
+
+**Scope note on FR2's exclusion list.** The negative tests assert what a
+component test can: nothing enables encryption on mount, on opening the modal,
+on cancelling, or without every gate met — and an encrypted project offers no
+enable action (nor a disable one, since v1 has no in-place decryption). The
+remaining exclusions — upgrade, project type, template, import, config, env — are
+assertions about code paths that *do not exist*, so there is nothing to render
+and nothing to test here. They are properly enforced by review and by Task 20's
+server-side fail-closed check, not by this component.
 
 ### Task 12: Unlock gate and prompt
 
