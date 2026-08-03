@@ -102,7 +102,17 @@ text and binary through `readFile`/`readFileBuffer`/`writeFile`/`copyFile`/`cp`/
 `stat().size` will report ciphertext length — ADR-019's reconnaissance confirmed
 the model layer never reads `size`, so this is safe, but assert it stays true.
 `copyFile`/`rename` within one project can move ciphertext without re-sealing.
-**Done:** [ ]
+**Done:** [x] — 27 tests. **Signature deviation:** takes a `CryptoKey`, not the
+whole keyring. The decorator is scoped to one project and knows nothing about
+path→project mapping; keeping that in Task 8 is what lets an unencrypted project
+run through a chain containing no crypto code (FR3, FR12).
+`readFile` must call the inner adapter's `readFileBuffer`, never its `readFile` —
+the latter would UTF-8-decode *ciphertext*. Unsupported encodings throw rather
+than return mangled text; a survey found the model layer only ever passes
+`utf8`/`utf-8`. Reads are strict: plaintext where ciphertext is expected is
+rejected as a downgrade (tolerant mode is Task 15, gated on a conversion marker).
+Verified that the in-memory adapter synthesises only `name`/`isDirectory` — a
+practical confirmation of ADR-019's survey.
 
 ### Task 5: `appendFile` under encryption
 
@@ -115,11 +125,15 @@ file whose decrypted content equals the concatenation, and the template
 changes-log path (`resource-templates.ts:710`) works unchanged on an encrypted
 project.
 **Depends on:** 4
-**Estimate:** 2
-**Notes:** `resource-templates.ts:710` is the only real caller (JSONL changes
-log). Read-modify-write is the simple correct answer; a per-line sealed-record
-format avoids O(n²) growth if that log ever gets large.
-**Done:** [ ]
+**Estimate:** 1
+**Notes:** **Largely absorbed by Task 4** — leaving `appendFile` as a
+plaintext-appending pass-through even briefly would have been a silent corruption
+path, so read-modify-write landed with the decorator and is covered by 4 tests
+(create-on-absent, concatenation, still-sealed, binary). Estimate cut 2 → 1.
+What remains: verify the real caller (`resource-templates.ts:710`, a JSONL
+changes log) against an encrypted project, and decide whether the O(n²) rewrite
+cost justifies a per-line sealed-record format. That decision needs a realistic
+sense of how large that log grows, which Task 8 wiring will make measurable.
 
 ### Task 6: Conformance suite coverage
 
