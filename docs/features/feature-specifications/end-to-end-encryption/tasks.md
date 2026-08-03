@@ -616,7 +616,30 @@ normal unencrypted project with all resources, revisions, and metadata intact
 should reuse Task 14's decrypt direction rather than a parallel implementation.
 The spike verified an encrypt→decrypt round trip is byte-identical to the
 original.
-**Done:** [ ]
+**Done:** [x] — 9 integration tests, in `crypto/export-plaintext.ts`.
+
+**File deviation:** not `export-core.ts`, which exports a *resource* to
+text/markdown — an unrelated concept. Putting a project-tree export there would
+have conflated the two.
+
+Reuses the sweep's `isEnvelope`/`open` pair but not `convertProject` itself: the
+sweep rewrites in place, and an export must not touch the original. It is
+tolerant by construction, so a half-converted project exports correctly too.
+
+Both markers are omitted from the copy — carrying them would produce a directory
+claiming to be encrypted while holding plaintext, the exact state everything else
+prevents. Refuses to export into the project itself, or into a non-empty
+destination.
+
+**Found a real bug while testing:** `onProgress?.({ done: ++done })` never
+evaluates its argument when no callback is supplied, so the file counter stayed
+at zero for every caller that ignored progress — correct only when someone
+happened to pass a handler. The increment is now its own statement.
+
+**Scope limit:** the "opens as a normal project" check asserts the manifest is
+plaintext, parses, and carries no encryption marker. Opening it in the running
+app validates every resource against its schema, which needs realistic fixtures —
+that is Task 22's desktop end-to-end job.
 
 ### Task 19: Plaintext-output warning
 
