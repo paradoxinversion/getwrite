@@ -822,7 +822,28 @@ modules.
 in this repo (ADR-017/018/019/021) has one, and the decorator seam is exactly the
 kind of decision those ADRs exist to record. Both spike documents
 (`kdf-spike.md`, `conversion-spike.md`) are ready-made "options considered" input.
-**Done:** [ ]
+**Done:** [x] — `docs/architecture/ADRs/adr-022-end-to-end-encryption-via-storage-adapter-decorator.md`,
+following the ADR-019/021 format.
+
+Options considered: per-call-site encryption in the model layer (rejected — it
+defeats FR14 by construction and cannot be proven), the `ObjectStore` seam
+(rejected — excludes desktop, which runs the filesystem adapter), and the
+`StorageAdapter` decorator (chosen — composes with all three backends and is
+provable against ADR-019's existing conformance suite).
+
+The ADR records the FR12 revision as its own section rather than burying it:
+requiring "no crypto code in the chain", asserted by identity, forced callers to
+opt in, almost none did, and encrypting a project made it unopenable while every
+unit test passed. **The spec's FR12 is amended in place**, with the rationale and
+date inline so the change is not silently absorbed.
+
+Also updated: CLAUDE.md's code map (the `crypto/` modules, `write-barrier.ts`,
+the `encryption` route, `cryptoSlice`, and `StorageContext`'s new optional
+`projectRoot`), and FR10's stale `encryptingAdapter(inner, keyring)` signature.
+
+**Deliberately deferred from this ADR:** the three integration gaps are recorded
+as a lesson ("a seam is not done when it is correct, only when it is adopted"),
+not as a process change — that belongs in the testing standard, if anywhere.
 
 ---
 

@@ -95,13 +95,21 @@ and the passphrase is the only thing that can open them.
 **Crypto seam**
 
 10. Encryption **must** be implemented as a decorator over `StorageAdapter`
-    (`encryptingAdapter(inner, keyring)`), so it composes unchanged with the
+    (`encryptingAdapter(inner, key)`), so it composes unchanged with the
     filesystem, object-store (ADR-019), and Capacitor adapters.
 11. The decorator **must** pass the existing `StorageAdapter` conformance suite,
     run against it over at least the filesystem and in-memory backends.
-12. The decorator **must** be absent from the adapter chain entirely for a
-    project that has not opted in — an unencrypted project's I/O path **must**
-    be identical to today's.
+12. No cryptographic operation **may** run for a project that has not opted in,
+    and its files **must** be byte-identical to what an unencrypted build would
+    write.
+
+    *Amended 2026-08-04 (ADR-022).* This previously required the decorator to be
+    absent from the adapter chain entirely, asserted by reference identity. That
+    wording forced every caller to opt in by resolving its own project adapter,
+    almost none did, and encrypting a project made it unopenable while every unit
+    test passed. Encryption is now routed by a per-request adapter that is in the
+    chain for all projects but does nothing for one without a key. The intent is
+    unchanged; the identity check is gone.
 13. No module above the adapter seam **may** reference key material or
     ciphertext.
 
