@@ -698,7 +698,33 @@ byte-for-byte untouched on disk (FR15, FR26).
 **Notes:** FR26 matters most where existing code "repairs" unreadable state —
 `listProjectsCore`'s skip path and any trash/cleanup routine must not delete or
 rewrite data that is merely locked.
-**Done:** [ ]
+**Done:** [x] — 6 integration tests.
+
+**File deviation:** no `crypto/errors.ts`. `EnvelopeFormatError` and
+`EnvelopeIntegrityError` already exist in `envelope.ts` and are the distinction
+FR15 asks for; a second module would have duplicated the hierarchy.
+
+Most of this task had already landed piecemeal — the distinct types in Task 2,
+tampered-file coverage in Task 4, untouched-on-unresolvable-key in Task 8, and
+list-rather-than-drop in Task 9. What was missing was proof that the distinction
+survives the *real* request path, and an audit of FR26's actual risk.
+
+**Audit result: nothing repairs a file that fails integrity.** A scan of every
+`catch` block in `src/lib/models/` that writes or deletes found exactly one —
+`revision.ts` removing the temp directory it just created, which is correct and
+unrelated. `reindexMissingResources` runs only on an explicit user-triggered
+reindex, never on a read failure.
+
+New coverage: through the request-level routing adapter, a corrupted file raises
+`EnvelopeIntegrityError` (not `EnvelopeFormatError`), carries an actionable
+message, never returns empty or partial content, leaves the damaged bytes exactly
+as found, does not take the rest of the project with it, and a project with a
+damaged manifest still lists rather than vanishing. Mutation-verified: swallowing
+read failures fails 3 of the 6.
+
+**Not done — deliberately:** no dedicated UI affordance. The integrity message
+already reaches the user through the route's error mapping, and inventing a
+recovery screen without a real failure to design against would be speculative.
 
 ### Task 18: Full-project plaintext export
 
