@@ -268,3 +268,74 @@ describe("EncryptionSetupModal — the in-progress state", () => {
     expect(onCancel).toHaveBeenCalled();
   });
 });
+
+describe("EncryptionSettings — the escape hatch and lock control", () => {
+  it("offers an unencrypted-copy export once encrypted", async () => {
+    const onExportPlaintextCopy = vi.fn();
+    render(
+      <EncryptionSettings
+        projectName={PROJECT}
+        isEncrypted
+        needsPassphrase={false}
+        onEnableEncryption={vi.fn()}
+        onExportPlaintextCopy={onExportPlaintextCopy}
+      />,
+    );
+
+    // FR24: the panel already promises this route back; it must exist.
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole("button", { name: /export an unencrypted copy/i }),
+      );
+    expect(onExportPlaintextCopy).toHaveBeenCalledOnce();
+  });
+
+  it("offers no export before the project is encrypted", () => {
+    render(
+      <EncryptionSettings
+        projectName={PROJECT}
+        isEncrypted={false}
+        needsPassphrase
+        onEnableEncryption={vi.fn()}
+        onExportPlaintextCopy={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /export an unencrypted copy/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers a lock control while unlocked", async () => {
+    const onLockWorkspace = vi.fn();
+    render(
+      <EncryptionSettings
+        projectName={PROJECT}
+        isEncrypted
+        needsPassphrase={false}
+        onEnableEncryption={vi.fn()}
+        onLockWorkspace={onLockWorkspace}
+      />,
+    );
+
+    // FR7: keys are discarded on *explicit* lock, so there has to be one.
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: /lock workspace/i }));
+    expect(onLockWorkspace).toHaveBeenCalledOnce();
+  });
+
+  it("hides the lock control when the workspace is already locked", () => {
+    render(
+      <EncryptionSettings
+        projectName={PROJECT}
+        isEncrypted
+        needsPassphrase={false}
+        onEnableEncryption={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /lock workspace/i }),
+    ).not.toBeInTheDocument();
+  });
+});

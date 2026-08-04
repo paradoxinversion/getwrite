@@ -19,6 +19,16 @@ export interface EncryptionSettingsProps {
   progress?: { done: number; total: number };
   /** Called with the new passphrase, or `null` when the workspace has one. */
   onEnableEncryption: (passphrase: string | null) => void;
+  /** Whether a plaintext export is in flight. */
+  isExporting?: boolean;
+  /**
+   * Writes an unencrypted copy of this project (FR24).
+   *
+   * Absent when the workspace is locked — the copy needs the project's key.
+   */
+  onExportPlaintextCopy?: () => void;
+  /** Discards every key held this session. Absent when already locked. */
+  onLockWorkspace?: () => void;
 }
 
 /**
@@ -40,6 +50,9 @@ export default function EncryptionSettings({
   errorMessage,
   progress,
   onEnableEncryption,
+  isExporting = false,
+  onExportPlaintextCopy,
+  onLockWorkspace,
 }: EncryptionSettingsProps): JSX.Element {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -82,6 +95,33 @@ export default function EncryptionSettings({
           </p>
         </div>
       )}
+
+      {isEncrypted && onExportPlaintextCopy ? (
+        <div className="flex flex-col items-start gap-2">
+          <Button
+            variant="secondary"
+            onClick={onExportPlaintextCopy}
+            disabled={isExporting}
+          >
+            {isExporting ? "Exporting…" : "Export an unencrypted copy"}
+          </Button>
+          <p className="text-[11px] leading-relaxed text-gw-dim">
+            Adds a second, unencrypted project alongside this one. The original
+            stays encrypted.
+          </p>
+        </div>
+      ) : null}
+
+      {onLockWorkspace ? (
+        <div className="flex flex-col items-start gap-2">
+          <Button variant="secondary" onClick={onLockWorkspace}>
+            Lock workspace
+          </Button>
+          <p className="text-[11px] leading-relaxed text-gw-dim">
+            Discards your keys until you enter the passphrase again.
+          </p>
+        </div>
+      ) : null}
 
       {errorMessage ? (
         <p className="font-mono text-[10px] text-gw-secondary">

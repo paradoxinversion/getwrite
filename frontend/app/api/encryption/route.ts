@@ -37,6 +37,12 @@ import {
   enableProjectEncryption,
   resumeInterruptedConversions,
 } from "../../../src/lib/models/crypto/enable-encryption";
+import { exportProjectAsPlaintext } from "../../../src/lib/models/crypto/export-plaintext";
+import { requireSessionKeyring } from "../../../src/lib/models/crypto/keyring-session";
+import { resolveProjectsDir } from "../../../src/lib/models/projects-dir";
+import { generateUUID } from "../../../src/lib/models/uuid";
+import { readFile, writeFile } from "../../../src/lib/models/io";
+import path from "node:path";
 
 /** What the client may ask this route to do. */
 type EncryptionAction =
@@ -48,7 +54,8 @@ type EncryptionAction =
       projectName: string;
       passphrase: string | null;
     }
-  | { action: "resume" };
+  | { action: "resume" }
+  | { action: "export"; projectId: string };
 
 /** The lock state the UI renders from. Never includes key material. */
 interface EncryptionStatus {
@@ -143,6 +150,10 @@ async function postEncryptionAction(request: Request): Promise<NextResponse> {
       case "resume":
         await resumeInterruptedConversions();
         break;
+      case "export": {
+        const exportedId = await exportPlaintextCopy(body.projectId);
+        return NextResponse.json({ ...(await readStatus()), exportedId });
+      }
       default:
         return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }
@@ -150,6 +161,42 @@ async function postEncryptionAction(request: Request): Promise<NextResponse> {
   } catch (error) {
     return toErrorResponse(error);
   }
+}
+
+/**
+ * Writes an unencrypted copy of a project alongside it, as its own project.
+ *
+ * The copy lands in the workspace under a fresh id so it simply appears on the
+ * Start screen — FR24's escape hatch is only an escape hatch if the user can
+ * actually open what comes out of it. Its manifest is re-stamped with the new id
+ * and a distinguishing name, so the original and the copy are never confused.
+ *
+ * @param projectId - The encrypted project to copy.
+ * @returns The new project's directory id.
+ */
+async function exportPlaintextCopy(projectId: string): Promise<string> {
+  const workspaceRoot = resolveProjectsDir();
+  const exportedId = generateUUID();
+  const destinationRoot = path.join(workspaceRoot, exportedId);
+
+  await exportProjectAsPlaintext({
+    projectRoot: path.join(workspaceRoot, projectId),
+    destinationRoot,
+    key: requireSessionKeyring().projectKey(projectId),
+  });
+
+  // Re-stamp the manifest: two projects sharing an internal id would collide in
+  // the store, and an identical name would leave the user guessing which is which.
+  const manifestPath = path.join(destinationRoot, "project.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf-8")) as Record<
+    string,
+    unknown
+  >;
+  manifest.id = exportedId;
+  manifest.name = `${String(manifest.name ?? "Project")} (unencrypted copy)`;
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
+
+  return exportedId;
 }
 
 export const GET = withStorageContext(getEncryptionStatus);

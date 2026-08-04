@@ -189,3 +189,21 @@ describe("plaintext export — refuses to destroy data", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("plaintext export — the exported copy opens as its own project", () => {
+  it("re-stamps the manifest so original and copy are distinguishable", async () => {
+    // Mirrors what the API route does after the copy is written: without a
+    // fresh id the two projects collide in the store, and without a changed
+    // name the user cannot tell them apart on the Start screen.
+    await exportProject();
+
+    const manifest = JSON.parse(
+      await adapter.readFile(`${DEST}/project.json`, "utf-8"),
+    ) as Record<string, unknown>;
+    manifest.id = "exported-id";
+    manifest.name = `${String(manifest.name)} (unencrypted copy)`;
+
+    expect(manifest.id).not.toBe("abc");
+    expect(manifest.name).toBe("The Whistleblower (unencrypted copy)");
+  });
+});

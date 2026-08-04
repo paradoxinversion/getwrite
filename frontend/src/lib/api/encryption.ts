@@ -107,6 +107,22 @@ export function enableProjectEncryptionRequest(
 }
 
 /**
+ * Writes an unencrypted copy of a project, as its own project.
+ *
+ * @param projectId - The encrypted project to copy.
+ * @returns The status afterwards, plus the new project's id.
+ * @throws {Error} With the server's message.
+ */
+export async function exportPlaintextCopyRequest(
+  projectId: string,
+): Promise<EncryptionStatus & { exportedId: string }> {
+  return (await request({
+    method: "POST",
+    body: JSON.stringify({ action: "export", projectId }),
+  })) as EncryptionStatus & { exportedId: string };
+}
+
+/**
  * Finishes any conversion a crash left half-done.
  *
  * @returns The status afterwards.

@@ -163,6 +163,7 @@ describe("cryptoSlice — no key material reaches the store", () => {
       "encryptedProjectIds",
       "errorMessage",
       "isConverting",
+      "isExporting",
       "isUnlocking",
       "status",
     ]);

@@ -19,6 +19,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   enableProjectEncryptionRequest,
+  exportPlaintextCopyRequest,
   fetchEncryptionStatus,
   lockWorkspaceRequest,
   resumeConversionsRequest,
@@ -51,6 +52,8 @@ interface CryptoState {
   isUnlocking: boolean;
   /** Whether a project conversion is in flight. */
   isConverting: boolean;
+  /** Whether a plaintext export is in flight. */
+  isExporting: boolean;
   /** User-facing failure text; never contains key material. */
   errorMessage: string;
 }
@@ -60,6 +63,7 @@ const initialState: CryptoState = {
   encryptedProjectIds: [],
   isUnlocking: false,
   isConverting: false,
+  isExporting: false,
   errorMessage: "",
 };
 
@@ -115,6 +119,12 @@ export const encryptProject = createAsyncThunk(
     ),
 );
 
+/** Writes an unencrypted copy of a project, as its own project (FR24). */
+export const exportPlaintextCopy = createAsyncThunk(
+  "crypto/exportPlaintextCopy",
+  (projectId: string) => exportPlaintextCopyRequest(projectId),
+);
+
 /** Finishes any conversion a crash left half-done. */
 export const resumeConversions = createAsyncThunk(
   "crypto/resumeConversions",
@@ -152,6 +162,21 @@ const cryptoSlice = createSlice({
       })
       .addCase(resumeConversions.fulfilled, (state, action) => {
         applyStatus(state, action.payload);
+      })
+      .addCase(exportPlaintextCopy.pending, (state) => {
+        state.isExporting = true;
+        state.errorMessage = "";
+      })
+      .addCase(exportPlaintextCopy.fulfilled, (state, action) => {
+        state.isExporting = false;
+        applyStatus(state, action.payload);
+      })
+      .addCase(exportPlaintextCopy.rejected, (state, action) => {
+        state.isExporting = false;
+        state.errorMessage = getErrorMessage(
+          action.error,
+          "Could not export an unencrypted copy.",
+        );
       })
       .addCase(encryptProject.pending, (state) => {
         state.isConverting = true;

@@ -653,6 +653,36 @@ updating to match.**
 Workspace-level files (keyring, sealed name index) are never routed through a
 project key — they must stay readable before any project can be opened.
 
+### Task 18b: Make the escape hatch and lock control reachable
+
+**What:** An "Export an unencrypted copy" action and a "Lock workspace" control in
+the encryption panel, with the API surface behind them.
+**Files:** `frontend/app/api/encryption/route.ts`,
+`frontend/src/lib/api/encryption.ts`, `frontend/src/store/cryptoSlice.ts`,
+`frontend/components/preferences/EncryptionSettings.tsx`,
+`frontend/components/preferences/ProjectEncryptionPanel.tsx`
+**Done when:** A user can produce an unencrypted copy of an encrypted project and
+lock the workspace without restarting.
+**Depends on:** 16b, 18
+**Estimate:** 3
+**Notes:** **Found by a reachability sweep of every crypto export.** Two had no
+production caller: `exportProjectAsPlaintext` — FR24's escape hatch, which the
+panel's own copy already promised — and `lockWorkspace`, leaving FR7's "explicit
+lock" reachable only by restarting the app.
+**Done:** [x] — 4 UI tests plus a manifest re-stamp test.
+
+The exported copy lands in the workspace under a **fresh id**, with its name
+suffixed "(unencrypted copy)", so it simply appears on the Start screen. An
+escape hatch is only an escape hatch if the user can open what comes out of it;
+two projects sharing an internal id would also collide in the store.
+
+**Limit of the sweep, worth recording:** it finds *unreachable* code, not
+*under-adopted* seams. Before Task 8b, `runInProjectContext` had one production
+caller and would have passed this sweep clean — the bug was "one caller where
+fifty were needed", which counting cannot see. Three integration gaps (16b, 8b,
+the post-unlock refresh) were all found by running the app, not by any automated
+check.
+
 ### Task 17: Integrity-failure handling
 
 **What:** Distinct, non-destructive handling of files that fail AEAD verification

@@ -6,7 +6,11 @@ import {
   selectActiveProjectDirectoryId,
   selectSelectedProjectId,
 } from "../../src/store/projectsSlice";
-import { encryptProject } from "../../src/store/cryptoSlice";
+import {
+  encryptProject,
+  exportPlaintextCopy,
+  lockWorkspace,
+} from "../../src/store/cryptoSlice";
 import EncryptionSettings from "./EncryptionSettings";
 
 /**
@@ -41,6 +45,9 @@ export default function ProjectEncryptionPanel(): JSX.Element | null {
   const isConverting = useAppSelector(
     (state) => state.crypto?.isConverting ?? false,
   );
+  const isExporting = useAppSelector(
+    (state) => state.crypto?.isExporting ?? false,
+  );
   const errorMessage = useAppSelector((state) => state.crypto?.errorMessage);
 
   // Deliberately does not fetch: the page bootstraps lock state once on mount.
@@ -62,6 +69,17 @@ export default function ProjectEncryptionPanel(): JSX.Element | null {
       // that one workspace passphrase covers them all.
       needsPassphrase={lockStatus === "absent"}
       isBusy={isConverting}
+      isExporting={isExporting}
+      onExportPlaintextCopy={
+        lockStatus === "unlocked"
+          ? () => void dispatch(exportPlaintextCopy(directoryId))
+          : undefined
+      }
+      onLockWorkspace={
+        lockStatus === "unlocked"
+          ? () => void dispatch(lockWorkspace())
+          : undefined
+      }
       errorMessage={errorMessage}
       onEnableEncryption={(passphrase) => {
         void dispatch(
