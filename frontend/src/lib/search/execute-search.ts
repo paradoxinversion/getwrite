@@ -102,8 +102,16 @@ async function loadCanonicalText(
   let text: string;
   try {
     text = await readFile(contentPath, "utf8");
-  } catch {
-    return "";
+  } catch (error) {
+    // A missing revision is ordinary — a stub resource has no canonical text —
+    // and yields "" so search simply finds nothing in it.
+    //
+    // A file that exists but cannot be *decrypted* is not ordinary, and must
+    // not be flattened into the same answer. Reporting an encrypted resource as
+    // empty hides real content from search and, worse, invites an editor to
+    // open an empty document over a real file and autosave it back (FR15).
+    if (isMissingFileError(error)) return "";
+    throw error;
   }
 
   if (text.trimStart().startsWith("{")) {
@@ -115,6 +123,23 @@ async function loadCanonicalText(
   }
 
   return text;
+}
+
+/**
+ * Whether a thrown value means "this file is not there".
+ *
+ * Anything else — notably an integrity or format failure from the encrypting
+ * adapter — is a real error and must propagate.
+ *
+ * @param error - The thrown value.
+ * @returns `true` for a missing-file error.
+ */
+function isMissingFileError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
 }
 
 async function loadTagAssignments(
