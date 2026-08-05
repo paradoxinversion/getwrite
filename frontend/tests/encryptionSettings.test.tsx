@@ -339,3 +339,61 @@ describe("EncryptionSettings — the escape hatch and lock control", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("EncryptionSettings — the modal closes on the outcome", () => {
+  /** Drives the panel from "not encrypted" to whatever `next` describes. */
+  function renderThenSettle(
+    next: Partial<React.ComponentProps<typeof EncryptionSettings>>,
+  ) {
+    const onEnableEncryption = vi.fn();
+    const props = {
+      projectName: PROJECT,
+      isEncrypted: false,
+      needsPassphrase: true,
+      onEnableEncryption,
+    } as React.ComponentProps<typeof EncryptionSettings>;
+
+    const view = render(<EncryptionSettings {...props} />);
+    return {
+      onEnableEncryption,
+      user: userEvent.setup(),
+      settle: () => view.rerender(<EncryptionSettings {...props} {...next} />),
+    };
+  }
+
+  it("closes once the project is encrypted", async () => {
+    const { user, settle } = renderThenSettle({ isEncrypted: true });
+    await user.click(
+      screen.getByRole("button", { name: /encrypt this project/i }),
+    );
+    await typePassphrases(user, PASS, PASS);
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /encrypt project/i }));
+
+    // Left open through the sweep, closed by the outcome.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    settle();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("stays open with the reason when encryption fails", async () => {
+    const { user, settle } = renderThenSettle({
+      errorMessage: "Could not encrypt this project.",
+    });
+    await user.click(
+      screen.getByRole("button", { name: /encrypt this project/i }),
+    );
+    await typePassphrases(user, PASS, PASS);
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /encrypt project/i }));
+    settle();
+
+    // Closing on failure would strand the user with no idea what happened.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/could not encrypt this project/i).length,
+    ).toBeGreaterThan(0);
+  });
+});

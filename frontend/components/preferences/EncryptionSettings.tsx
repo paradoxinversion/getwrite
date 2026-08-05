@@ -56,10 +56,16 @@ export default function EncryptionSettings({
 }: EncryptionSettingsProps): JSX.Element {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
+  // Closed by the outcome, not by the click. The modal owns the
+  // non-dismissible progress state while the sweep runs — closing on confirm
+  // would drop the user into an editor whose every write the barrier refuses —
+  // so it stays up until the project is actually encrypted. A failure leaves it
+  // open with the reason.
+  React.useEffect(() => {
+    if (isEncrypted) setIsModalOpen(false);
+  }, [isEncrypted]);
+
   function handleConfirm(passphrase: string | null): void {
-    // Deliberately left open: the modal owns the non-dismissible progress state
-    // while the sweep runs, and closing here would drop the user into an editor
-    // whose every write the barrier refuses.
     onEnableEncryption(passphrase);
   }
 
@@ -135,6 +141,7 @@ export default function EncryptionSettings({
         needsPassphrase={needsPassphrase}
         isBusy={isBusy}
         progress={progress}
+        errorMessage={errorMessage}
         onConfirm={handleConfirm}
         onCancel={() => setIsModalOpen(false)}
       />
