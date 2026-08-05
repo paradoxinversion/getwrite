@@ -6,6 +6,13 @@ Targets: desktop (Electron) + native Android. Hosted is a separate feature.
 FR numbers below refer to that spec's Functional Requirements (FR1–FR28).
 Spike findings: `kdf-spike.md` (Task 1), `conversion-spike.md` (Tasks 13–15).
 
+**Status (2026-08-05): 86/94 points, desktop shipped in
+[PR #172](https://github.com/saboteur-works/getwrite/pull/172).** Everything
+outstanding — including the two tasks below that are only partly done — is
+carried in `follow-up-work.md`, which is the list to read before picking this up
+again. Three tasks (8b, 16b, 18b) were added mid-flight for integration gaps the
+original breakdown did not anticipate.
+
 ---
 
 ### Task 1: Cryptographic primitives module
@@ -831,7 +838,19 @@ genuinely worth measuring are **unlock latency** (extrapolated ~0.8-1.3 s, never
 measured on-device) and **`crypto.subtle` availability** under Capacitor's
 `https://localhost` origin. If unlock proves painful, `hash-wasm` is a drop-in
 with byte-identical output and no migration.
-**Done:** [ ]
+**Done:** [ ] — **partly explored; nothing landed.** Split into two pieces in
+`follow-up-work.md`: the `createTransport` native pair (~3 pts, code only —
+encryption does *not* function on native until it exists) and on-device
+measurement (~2 pts). The device pipeline is proven end to end on a Pixel 7 Pro
+and the exact working command sequence is recorded there, including that
+Android Studio's bundled JDK 21 is what builds and that a warm resume will not
+re-run the harness. The harness crypto checks were written and lost before
+reaching the bundle; they need re-adding.
+
+Real measurements taken from the device *did* confirm the ~10 MB/s Capacitor
+bridge figure that FR28's argument rests on — since AES-GCM measured
+2,500–4,500 MB/s on desktop, the throughput half of FR28 is safe by inference.
+What remains unmeasured is `crypto.subtle` availability and unlock latency.
 
 ### Task 22: Desktop adoption and end-to-end verification
 
@@ -845,7 +864,15 @@ reveals no plaintext (FR7, FR14).
 **Estimate:** 3
 **Notes:** The on-disk plaintext check is the single most valuable assertion in
 this list — it validates the whole feature's premise from outside the code.
-**Done:** [ ]
+**Done:** [ ] — **substantially done; one gap.** The full flow (enable → convert
+→ restart → unlock → edit → save → search → export) was walked manually, and the
+on-disk check ran against the result: **35/35 files sealed, none decodable as
+UTF-8, no prose greps hit, and the sealed name index does not leak the project
+title.** The marker and keyring are plaintext by design and both check out.
+
+Outstanding: that project was encrypted by the dev server. Repeat the same scan
+against one encrypted in a packaged `pnpm electron:package` build (~1 pt, see
+`follow-up-work.md`).
 
 ### Task 23: ADR and documentation
 
