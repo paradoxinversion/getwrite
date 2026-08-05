@@ -134,6 +134,19 @@ What remains: verify the real caller (`resource-templates.ts:710`, a JSONL
 changes log) against an encrypted project, and decide whether the O(n²) rewrite
 cost justifies a per-line sealed-record format. That decision needs a realistic
 sense of how large that log grows, which Task 8 wiring will make measurable.
+**Done:** [x] — 2 integration tests in `tests/integration/encrypted-append.test.ts`.
+The real caller (`recordTemplateChange` → `resource-templates.ts:710`) works
+unchanged on an encrypted project: appends concatenate across calls,
+`getTemplateChanges` reads every entry back, and the log stays a single sealed
+envelope rather than gaining plaintext lines.
+**O(n²) decision: keep read-modify-write.** The log gains one short JSON line per
+template edit, so it stays kilobytes for any realistic project. A per-line
+sealed-record format would add a second on-disk format to maintain and test for
+no measurable gain; revisit only if a project turns up with a large log.
+
+*(Record repaired 2026-08-05: this was completed and committed alongside T19/T20,
+but the edit that marked it done silently failed to match, so the file showed it
+as outstanding.)*
 
 ### Task 6: Conformance suite coverage
 
