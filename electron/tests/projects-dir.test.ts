@@ -13,9 +13,14 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import {
-  legacyProjectsDir,
+  clearConfiguredProjectsDir,
+  defaultProjectsDir,
+  legacyProjectsDirs,
   migrateLegacyProjectsDir,
+  readConfiguredProjectsDir,
   resolveProjectsDir,
+  validateWorkspaceDir,
+  writeConfiguredProjectsDir,
   type ProjectsDirEnvironment,
 } from "../src/projects-dir";
 
@@ -37,6 +42,7 @@ function write(target: string, contents: string): void {
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "getwrite-projects-dir-"));
   legacy = path.join(root, "bundle", "projects");
+  userDataDir = path.join(root, "userData");
   destination = path.join(root, "userData", "projects");
   fs.mkdirSync(destination, { recursive: true });
 });
@@ -45,44 +51,129 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe("resolveProjectsDir", () => {
-  it("keeps a packaged build's projects out of the app bundle", () => {
-    const environment: ProjectsDirEnvironment = {
-      isPackaged: true,
-      userDataDir: "/Users/x/Library/Application Support/getwrite-electron",
-      resourcesPath: "/Applications/GetWrite.app/Contents/Resources",
-      repoRoot: "/repo",
-    };
+let userDataDir: string;
 
-    const resolved = resolveProjectsDir(environment);
+/**
+ * Builds a packaged-build environment rooted in the test's temp directory.
+ *
+ * @param overrides - Fields to replace.
+ * @returns A complete environment.
+ */
+function packagedEnv(
+  overrides: Partial<ProjectsDirEnvironment> = {},
+): ProjectsDirEnvironment {
+  return {
+    isPackaged: true,
+    documentsDir: path.join(root, "Documents"),
+    userDataDir,
+    resourcesPath: path.join(root, "bundle"),
+    repoRoot: path.join(root, "repo"),
+    ...overrides,
+  };
+}
 
-    // The whole point: an update replaces Contents/, so anything under
-    // resourcesPath is destroyed by a routine upgrade.
+describe("defaultProjectsDir", () => {
+  it("puts a packaged build's projects somewhere the user can find them", () => {
+    const environment = packagedEnv();
+
+    const resolved = defaultProjectsDir(environment);
+
+    // Documents, not userData: a manuscript is the user's document, and
+    // ~/Library is hidden by default on macOS. A writer who cannot find their
+    // own work cannot back it up either.
+    expect(resolved).toBe(path.join(environment.documentsDir, "GetWrite"));
+    // And emphatically not inside the app bundle, which an update replaces.
     expect(resolved).not.toContain(environment.resourcesPath);
-    expect(resolved).toBe(path.join(environment.userDataDir, "projects"));
   });
 
   it("leaves development builds on the repo's projects directory", () => {
-    const resolved = resolveProjectsDir({
-      isPackaged: false,
-      userDataDir: "",
-      resourcesPath: "",
-      repoRoot: "/repo",
-    });
+    const resolved = defaultProjectsDir(
+      packagedEnv({ isPackaged: false, repoRoot: "/repo" }),
+    );
 
     // Every contributor's working copy expects this; the fix must not move it.
     expect(resolved).toBe(path.join("/repo", "projects"));
   });
 
-  it("points the legacy location at the old in-bundle path", () => {
+  it("knows every location an older build may have used", () => {
+    const environment = packagedEnv();
+
+    expect(legacyProjectsDirs(environment)).toEqual([
+      path.join(environment.resourcesPath, "projects"),
+      path.join(environment.userDataDir, "projects"),
+    ]);
+  });
+});
+
+describe("the configured workspace location", () => {
+  it("defaults to Documents when the user has chosen nothing", () => {
+    expect(resolveProjectsDir(packagedEnv())).toBe(
+      defaultProjectsDir(packagedEnv()),
+    );
+  });
+
+  it("honours a recorded choice", () => {
+    const chosen = path.join(root, "elsewhere", "Novels");
+    writeConfiguredProjectsDir(userDataDir, chosen);
+
+    expect(readConfiguredProjectsDir(userDataDir)).toBe(chosen);
+    expect(resolveProjectsDir(packagedEnv())).toBe(chosen);
+  });
+
+  it("returns to the default once the choice is cleared", () => {
+    writeConfiguredProjectsDir(userDataDir, path.join(root, "elsewhere"));
+    clearConfiguredProjectsDir(userDataDir);
+
+    expect(resolveProjectsDir(packagedEnv())).toBe(
+      defaultProjectsDir(packagedEnv()),
+    );
+  });
+
+  it("treats a corrupt config as no choice at all", () => {
+    fs.mkdirSync(userDataDir, { recursive: true });
+    fs.writeFileSync(path.join(userDataDir, "workspace.json"), "{not json");
+
+    // Refusing to start because a preferences file is damaged would be a much
+    // worse failure than quietly using the default.
+    expect(readConfiguredProjectsDir(userDataDir)).toBeNull();
+    expect(resolveProjectsDir(packagedEnv())).toBe(
+      defaultProjectsDir(packagedEnv()),
+    );
+  });
+
+  it("ignores a recorded choice in development builds", () => {
+    writeConfiguredProjectsDir(userDataDir, path.join(root, "elsewhere"));
+
     expect(
-      legacyProjectsDir({
-        isPackaged: true,
-        userDataDir: "/userdata",
-        resourcesPath: "/Applications/GetWrite.app/Contents/Resources",
-        repoRoot: "/repo",
-      }),
-    ).toBe("/Applications/GetWrite.app/Contents/Resources/projects");
+      resolveProjectsDir(packagedEnv({ isPackaged: false, repoRoot: "/repo" })),
+    ).toBe(path.join("/repo", "projects"));
+  });
+});
+
+describe("validateWorkspaceDir", () => {
+  it("accepts a writable folder", () => {
+    expect(
+      validateWorkspaceDir(path.join(root, "somewhere"), packagedEnv()),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a relative path", () => {
+    const result = validateWorkspaceDir("./projects", packagedEnv());
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.reason).toBe("not-absolute");
+  });
+
+  it("refuses a folder inside the app bundle", () => {
+    const environment = packagedEnv();
+    const inside = path.join(environment.resourcesPath, "projects");
+
+    const result = validateWorkspaceDir(inside, environment);
+
+    // This is the exact mistake the module exists to undo. A user must not be
+    // able to re-create it by hand, however deliberately.
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.reason).toBe("inside-app-bundle");
+    expect(result.ok === false && result.message).toMatch(/delete/i);
   });
 });
 

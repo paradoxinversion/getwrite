@@ -1,13 +1,22 @@
-import { app, BrowserWindow, shell, utilityProcess } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  shell,
+  utilityProcess,
+} from "electron";
 import type { UtilityProcess } from "electron";
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import http from "http";
 import fs from "fs";
 import {
-  legacyProjectsDir,
+  legacyProjectsDirs,
   migrateLegacyProjectsDir,
   resolveProjectsDir,
+  validateWorkspaceDir,
+  writeConfiguredProjectsDir,
   type ProjectsDirEnvironment,
 } from "./projects-dir";
 
@@ -60,6 +69,7 @@ function getRepoRoot(): string {
 function projectsDirEnvironment(): ProjectsDirEnvironment {
   return {
     isPackaged: app.isPackaged,
+    documentsDir: app.isPackaged ? app.getPath("documents") : "",
     userDataDir: app.isPackaged ? app.getPath("userData") : "",
     resourcesPath: app.isPackaged ? process.resourcesPath : "",
     repoRoot: getRepoRoot(),
@@ -132,13 +142,11 @@ function startServer(
 
   if (app.isPackaged) {
     fs.mkdirSync(dirs.projectsDir, { recursive: true });
-    // Rescue anything an earlier build left inside the bundle. A no-op once
-    // there is nothing there, so it can run on every launch.
-    migrateLegacyProjectsDir(
-      legacyProjectsDir(projectsDirEnvironment()),
-      dirs.projectsDir,
-      log,
-    );
+    // Rescue anything an earlier build left elsewhere. Each is a no-op once
+    // drained, so this can run on every launch with no "have I migrated?" flag.
+    for (const legacy of legacyProjectsDirs(projectsDirEnvironment())) {
+      migrateLegacyProjectsDir(legacy, dirs.projectsDir, log);
+    }
     // pnpm monorepo: Next.js standalone mirrors the workspace layout,
     // so server.js lands at standalone/frontend/server.js (not standalone/server.js).
     const serverCwd = path.join(dirs.standaloneDir, "frontend");
@@ -162,6 +170,58 @@ function startServer(
     cwd: path.join(getRepoRoot(), "frontend"),
     env,
     shell: true,
+  });
+}
+
+/**
+ * Wires the three workspace-location channels the preload bridge calls.
+ *
+ * Changing the location needs a restart rather than a live switch: the Next
+ * server receives `GETWRITE_PROJECTS_DIR` in its environment when it is
+ * forked, so the running server is bound to the old directory for its whole
+ * life. Restarting is honest about that; quietly serving stale state would not
+ * be.
+ *
+ * Nothing here trusts the renderer with a path. The directory comes from a
+ * native picker in this process, and is validated before it is recorded.
+ */
+function registerWorkspaceHandlers(): void {
+  ipcMain.handle("getwrite:workspace-dir", () =>
+    resolveProjectsDir(projectsDirEnvironment()),
+  );
+
+  ipcMain.handle("getwrite:choose-workspace-dir", async () => {
+    const environment = projectsDirEnvironment();
+    const picked = await dialog.showOpenDialog({
+      title: "Choose where GetWrite keeps your projects",
+      defaultPath: resolveProjectsDir(environment),
+      properties: ["openDirectory", "createDirectory"],
+      buttonLabel: "Use this folder",
+    });
+    if (picked.canceled || picked.filePaths.length === 0) {
+      return { ok: false, cancelled: true };
+    }
+
+    const [projectsDir] = picked.filePaths;
+    const validation = validateWorkspaceDir(projectsDir, environment);
+    if (!validation.ok) {
+      log(`Rejected workspace location ${projectsDir}: ${validation.reason}`);
+      return { ok: false, message: validation.message };
+    }
+
+    // Recorded, not moved. Pointing at a folder and relocating a workspace are
+    // different intentions, and silently moving a user's manuscripts because
+    // they browsed to a folder would be the wrong guess to make on their
+    // behalf.
+    writeConfiguredProjectsDir(environment.userDataDir, projectsDir);
+    log(`Workspace location set to ${projectsDir}`);
+    return { ok: true, projectsDir };
+  });
+
+  ipcMain.handle("getwrite:restart", () => {
+    log("Restarting to apply a new workspace location");
+    app.relaunch();
+    app.quit();
   });
 }
 
@@ -286,6 +346,7 @@ if (!app.requestSingleInstanceLock()) {
     initLog();
     log(`app ready — isPackaged: ${app.isPackaged}`);
     log(`resourcesPath: ${process.resourcesPath}`);
+    registerWorkspaceHandlers();
 
     const dirs = resolveDirectories();
     serverProcess = startServer(dirs);
