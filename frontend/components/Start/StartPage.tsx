@@ -719,7 +719,7 @@ export default function StartPage({
                   </p>
 
                   <p className="mt-2 text-gw-label uppercase tracking-label-wide text-gw-secondary">
-                    Last edited{" "}
+                    {projectEntry.isEncrypted ? "Encrypted " : "Last edited "}
                     {formatRelativeTimestamp(
                       lastEditedTimestamp,
                       timestampTick,

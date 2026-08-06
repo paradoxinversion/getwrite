@@ -52,6 +52,18 @@ the WebView, but the wiring added in T16b is HTTP-only.
       ran against a dev-server-encrypted project. Repeat it against one encrypted
       in a `pnpm electron:package` build. ~1 pt.
 
+## Known coverage gap
+
+- [ ] **The Start-screen flag mapping in `app/(app)/page.tsx` is untested.**
+      `refreshProjects` maps API entries through `buildProjectView`, which
+      returns only project/folders/resources — so `isEncrypted`/`isLocked` were
+      silently dropped and every locked project rendered as "Untitled Project ·
+      0 resources · 0 folders". Fixed, but the `StartPage` tests pass either way
+      because they supply the flags directly as props; removing the fix breaks
+      nothing. Covering it needs a page-level test with a mocked
+      `listProjects()`. This is the fifth defect of this exact shape — a value
+      computed correctly server-side and lost in a client mapping.
+
 ## Open questions
 
 - [ ] **The ⌘K content-search symptom is still unexplained.** Search *does* find

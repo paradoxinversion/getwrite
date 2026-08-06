@@ -172,13 +172,19 @@ export default function Home(): JSX.Element {
       // buildProjectView expects TextResource[] and returns UIResource[]; the original
       // code cast through `any` (p: any) to bypass both constraints. We preserve that
       // runtime behaviour with a targeted cast rather than a blanket any.
-      const data = entries.map((p) =>
-        buildProjectView({
+      const data = entries.map((p) => ({
+        ...buildProjectView({
           project: p.project,
           folders: p.folders,
           resources: p.resources as unknown as TextResource[],
         }),
-      ) as unknown as StartPageProjectEntry[];
+        // Carried through deliberately: `buildProjectView` returns only
+        // project/folders/resources, so without this the Start screen cannot
+        // tell an encrypted project from an ordinary one and renders a locked
+        // entry as "Untitled Project · 0 resources · 0 folders".
+        isEncrypted: (p as { isEncrypted?: boolean }).isEncrypted,
+        isLocked: (p as { isLocked?: boolean }).isLocked,
+      })) as unknown as StartPageProjectEntry[];
       if (Array.isArray(data)) {
         dispatch(setProjectsInStore(data));
         setProjects(data);

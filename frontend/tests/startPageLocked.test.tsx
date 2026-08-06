@@ -2,7 +2,7 @@
 
 import React from "react";
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { makeStore } from "../src/store/store";
 import StartPage, {
@@ -113,5 +113,34 @@ describe("StartPage — locked project cards", () => {
     // FR3: a workspace that never opted in sees no change at all.
     expect(screen.queryByText(/encrypted project/i)).not.toBeInTheDocument();
     expect(screen.getByText("Open Notebook")).toBeInTheDocument();
+  });
+});
+
+describe("StartPage — card fields an encrypted project cannot supply", () => {
+  it("never shows a locked project as 'Untitled Project'", () => {
+    renderStart([lockedEntry()]);
+
+    // The reported symptom: the locked branch was not being reached, so a
+    // nameless entry fell through to the ordinary card's placeholder.
+    expect(screen.queryByText(/untitled project/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/encrypted project/i)).toBeInTheDocument();
+  });
+
+  it("never shows zero counts for a locked project", () => {
+    renderStart([lockedEntry()]);
+    // Scoped to the card: the page also renders a workspace-wide summary, which
+    // legitimately totals zero here.
+    const card = screen.getByRole("article");
+    expect(within(card).queryByText(/resources/i)).not.toBeInTheDocument();
+    expect(within(card).queryByText(/folders/i)).not.toBeInTheDocument();
+  });
+
+  it("labels an unlocked encrypted project's date as encrypted, not edited", () => {
+    renderStart([lazyEncryptedEntry()]);
+    // The date is the marker's encryptedAt — the manifest is never opened — so
+    // calling it "Last edited" would state something untrue.
+    const card = screen.getByRole("article");
+    expect(within(card).queryByText(/last edited/i)).not.toBeInTheDocument();
+    expect(card.textContent).toMatch(/encrypted/i);
   });
 });
