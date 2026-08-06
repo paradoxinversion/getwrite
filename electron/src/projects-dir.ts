@@ -99,6 +99,17 @@ export function legacyProjectsDirs(
  * does nothing, so it needs no "already migrated" flag — the directory's own
  * presence is the flag.
  *
+ * **It rescues a narrower set of users than it appears to.** The in-bundle
+ * location is destroyed by the very act of replacing `GetWrite.app`, so a user
+ * who updates the normal way — a new `.dmg` dragged over the old app — has
+ * already lost the data before any code in the new bundle can run. No fix
+ * shipped *inside* the application can execute early enough to prevent that.
+ * This helps only where the old directory survives to the new build's first
+ * launch: an in-place run of a rebuilt app, a copy restored from a backup, or a
+ * user who never updated. That is worth having, and it is not a full recovery
+ * story. Verified the hard way: repackaging over an installed build destroyed
+ * an encrypted test project before this function ever saw it.
+ *
  * Three rules, all of them about not turning a bad situation into a worse one:
  *
  * - **Never overwrite.** An entry already present at the destination is left

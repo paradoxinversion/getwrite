@@ -55,6 +55,17 @@ both verified to carry no user-authored text. Details in `tasks.md` under T22.
 
 ## Not caused by this feature, but found by it
 
+> **The migration rescues fewer users than it looks like it does.** Replacing
+> `GetWrite.app` is what destroys the in-bundle directory, so anyone updating
+> the normal way — a new `.dmg` over the old app — has lost the data before any
+> code in the new bundle can run. Nothing shipped *inside* the app can execute
+> early enough. It helps only where the old directory survives to the new
+> build's first launch. Confirmed on 2026-08-06: repackaging over the installed
+> build destroyed the encrypted test project (`271707fe-…`, plus its keyring and
+> name index) before the migration ever saw it. The code is correct; the window
+> is narrow. Anyone already running a packaged build should be told to copy
+> their projects out **before** installing the fixed version.
+
 - [x] **FIXED** on `fix/desktop-projects-outside-bundle`. Packaged builds now
       store projects under `app.getPath("userData")`, and
       `migrateLegacyProjectsDir` moves anything still inside the bundle on each
