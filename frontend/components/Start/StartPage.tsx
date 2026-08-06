@@ -212,6 +212,14 @@ export default function StartPage({
    * re-renders, or the prompt would reappear the moment anything changed.
    */
   const [hasDeclinedUnlock, setHasDeclinedUnlock] = useState<boolean>(false);
+
+  // A successful unlock ends the decline: the user has answered the prompt, and
+  // if they later lock the workspace again they are asking to be prompted, not
+  // asking to be left alone for the rest of the mount.
+  useEffect(() => {
+    if (lockStatus === "unlocked") setHasDeclinedUnlock(false);
+  }, [lockStatus]);
+
   /** Locally synchronized project list used for optimistic UI updates. */
   const [localProjects, setLocalProjects] =
     useState<StartPageProjectEntry[]>(projects);
@@ -367,6 +375,11 @@ export default function StartPage({
       <CompilePreviewModal
         isOpen={compileTargetProjectId !== null}
         projectId={compileTargetProjectId ?? undefined}
+        isSourceEncrypted={Boolean(
+          localProjects.find(
+            (entry) => entry.project?.id === compileTargetProjectId,
+          )?.isEncrypted,
+        )}
         resources={compileResources}
         onClose={() => setCompileTargetProjectId(null)}
         onConfirmCompile={(selectedIds, options) => {

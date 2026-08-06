@@ -3,6 +3,7 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { makeStore } from "../src/store/store";
 import StartPage, {
@@ -142,5 +143,65 @@ describe("StartPage — card fields an encrypted project cannot supply", () => {
     const card = screen.getByRole("article");
     expect(within(card).queryByText(/last edited/i)).not.toBeInTheDocument();
     expect(card.textContent).toMatch(/encrypted/i);
+  });
+});
+
+describe("StartPage — declining the unlock prompt", () => {
+  /**
+   * Renders the Start screen with a controllable lock state.
+   *
+   * @param lockStatus - The workspace lock state to render at.
+   * @returns The testing-library rerender helper, bound to the same store.
+   */
+  function renderAt(lockStatus: "locked" | "unlocked") {
+    const store = makeStore();
+    const view = render(
+      <Provider store={store}>
+        <StartPage
+          projects={[plainEntry()]}
+          lockStatus={lockStatus}
+          onUnlock={() => {}}
+        />
+      </Provider>,
+    );
+    return (next: "locked" | "unlocked") =>
+      view.rerender(
+        <Provider store={store}>
+          <StartPage
+            projects={[plainEntry()]}
+            lockStatus={next}
+            onUnlock={() => {}}
+          />
+        </Provider>,
+      );
+  }
+
+  it("stops asking for the rest of the session", async () => {
+    renderAt("locked");
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole("button", { name: /continue without unlocking/i }),
+      );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("asks again after a real unlock and a later lock", async () => {
+    const rerender = renderAt("locked");
+
+    // Decline first — without this the flag was never set and the test would
+    // pass whether or not it is ever cleared.
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole("button", { name: /continue without unlocking/i }),
+      );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // Unlock for real, then lock again: the user is asking to be prompted,
+    // not asking to be left alone for the rest of the mount.
+    rerender("unlocked");
+    rerender("locked");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

@@ -11,12 +11,18 @@ export interface EncryptionSettingsProps {
   isEncrypted: boolean;
   /** Whether the workspace still needs a passphrase created. */
   needsPassphrase: boolean;
+  /**
+   * Whether the workspace has a passphrase that has not been entered yet.
+   *
+   * Encrypting a further project reuses the workspace key, so it cannot proceed
+   * while the keyring is closed. Offering the action anyway sent
+   * `passphrase: null` into `requireSessionKeyring()`, which threw every time.
+   */
+  isWorkspaceLocked?: boolean;
   /** Whether an enable request is in flight. */
   isBusy?: boolean;
   /** Failure text from a previous attempt. */
   errorMessage?: string;
-  /** Files converted so far, shown while the sweep runs. */
-  progress?: { done: number; total: number };
   /** Called with the new passphrase, or `null` when the workspace has one. */
   onEnableEncryption: (passphrase: string | null) => void;
   /** Whether a plaintext export is in flight. */
@@ -46,9 +52,9 @@ export default function EncryptionSettings({
   projectName,
   isEncrypted,
   needsPassphrase,
+  isWorkspaceLocked = false,
   isBusy = false,
   errorMessage,
-  progress,
   onEnableEncryption,
   isExporting = false,
   onExportPlaintextCopy,
@@ -86,7 +92,12 @@ export default function EncryptionSettings({
           : "Encrypting this project scrambles every file on disk, so its contents cannot be read without your passphrase."}
       </p>
 
-      {isEncrypted ? null : (
+      {isEncrypted ? null : isWorkspaceLocked ? (
+        <p className="text-[11px] leading-relaxed text-gw-dim">
+          Unlock the workspace to encrypt this project. It will be protected by
+          the passphrase you already use for your other encrypted projects.
+        </p>
+      ) : (
         <div className="flex flex-col items-start gap-2">
           <Button
             variant="outline"
@@ -140,7 +151,6 @@ export default function EncryptionSettings({
         projectName={projectName}
         needsPassphrase={needsPassphrase}
         isBusy={isBusy}
-        progress={progress}
         errorMessage={errorMessage}
         onConfirm={handleConfirm}
         onCancel={() => setIsModalOpen(false)}

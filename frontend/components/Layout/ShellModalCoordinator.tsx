@@ -103,6 +103,13 @@ export interface ShellModalCoordinatorProps {
   resources?: AnyResource[];
   folders?: Folder[];
   project?: CanonicalProject | null;
+  /**
+   * Whether this project's files are encrypted at rest.
+   *
+   * Compiled and exported output is plaintext wherever it lands, so FR27 wants
+   * the user warned before it leaves the project.
+   */
+  isProjectEncrypted?: boolean;
   hasUnsavedEditorChanges: boolean;
   syncBlockers?: SyncBlocker[];
   onDeleteConfirm: (resourceId: string) => Promise<void>;
@@ -172,6 +179,7 @@ export default function ShellModalCoordinator({
   resources,
   folders,
   project,
+  isProjectEncrypted = false,
   syncBlockers,
   onDeleteConfirm,
   onCloseProjectConfirm,
@@ -266,6 +274,7 @@ export default function ShellModalCoordinator({
 
       <ExportPreviewModal
         isOpen={exportModal.open}
+        isSourceEncrypted={isProjectEncrypted}
         resourceTitle={exportModal.resourceTitle}
         resourceNames={exportModal.resourceNames}
         onClose={() => setExportModal({ open: false })}
@@ -289,6 +298,7 @@ export default function ShellModalCoordinator({
 
       <CompilePreviewModal
         isOpen={compileModal.open}
+        isSourceEncrypted={isProjectEncrypted}
         resource={
           compileModal.resourceId
             ? resources?.find((r) => r.id === compileModal.resourceId)

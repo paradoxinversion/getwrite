@@ -154,15 +154,6 @@ export default function Home(): JSX.Element {
   );
 
   /**
-   * Asks the server to open the workspace.
-   *
-   * Failures are surfaced through the slice's `errorMessage`, so the prompt
-   * stays open with the reason rather than closing on a wrong passphrase.
-   *
-   * @param passphrase - The passphrase the user entered.
-   */
-
-  /**
    * Loads all projects from the API and maps them into
    * {@link StartPageProjectEntry}-compatible view objects.
    */

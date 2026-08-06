@@ -83,6 +83,27 @@ describe("EncryptionSettings — opt-in is the only route in", () => {
   });
 });
 
+describe("EncryptionSettings — a locked workspace", () => {
+  it("does not offer to encrypt, and says why", () => {
+    renderPanel({ needsPassphrase: false, isWorkspaceLocked: true });
+
+    // Encrypting a further project reuses the workspace key, so it cannot run
+    // while the keyring is closed. The panel used to offer the action anyway
+    // and submit `passphrase: null`, which threw SessionLockedError every time.
+    expect(
+      screen.queryByRole("button", { name: /encrypt this project/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/unlock the workspace/i)).toBeInTheDocument();
+  });
+
+  it("offers it again once the workspace is open", () => {
+    renderPanel({ needsPassphrase: false, isWorkspaceLocked: false });
+    expect(
+      screen.getByRole("button", { name: /encrypt this project/i }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("EncryptionSettings — the gates before encryption can start", () => {
   it("keeps the action disabled until every gate is satisfied", async () => {
     const { user } = renderPanel();
@@ -241,16 +262,16 @@ describe("EncryptionSetupModal — the in-progress state", () => {
     return { onCancel, user: userEvent.setup() };
   }
 
-  it("reports how far the conversion has got", () => {
-    renderModal({ isBusy: true, progress: { done: 2, total: 7 } });
-    // The counts are interpolated, so the sentence spans several text nodes —
-    // and the confirm button also reads "Encrypting…", hence the tag filter.
+  it("says a conversion is running", () => {
+    renderModal({ isBusy: true });
+    // This used to assert a "N of M files" count, supplied straight to the
+    // component as a prop — which is why it passed even though the count could
+    // never reach the browser: the route answers once, after the sweep. The
+    // modal now claims only what it can actually know.
     const line = screen
       .getAllByText(/encrypting/i)
       .find((element: HTMLElement) => element.tagName === "P");
-    expect(line?.textContent).toContain("2");
-    expect(line?.textContent).toContain("7");
-    expect(line?.textContent).toMatch(/files/i);
+    expect(line).toBeTruthy();
   });
 
   it("cannot be dismissed with Escape while converting", async () => {

@@ -68,6 +68,7 @@ export default function ProjectEncryptionPanel(): JSX.Element | null {
       // A passphrase is created only for the first encrypted project; after
       // that one workspace passphrase covers them all.
       needsPassphrase={lockStatus === "absent"}
+      isWorkspaceLocked={lockStatus === "locked"}
       isBusy={isConverting}
       isExporting={isExporting}
       onExportPlaintextCopy={

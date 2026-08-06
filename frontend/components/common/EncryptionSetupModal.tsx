@@ -31,8 +31,6 @@ export interface EncryptionSetupModalProps {
   isBusy?: boolean;
   /** Failure text from a previous attempt. */
   errorMessage?: string;
-  /** Files converted so far, shown while the sweep runs. */
-  progress?: { done: number; total: number };
   /** Called with the new passphrase, or `null` when one already exists. */
   onConfirm: (passphrase: string | null) => void;
   /** Called when the user backs out. */
@@ -54,7 +52,6 @@ export default function EncryptionSetupModal({
   needsPassphrase,
   isBusy = false,
   errorMessage,
-  progress,
   onConfirm,
   onCancel,
 }: EncryptionSetupModalProps): JSX.Element {
@@ -165,9 +162,19 @@ export default function EncryptionSetupModal({
           </label>
         </div>
 
-        {isBusy && progress ? (
+        {/*
+          A file count would be better, and the sweep does report one — but it
+          reports it server-side, and `POST /api/encryption` answers with a
+          single JSON response once the whole conversion has finished, so there
+          is no way for a count to reach the browser. This said "Encrypting N of
+          M files" behind an `isBusy && progress` guard that nothing could ever
+          satisfy: the slice has no progress field and no caller passed one.
+          Streaming the sweep's progress is tracked as follow-up work; until
+          then this says only what is actually known.
+        */}
+        {isBusy ? (
           <p className="mt-3 font-mono text-[10px] uppercase tracking-label text-gw-secondary">
-            Encrypting {progress.done} of {progress.total} files
+            Encrypting this project…
           </p>
         ) : null}
 

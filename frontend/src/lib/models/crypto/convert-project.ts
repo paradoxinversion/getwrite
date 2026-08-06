@@ -126,14 +126,21 @@ export async function readConversionMarker(
   projectRoot: string,
   adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ConversionMarker | null> {
-  let raw: string;
+  // The parse is inside the guard deliberately. A marker truncated by the same
+  // crash it records would otherwise throw here, and every caller of this —
+  // adapter resolution, resume, claim — would fail with it, leaving the project
+  // both unopenable and unresumable. An unreadable marker is treated the same
+  // as an unparseable one: no usable record of a conversion.
   try {
-    raw = await adapter.readFile(conversionMarkerPath(projectRoot), "utf-8");
+    const raw = await adapter.readFile(
+      conversionMarkerPath(projectRoot),
+      "utf-8",
+    );
+    const parsed = ConversionMarkerSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
-  const parsed = ConversionMarkerSchema.safeParse(JSON.parse(raw));
-  return parsed.success ? parsed.data : null;
 }
 
 /**

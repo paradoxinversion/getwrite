@@ -114,25 +114,40 @@ Fixed:
   existed nowhere on disk; a retry would then seal the project under it. Now
   rolled back on failure.
 
-Still open, in rough priority order:
+The remaining seven are also fixed:
 
-- [ ] **`POST /api/encryption` is only fail-closed for `enable`.** `unlock`,
-      `lock`, `resume` and `export` run unconditionally, so on hosted a client can
-      still derive keys and mutate session state while `GET` reports
-      `isAvailable: false` (FR23). Gate the whole handler.
-- [ ] **The FR27 plaintext-output warning is unreachable.** `isSourceEncrypted`
-      has no caller outside its own test, so neither preview modal can show it.
-- [ ] **The encryption panel offers "Encrypt" while the workspace is locked.**
-      `needsPassphrase={lockStatus === "absent"}` is false when locked, so it
-      submits `passphrase: null` and `requireSessionKeyring()` throws every time.
-- [ ] **`readConversionMarker`'s `JSON.parse` sits outside its `try`,** so a
-      truncated marker makes the project both unopenable and unresumable.
-- [ ] **`hasDeclinedUnlock` is never reset**, so after decline → unlock → lock the
-      prompt never returns for the rest of the mount — contrary to its own doc.
-- [ ] **`enable` never forwards `onProgress`,** so the setup modal's
-      "Encrypting N of M files" line can never appear.
-- [ ] An orphaned JSDoc block above `refreshProjects` in `app/(app)/page.tsx` now
-      documents the wrong function.
+- **`POST /api/encryption` now fails closed for every action**, not just
+  `enable` — `unlock` derived a workspace key and opened server-side session
+  state, and `export` wrote a whole plaintext project, on a deployment whose own
+  `GET` reported the feature unavailable (FR23). The test signs a hosted user in
+  and satisfies the CSRF gate, because an anonymous request stops at the
+  wrapper's 401 and would pass with or without the guard.
+- **The FR27 plaintext-output warning is reachable.** `isSourceEncrypted` had no
+  caller outside its own test; `AppShell` now derives it from the active
+  project and threads it through `ShellModalCoordinator` to both preview modals,
+  and `StartPage` supplies it for the project-level compile.
+- **The encryption panel no longer offers "Encrypt" while the workspace is
+  locked**, where it submitted `passphrase: null` and threw `SessionLockedError`
+  every time. It explains that unlocking comes first.
+- **`readConversionMarker` parses inside its guard,** so a marker truncated by
+  the crash it records reads as absent instead of making the project both
+  unopenable and unresumable.
+- **Declining the unlock prompt is no longer permanent** — a real unlock clears
+  it, so a later lock prompts again.
+- **The setup modal's progress line is gone.** It was `isBusy && progress` behind
+  a prop no caller passed and no slice held, and it could not be satisfied: the
+  route answers with one JSON response after the sweep finishes. It now says
+  only that a conversion is running. **Streaming real progress is the open
+  enhancement** — it needs a streamed response plus a native counterpart, which
+  is why it was not done here.
+- The orphaned JSDoc above `refreshProjects` is removed.
+
+**Every one of the thirteen was an integration defect; none was in the
+cryptography.** Three of the tests that should have caught them passed because
+they supplied, as props or arguments, the exact thing production could not
+produce — a plain adapter, a progress count, an `isSourceEncrypted` flag. That
+pattern is worth naming in review: a test that hands a component the input under
+test proves the component, never the wiring.
 
 ## Known coverage gap
 

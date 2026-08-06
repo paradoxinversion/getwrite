@@ -39,6 +39,7 @@ import {
 } from "../../src/lib/models/crypto/keyring-session";
 import { workspaceEncryptionAdapter } from "../../src/lib/models/crypto/workspace-adapter";
 import { enableProjectEncryption } from "../../src/lib/models/crypto/enable-encryption";
+import { readConversionMarker } from "../../src/lib/models/crypto/convert-project";
 
 const WORKSPACE = "/ws";
 const FIRST = "11111111-1111-4111-8111-111111111111";
@@ -301,5 +302,19 @@ describe("registerProject when the keyring cannot be persisted", () => {
     // If the in-memory add survived, a retry would seal SECOND under a key
     // that was never written down — unrecoverable at the next unlock.
     expect(requireSessionKeyring().hasProject(SECOND)).toBe(false);
+  });
+});
+
+describe("a conversion marker damaged by the crash it records", () => {
+  it("reads as absent rather than throwing", async () => {
+    const root = `${WORKSPACE}/${FIRST}`;
+    // Truncated mid-write — exactly what an interrupted `atomicWriteFile`
+    // fallback or a torn page leaves behind.
+    await base.writeFile(`${root}/.converting.json`, '{"version":1,"direc');
+
+    // The parse used to sit outside the read's try, so this threw and took
+    // adapter resolution, resume and claim down with it: the project became
+    // both unopenable and unresumable.
+    expect(await readConversionMarker(root, base)).toBeNull();
   });
 });

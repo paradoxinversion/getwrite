@@ -22,6 +22,7 @@ import { NextResponse } from "next/server";
 import { withStorageContext } from "../_tenant/with-storage-context";
 import {
   EncryptionUnavailableError,
+  assertEncryptionAvailable,
   isEncryptionAvailable,
 } from "../../../src/lib/models/crypto/encryption-availability";
 import {
@@ -131,6 +132,14 @@ async function getEncryptionStatus(): Promise<NextResponse> {
  */
 async function postEncryptionAction(request: Request): Promise<NextResponse> {
   try {
+    // Fail closed for every action, not just the one that writes ciphertext
+    // (FR23). `enable` guards itself deeper down, but `unlock` derives a
+    // workspace key and opens server-side session state, and `export` writes a
+    // whole plaintext project — none of which may be reachable on a deployment
+    // where `GET` reports the feature unavailable. A client that ignores the
+    // status is exactly the client this has to stop.
+    assertEncryptionAvailable();
+
     const body = (await request.json()) as EncryptionAction;
 
     switch (body.action) {
