@@ -88,8 +88,8 @@ Point 4 replaced an earlier design in which each caller resolved its own project
 
 - `appendFile` is read-modify-write, since an AEAD envelope cannot be extended in place. Acceptable because the model layer has exactly one appending caller (a template change log that gains one short line per edit), but it would not scale to a large log.
 - `stat().size` reports ciphertext length. Inert today because ADR-019's survey established the model layer reads only `isDirectory`/`isFile`/`name` and existence, but it is a latent trap for any future caller that reaches for `size`.
-- Tolerant reads open a bounded downgrade window during a conversion, in which a plaintext file is accepted where ciphertext is expected. The window is the conversion's duration, and strict mode applies at every other time.
-- Conversion requires an exclusive project write barrier, because `meta-locks.ts` does not cover the content save path. Writes to a converting project fail fast rather than blocking.
+- Tolerant reads open a bounded downgrade window during a conversion, in which a plaintext file is accepted where ciphertext is expected. The window is the conversion's duration, and strict mode applies at every other time. Because whether a conversion is in flight is a fact on disk that can change between requests — and adapter selection is synchronous — the routing adapter resolves tolerance *per read*, and only after a read has already failed as "not an envelope". An envelope that fails authentication is never tolerated, since that is a distinct error (FR15).
+- Conversion requires an exclusive project write barrier, because `meta-locks.ts` does not cover the content save path. Writes to a converting project fail fast rather than blocking. The barrier identifies the project from the path being written: it originally read a `projectRoot` off the storage context, which `withStorageContext` does not set, so it silently permitted every request write for the life of the branch.
 
 ### The revision that matters
 
@@ -102,6 +102,31 @@ The routing adapter fixes this by removing the choice from callers. It is presen
 Two related gaps had the same shape: components built and tested but never mounted, and a capability (plaintext export) with no route in. All three were found by running the application, not by any automated check. A reachability sweep afterwards found unreferenced exports but would not have caught the routing bug, because that code had one caller and looked used.
 
 The lesson is recorded here deliberately: **a seam is not done when it is correct, only when it is adopted.** Task breakdowns for work of this shape need an explicit integration task, and a manual walkthrough before the feature is called complete.
+
+### Why that lesson was not enough
+
+It recurred. A code review of the finished branch found thirteen issues, and **every one of them was an integration defect — not one was in the cryptography.** The worst made encrypting a *second* project fail outright, and it was the same bug wearing different clothes: the routing adapter fixed *reads* going through the wrong adapter, but every crypto module still defaulted its own adapter to `getStorageAdapter()`, which under a request is that same routing adapter. Registering the second project's key mid-call flipped it into decrypting the plaintext the conversion sweep was partway through sealing.
+
+The advice above did not prevent this, and it could not have. "Add an integration task" and "walk it through manually" are dispositions, and a disposition cannot be enforced by a test suite. Worse, the suite actively signalled the opposite: 2,966 tests passed while a second project could not be encrypted at all.
+
+The reason is specific enough to name. **Three of the tests that should have caught these findings passed because they supplied, as a prop or an argument, the exact thing production could not produce:**
+
+- `enable-encryption.test.ts` had a test called "a second project". It passed a plain adapter explicitly — the one thing a request never has.
+- The encryption setup modal's progress line was asserted by handing the component a `progress` object. No slice held one and no caller passed one; the route answers with a single JSON response after the sweep, so no count can reach the browser.
+- The FR27 plaintext-output warning was asserted by rendering the modal with `isSourceEncrypted`. No component in the application set that prop.
+
+Each test proved its unit and none of them proved the wiring, because the wiring was the thing being stubbed. This is not a gap that more unit tests close — every additional unit test of that shape widens it.
+
+### The mitigation, stated as a rule
+
+**Where a seam is bound once and consumed everywhere, at least one test must bind it the way production binds it and pass nothing.**
+
+Concretely, for this feature that is `frontend/tests/integration/encryption-request-path.test.ts`: it constructs the adapter exactly as `app/api/_tenant/with-storage-context.ts` does, including reading the session keyring once at request start, and then passes no `adapter` argument to anything. A module that reaches for the ambient adapter fails it. That test is the reason the second-project bug cannot come back, and it is a materially different artefact from a note asking future readers to be careful.
+
+Two corollaries worth carrying to the next seam of this kind:
+
+- **A test that hands a component the input under test proves the component, never the wiring.** If the assertion depends on a value the test itself supplied, ask what in production supplies it — and if the answer is "nothing", that is the bug.
+- **Mutation-test the fix, not just the feature.** Two of the replacement tests written for these findings passed against a deliberately broken fix on the first attempt — one asserted a reset that it had never triggered. Only removing the fix and re-running exposed them.
 
 ### Deferred
 
