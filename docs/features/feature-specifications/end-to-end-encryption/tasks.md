@@ -864,15 +864,31 @@ reveals no plaintext (FR7, FR14).
 **Estimate:** 3
 **Notes:** The on-disk plaintext check is the single most valuable assertion in
 this list — it validates the whole feature's premise from outside the code.
-**Done:** [ ] — **substantially done; one gap.** The full flow (enable → convert
-→ restart → unlock → edit → save → search → export) was walked manually, and the
-on-disk check ran against the result: **35/35 files sealed, none decodable as
-UTF-8, no prose greps hit, and the sealed name index does not leak the project
-title.** The marker and keyring are plaintext by design and both check out.
+**Done:** [x] — verified twice, on the dev server and then on a packaged
+`pnpm electron:package` build.
 
-Outstanding: that project was encrypted by the dev server. Repeat the same scan
-against one encrypted in a packaged `pnpm electron:package` build (~1 pt, see
-`follow-up-work.md`).
+The full flow (enable → convert → restart → unlock → edit → save → search →
+export) was walked manually against both. The on-disk scan of the packaged
+build's project at
+`/Applications/GetWrite.app/Contents/Resources/projects/271707fe-…`:
+
+- **36 of 38 files carry the envelope magic** (`47 57 45 00 01`).
+- The two that do not are the two that must not: `.getwrite-keyring.json` (salt,
+  KDF parameters, and wrapped keys — plaintext by FR5) and `.encrypted.json`
+  (the marker — FR18). Both were read in full and contain no user-authored text;
+  the marker holds only a version, `encrypted: true`, and a timestamp.
+- **No sealed file is decodable as UTF-8.**
+- Greps for `chapter`, `title`, `name`, `resource`, `tiptap`, `paragraph`,
+  `doc`, `content`, and `the` hit **zero files**.
+- `.getwrite-names` is itself sealed, so the index does not leak the title.
+
+The keyring names the project's UUID, which is already the directory name — no
+new disclosure.
+
+**Unrelated finding, raised separately:** the packaged build stores projects
+*inside the application bundle* (`process.resourcesPath`). See
+`follow-up-work.md` — it is a data-loss risk on upgrade and is not caused by
+this feature.
 
 ### Task 23: ADR and documentation
 

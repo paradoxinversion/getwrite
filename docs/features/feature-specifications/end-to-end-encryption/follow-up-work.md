@@ -45,12 +45,40 @@ the WebView, but the wiring added in T16b is HTTP-only.
       restored in the repo, but the installed APK is the harness. Rebuild before
       treating what is on the device as the app.
 
-## Verification gaps (T22, 3 pts — substantially done)
+## Verification gaps (T22) — CLOSED 2026-08-06
 
-- [ ] **Packaged Electron build.** The disk check that passed (35/35 sealed,
-      nothing UTF-8-decodable, no prose greps, name index not leaking the title)
-      ran against a dev-server-encrypted project. Repeat it against one encrypted
-      in a `pnpm electron:package` build. ~1 pt.
+The packaged-build re-check is done. `pnpm electron:package` was walked through
+the full manual flow, and the disk scan of the resulting project found **36/38
+files sealed**, nothing UTF-8-decodable, zero prose greps, and a sealed name
+index. The two plaintext files are the keyring and the marker, both by design and
+both verified to carry no user-authored text. Details in `tasks.md` under T22.
+
+## Not caused by this feature, but found by it
+
+- [ ] **The packaged desktop build stores projects inside the app bundle.**
+      `electron/src/main.ts` resolves `projectsDir` to
+      `path.join(process.resourcesPath, "projects")` when packaged, which on
+      macOS is `/Applications/GetWrite.app/Contents/Resources/projects` — where
+      this verification found real user data.
+
+      Three consequences, in descending severity:
+
+      1. **Upgrade or reinstall destroys user data.** Replacing the `.app`
+         replaces its `Contents/`. A drag-to-Applications update silently
+         discards every project.
+      2. **It breaks code signing.** A signed bundle's contents are sealed;
+         writing into `Contents/Resources` at runtime invalidates the signature,
+         and on a Gatekeeper-strict path the writes may simply fail. This
+         collides directly with the deferred mac signing/notarization work.
+      3. It is the wrong location by platform convention — `app.getPath("userData")`
+         is the intended home, and `~/Documents/GetWrite` would be a more
+         discoverable choice for a writing app.
+
+      Encryption makes the loss sharper (a discarded keyring is unrecoverable
+      ciphertext, not merely a lost copy), but the bug predates it and would
+      lose plaintext projects just as completely. Fixing it needs a migration for
+      anyone already running a packaged build, so it is not a one-line change.
+      Not fixed here — it belongs with desktop distribution, not encryption.
 
 ## Known coverage gap
 
