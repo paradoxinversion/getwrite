@@ -25,6 +25,7 @@ import { shallowEqual } from "react-redux";
 import {
   getProjectDirectoryId,
   removeResource,
+  selectActiveProjectDirectoryId,
   selectActiveProjectMetadataSchema,
   selectActiveProjectStatuses,
   selectTimelineViewEnabled,
@@ -279,6 +280,19 @@ export default function AppShell({
   const isQueryEvaluating = useAppSelector(selectIsEvaluating);
   const metadataSchema = useAppSelector(selectActiveProjectMetadataSchema);
   const isTimelineViewEnabled = useAppSelector(selectTimelineViewEnabled);
+
+  // Compile and export write plaintext wherever they land, so the preview
+  // modals warn first when the source is encrypted (FR27).
+  const activeProjectDirectoryId = useAppSelector(
+    selectActiveProjectDirectoryId,
+  );
+  const isActiveProjectEncrypted = useAppSelector((state) =>
+    activeProjectDirectoryId
+      ? (state.crypto?.encryptedProjectIds ?? []).includes(
+          activeProjectDirectoryId,
+        )
+      : false,
+  );
   const savedQueriesList = useAppSelector(selectSavedQueriesList);
   const liveEditorConfig = useAppSelector(selectEditorConfig);
   const resolvedEditorConfig = useAppSelector(selectResolvedEditorConfig);
@@ -1078,6 +1092,7 @@ export default function AppShell({
                   projectTypesLoadError,
                 }) => (
                   <ShellModalCoordinator
+                    isProjectEncrypted={isActiveProjectEncrypted}
                     contextAction={contextAction}
                     setContextAction={setContextAction}
                     isCloseProjectConfirmOpen={isCloseProjectConfirmOpen}

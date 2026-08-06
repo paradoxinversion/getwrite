@@ -32,6 +32,7 @@ import {
 import { getProjectDirectoryId } from "../../src/store/projectsSlice";
 import { formatRelativeTimestamp } from "../../src/lib/timestamp-utils";
 import Button from "../common/UI/Button";
+import UnlockModal from "../common/UnlockModal";
 
 /**
  * Project card data shape displayed on the start page.
@@ -43,6 +44,21 @@ export interface StartPageProjectEntry {
   resources: AnyResource[];
   /** Folder tree entries for the project. */
   folders: Folder[];
+  /**
+   * True for an encrypted project, locked or not.
+   *
+   * Its `resources` and `folders` are empty because they were never read, not
+   * because they are empty — so the card shows no counts.
+   */
+  isEncrypted?: boolean;
+  /**
+   * True when the project is encrypted and the workspace is locked.
+   *
+   * Such an entry carries no name, resources, or folders — nothing inside it
+   * could be read — so its card shows that the project exists and is closed,
+   * and offers no actions that would need its contents (FR20).
+   */
+  isLocked?: boolean;
 }
 
 /**
@@ -144,6 +160,21 @@ export interface StartPageProps {
    * `resolveProjectsDir()/<projectId>` (ADR-017/018 tenant-route migration).
    */
   onOpen?: (projectId: string) => void;
+  /**
+   * Whether the workspace holds encrypted projects, and whether it is open.
+   *
+   * `"locked"` is the only value that produces a prompt: a workspace that never
+   * had encryption set up must never be asked for a passphrase (FR4).
+   */
+  lockStatus?: "absent" | "locked" | "unlocked";
+  /** How many projects the workspace passphrase would open. */
+  encryptedProjectCount?: number;
+  /** Whether an unlock attempt is in flight. */
+  isUnlocking?: boolean;
+  /** Failure text from a previous unlock attempt. */
+  unlockErrorMessage?: string;
+  /** Called with the entered passphrase. Absent means no gate is shown. */
+  onUnlock?: (passphrase: string) => void;
 }
 
 /**
@@ -168,7 +199,27 @@ export default function StartPage({
   projects = [],
   onCreate,
   onOpen,
+  lockStatus = "absent",
+  encryptedProjectCount = 0,
+  isUnlocking = false,
+  unlockErrorMessage,
+  onUnlock,
 }: StartPageProps): JSX.Element {
+  /**
+   * Whether the user chose to carry on without unlocking this session.
+   *
+   * Declining must not be sticky across a real unlock, but it must survive
+   * re-renders, or the prompt would reappear the moment anything changed.
+   */
+  const [hasDeclinedUnlock, setHasDeclinedUnlock] = useState<boolean>(false);
+
+  // A successful unlock ends the decline: the user has answered the prompt, and
+  // if they later lock the workspace again they are asking to be prompted, not
+  // asking to be left alone for the rest of the mount.
+  useEffect(() => {
+    if (lockStatus === "unlocked") setHasDeclinedUnlock(false);
+  }, [lockStatus]);
+
   /** Locally synchronized project list used for optimistic UI updates. */
   const [localProjects, setLocalProjects] =
     useState<StartPageProjectEntry[]>(projects);
@@ -304,6 +355,17 @@ export default function StartPage({
       aria-labelledby="start-projects"
       className="min-h-full text-gw-primary bg-gw-chrome px-6 py-8"
     >
+      <UnlockModal
+        isOpen={
+          Boolean(onUnlock) && lockStatus === "locked" && !hasDeclinedUnlock
+        }
+        encryptedProjectCount={encryptedProjectCount}
+        isBusy={isUnlocking}
+        errorMessage={unlockErrorMessage}
+        onUnlock={(passphrase) => onUnlock?.(passphrase)}
+        onDecline={() => setHasDeclinedUnlock(true)}
+      />
+
       <CreateProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -313,6 +375,11 @@ export default function StartPage({
       <CompilePreviewModal
         isOpen={compileTargetProjectId !== null}
         projectId={compileTargetProjectId ?? undefined}
+        isSourceEncrypted={Boolean(
+          localProjects.find(
+            (entry) => entry.project?.id === compileTargetProjectId,
+          )?.isEncrypted,
+        )}
         resources={compileResources}
         onClose={() => setCompileTargetProjectId(null)}
         onConfirmCompile={(selectedIds, options) => {
@@ -562,6 +629,32 @@ export default function StartPage({
           ) : null}
 
           {sortedProjects.map((projectEntry) => {
+            if (projectEntry.isLocked) {
+              return (
+                <article
+                  key={projectEntry.project.id}
+                  className="border-hairline border-gw-border start-page-fade-in flex flex-col justify-between p-5"
+                  aria-labelledby={`proj-${projectEntry.project.id}-title`}
+                >
+                  <div>
+                    <p className="font-mono text-gw-label uppercase tracking-label text-gw-secondary">
+                      Project · Locked
+                    </p>
+                    <h3
+                      id={`proj-${projectEntry.project.id}-title`}
+                      className="mt-3 text-gw-h1 font-semibold text-gw-secondary"
+                    >
+                      Encrypted project
+                    </h3>
+                    <p className="mt-3 text-gw-body text-gw-secondary">
+                      Unlock this workspace to see this project&rsquo;s name and
+                      open it.
+                    </p>
+                  </div>
+                </article>
+              );
+            }
+
             /** Non-folder resources shown in summaries and package flow. */
             const resourceList =
               projectEntry.resources.filter(isRenderableResource);
@@ -623,15 +716,23 @@ export default function StartPage({
                   </div>
 
                   <p className="mt-0 text-gw-label tracking-label leading-7 text-gw-secondary">
-                    {resourceList.length} resource
-                    {resourceList.length === 1 ? "" : "s"}
-                    {" · "}
-                    {projectEntry.folders.length} folder
-                    {projectEntry.folders.length === 1 ? "" : "s"}
+                    {projectEntry.isEncrypted ? (
+                      // Encrypted projects are listed lazily, so no counts were
+                      // read. Showing "0 resources" would be a lie, not a fact.
+                      "Encrypted"
+                    ) : (
+                      <>
+                        {resourceList.length} resource
+                        {resourceList.length === 1 ? "" : "s"}
+                        {" · "}
+                        {projectEntry.folders.length} folder
+                        {projectEntry.folders.length === 1 ? "" : "s"}
+                      </>
+                    )}
                   </p>
 
                   <p className="mt-2 text-gw-label uppercase tracking-label-wide text-gw-secondary">
-                    Last edited{" "}
+                    {projectEntry.isEncrypted ? "Encrypted " : "Last edited "}
                     {formatRelativeTimestamp(
                       lastEditedTimestamp,
                       timestampTick,

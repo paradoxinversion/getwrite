@@ -29,6 +29,14 @@
  */
 import path from "node:path";
 import { readFile, readdir, writeFile, rm } from "./io";
+import { readProjectMarker } from "./crypto/project-marker";
+import { getSessionKeyring } from "./crypto/keyring-session";
+import { runInProjectContext } from "./crypto/adapter-selection";
+import {
+  readNameIndex,
+  removeProjectName,
+  setProjectName,
+} from "./crypto/name-index";
 import { getLocalResources } from "./resource";
 import { readFolderTree } from "./folder-utils";
 import { resolveProjectsDir } from "./projects-dir";
@@ -46,6 +54,26 @@ export interface ProjectListEntry {
   project: unknown;
   resources: AnyResource[];
   folders: unknown[];
+  /**
+   * Present and `true` when the project is encrypted and the workspace is
+   * locked, so nothing inside it could be read.
+   *
+   * Such an entry carries only the project's id and the time it was encrypted —
+   * no name, no resources, no folders. The Start screen renders it as a locked
+   * card rather than dropping it, so a writer can see the project exists and
+   * knows to unlock (FR20).
+   */
+  isLocked?: boolean;
+  /**
+   * Present and `true` for an encrypted project, locked or not.
+   *
+   * Encrypted projects are listed *lazily*: name and date only, without
+   * enumerating resources or folders. Reading those means decrypting the whole
+   * project just to draw a card, which on Android would cross the Capacitor
+   * bridge once per file. Consumers must therefore not read counts from such an
+   * entry — they are empty because nothing was read, not because nothing exists.
+   */
+  isEncrypted?: boolean;
 }
 
 /** Result shape of `createProjectCore` — mirrors `POST /api/projects`'s payload shape. */
@@ -84,11 +112,32 @@ function isListableProjectManifest(
  */
 export async function listProjectsCore(): Promise<ProjectListEntry[]> {
   const projectsDir = resolveProjectsDir();
+  // Project ids are UUIDs, so nothing listable is ever dot-prefixed. Skipping
+  // dotfiles wholesale covers `.DS_Store` as before and also the workspace-level
+  // `.getwrite-keyring.json`, which would otherwise be probed as a project and
+  // warn on every listing.
   const projectIds = (await readdir(projectsDir)).filter(
-    (file) => file !== ".DS_Store",
+    (file) => !file.startsWith("."),
   );
+  // One decryption for the whole list (FR21), rather than one per project.
+  const nameIndex = await readEncryptedProjectNames(projectsDir);
+
   const entries = await Promise.all(
     projectIds.map(async (id): Promise<ProjectListEntry | null> => {
+      const projectRoot = path.join(projectsDir, id);
+
+      // The encryption marker is plaintext by design, so this is answerable
+      // before anything inside the project can be read.
+      const marker = await readProjectMarker(projectRoot);
+      if (marker) {
+        return listEncryptedProject(
+          id,
+          projectRoot,
+          marker.encryptedAt,
+          nameIndex,
+        );
+      }
+
       const projectPath = path.join(projectsDir, id, "project.json");
       let manifest: unknown;
       try {
@@ -129,6 +178,109 @@ export async function listProjectsCore(): Promise<ProjectListEntry[]> {
     }),
   );
   return entries.filter((entry): entry is ProjectListEntry => entry !== null);
+}
+
+/**
+ * Reads the sealed project-name index, when the workspace is open.
+ *
+ * @param workspaceRoot - The workspace root.
+ * @returns Project id → name for encrypted projects; empty while locked.
+ */
+async function readEncryptedProjectNames(
+  workspaceRoot: string,
+): Promise<Record<string, string>> {
+  const keyring = getSessionKeyring();
+  if (!keyring || keyring.isLocked()) return {};
+  try {
+    return await readNameIndex(keyring.workspaceKey(), workspaceRoot);
+  } catch (error) {
+    // A damaged index must not take the whole list down; names fall back to
+    // the per-project manifest below.
+    console.warn("Could not read the project-name index:", error);
+    return {};
+  }
+}
+
+/**
+ * Builds a list entry for an encrypted project, without opening it.
+ *
+ * Encrypted projects are listed lazily: the card needs a name and a date, and
+ * getting those by decrypting the manifest, the folder tree, and every resource
+ * would mean opening an entire project to draw one card. The name comes from the
+ * sealed workspace index instead — one decryption for the whole list (FR21).
+ *
+ * Locked, not even that is readable, so the entry carries only an id and the
+ * time the project was encrypted — enough to show that it exists, without
+ * leaking a title (FR18, FR20).
+ *
+ * `createdAt` is the marker's `encryptedAt` in both cases, since the real
+ * manifest is deliberately not read.
+ *
+ * @param id - The project's directory id.
+ * @param encryptedAt - Timestamp from the plaintext marker.
+ * @param nameIndex - Names recovered from the sealed index, if unlocked.
+ * @returns The list entry.
+ */
+async function listEncryptedProject(
+  id: string,
+  projectRoot: string,
+  encryptedAt: string,
+  nameIndex: Record<string, string>,
+): Promise<ProjectListEntry> {
+  const keyring = getSessionKeyring();
+  const isUnlocked =
+    keyring !== null && !keyring.isLocked() && keyring.hasProject(id);
+
+  if (!isUnlocked) {
+    return {
+      isEncrypted: true,
+      isLocked: true,
+      project: { id, createdAt: encryptedAt },
+      resources: [],
+      folders: [],
+    };
+  }
+
+  return {
+    isEncrypted: true,
+    isLocked: false,
+    project: {
+      id,
+      name: nameIndex[id] ?? (await readNameFromManifest(projectRoot, keyring)),
+      createdAt: encryptedAt,
+    },
+    resources: [],
+    folders: [],
+  };
+}
+
+/**
+ * Recovers a project's name from its own manifest.
+ *
+ * The fallback for a project missing from the sealed index — one small
+ * decryption, still without enumerating resources or folders. Returns
+ * `undefined` rather than throwing, so one unreadable manifest cannot blank the
+ * whole list.
+ *
+ * @param projectRoot - The project directory.
+ * @param keyring - The unlocked keyring.
+ * @returns The project's name, or `undefined` when it cannot be read.
+ */
+async function readNameFromManifest(
+  projectRoot: string,
+  keyring: NonNullable<ReturnType<typeof getSessionKeyring>>,
+): Promise<string | undefined> {
+  try {
+    return await runInProjectContext(projectRoot, keyring, async () => {
+      const manifest: unknown = JSON.parse(
+        await readFile(path.join(projectRoot, "project.json"), "utf-8"),
+      );
+      const name = (manifest as { name?: unknown }).name;
+      return typeof name === "string" ? name : undefined;
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 /** Thrown by {@link createProjectCore} when `name` or `projectType` is missing. */
@@ -285,7 +437,47 @@ export async function renameProjectCore(
     JSON.stringify(projectData, null, 2),
     "utf-8",
   );
+  await syncEncryptedProjectName(projectId, projectRoot, newName);
   return projectData;
+}
+
+/**
+ * Keeps the sealed name index in step with a project's real name.
+ *
+ * The index is a second source of truth, and its characteristic failure is
+ * silent: a rename that updates `project.json` but not the index leaves a stale
+ * name on the Start screen with no error anywhere. Renames therefore route
+ * through here, and a failure to update is logged rather than swallowed.
+ *
+ * A no-op for unencrypted projects and for a locked workspace — a locked
+ * workspace cannot rename an encrypted project in the first place.
+ *
+ * @param projectId - The project's directory id.
+ * @param projectRoot - The project directory.
+ * @param newName - The name just written to the manifest.
+ */
+async function syncEncryptedProjectName(
+  projectId: string,
+  projectRoot: string,
+  newName: string,
+): Promise<void> {
+  const keyring = getSessionKeyring();
+  if (!keyring || keyring.isLocked() || !keyring.hasProject(projectId)) return;
+  if (!(await readProjectMarker(projectRoot))) return;
+
+  try {
+    await setProjectName(
+      projectId,
+      newName,
+      keyring.workspaceKey(),
+      resolveProjectsDir(),
+    );
+  } catch (error) {
+    console.warn(
+      `Renamed project "${projectId}" but could not update the project-name index:`,
+      error,
+    );
+  }
 }
 
 /**
@@ -298,6 +490,24 @@ export async function renameProjectCore(
 export async function deleteProjectCore(projectId: string): Promise<void> {
   const projectRoot = resolveProjectRootOrThrow(projectId);
   await rm(projectRoot, { recursive: true, force: true });
+
+  // Drop the name too, or the index accumulates entries for projects that no
+  // longer exist — each one a plaintext-recoverable title of deleted work.
+  const keyring = getSessionKeyring();
+  if (keyring && !keyring.isLocked()) {
+    try {
+      await removeProjectName(
+        projectId,
+        keyring.workspaceKey(),
+        resolveProjectsDir(),
+      );
+    } catch (error) {
+      console.warn(
+        `Deleted project "${projectId}" but could not update the project-name index:`,
+        error,
+      );
+    }
+  }
 }
 
 /**

@@ -50,6 +50,9 @@
  * byte-for-byte local-path invariant.
  */
 import { runInStorageContext } from "../../../src/lib/models/storage-context";
+import type { StorageAdapter } from "../../../src/lib/models/io";
+import { getSessionKeyring } from "../../../src/lib/models/crypto/keyring-session";
+import { workspaceEncryptionAdapter } from "../../../src/lib/models/crypto/workspace-adapter";
 import { defaultProjectsDir } from "../../../src/lib/models/projects-dir";
 import { resolveTenant } from "./resolve-tenant";
 import { resolveBackendAdapter } from "./storage-backend";
@@ -215,14 +218,44 @@ export function withStorageContext<
         }
       }
 
-      return await runInStorageContext({ tenantRoot: dataRoot, adapter }, () =>
-        handler(...args),
+      return await runInStorageContext(
+        {
+          tenantRoot: dataRoot,
+          adapter: withWorkspaceEncryption(adapter, dataRoot),
+        },
+        () => handler(...args),
       );
     }
 
+    const fallbackRoot = defaultProjectsDir();
     return await runInStorageContext(
-      { tenantRoot: defaultProjectsDir(), adapter: resolveBackendAdapter() },
+      {
+        tenantRoot: fallbackRoot,
+        adapter: withWorkspaceEncryption(resolveBackendAdapter(), fallbackRoot),
+      },
       () => handler(...args),
     );
   };
+}
+
+/**
+ * Routes a request's adapter through per-project encryption.
+ *
+ * Bound here rather than at each call site because every project-scoped
+ * operation — open, save, search, revisions, compile, export — goes through
+ * `io.ts` with a path and nothing else. Requiring each to opt in is what left
+ * encrypted projects unopenable.
+ *
+ * A no-op while the workspace is locked or has no keyring, and for every path
+ * belonging to a project without a key.
+ *
+ * @param adapter - The deployment's underlying adapter.
+ * @param tenantRoot - The workspace root for this request.
+ * @returns The adapter to bind for this request.
+ */
+function withWorkspaceEncryption(
+  adapter: StorageAdapter,
+  tenantRoot: string,
+): StorageAdapter {
+  return workspaceEncryptionAdapter(adapter, tenantRoot, getSessionKeyring());
 }

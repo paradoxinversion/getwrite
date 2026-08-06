@@ -90,6 +90,14 @@ function createRootState(overrides?: {
       deletingQueryId: null,
       errorMessage: "",
     },
+    crypto: {
+      status: "absent",
+      encryptedProjectIds: [],
+      isUnlocking: false,
+      isConverting: false,
+      isExporting: false,
+      errorMessage: "",
+    },
   } as RootState;
 }
 

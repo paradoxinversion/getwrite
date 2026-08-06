@@ -41,6 +41,11 @@ import type { MetadataValue, ResourceRef } from "../../src/lib/models/types";
 import { buildProjectView } from "../../src/lib/models/project-view";
 import { listProjects, openProject } from "../../src/lib/api/projects";
 import {
+  checkWorkspaceLock,
+  resumeConversions,
+  unlockWorkspace,
+} from "../../src/store/cryptoSlice";
+import {
   createResource,
   copyResource,
   deleteResource,
@@ -136,6 +141,18 @@ export default function Home(): JSX.Element {
 
   const dispatch = useAppDispatch();
 
+  // ── Encryption lock state ───────────────────────────────────────────────
+  // The keyring lives server-side on web and desktop, so this mirrors what
+  // `/api/encryption` reports. No key material is ever held here.
+  const lockStatus = useAppSelector((state) => state.crypto.status);
+  const encryptedProjectCount = useAppSelector(
+    (state) => state.crypto.encryptedProjectIds.length,
+  );
+  const isUnlocking = useAppSelector((state) => state.crypto.isUnlocking);
+  const unlockErrorMessage = useAppSelector(
+    (state) => state.crypto.errorMessage,
+  );
+
   /**
    * Loads all projects from the API and maps them into
    * {@link StartPageProjectEntry}-compatible view objects.
@@ -146,13 +163,19 @@ export default function Home(): JSX.Element {
       // buildProjectView expects TextResource[] and returns UIResource[]; the original
       // code cast through `any` (p: any) to bypass both constraints. We preserve that
       // runtime behaviour with a targeted cast rather than a blanket any.
-      const data = entries.map((p) =>
-        buildProjectView({
+      const data = entries.map((p) => ({
+        ...buildProjectView({
           project: p.project,
           folders: p.folders,
           resources: p.resources as unknown as TextResource[],
         }),
-      ) as unknown as StartPageProjectEntry[];
+        // Carried through deliberately: `buildProjectView` returns only
+        // project/folders/resources, so without this the Start screen cannot
+        // tell an encrypted project from an ordinary one and renders a locked
+        // entry as "Untitled Project · 0 resources · 0 folders".
+        isEncrypted: (p as { isEncrypted?: boolean }).isEncrypted,
+        isLocked: (p as { isLocked?: boolean }).isLocked,
+      })) as unknown as StartPageProjectEntry[];
       if (Array.isArray(data)) {
         dispatch(setProjectsInStore(data));
         setProjects(data);
@@ -162,10 +185,31 @@ export default function Home(): JSX.Element {
     }
   }, [dispatch]);
 
+  const handleUnlock = useCallback(
+    (passphrase: string) => {
+      void dispatch(unlockWorkspace(passphrase))
+        .unwrap()
+        // Finish anything a crash left half-done, now that keys are available.
+        .then(() => dispatch(resumeConversions()))
+        // Re-list: the entries currently on screen were fetched while locked,
+        // so they carry no name by design (FR18). Without this the project
+        // stays "Untitled Project" until something else refreshes the list.
+        .then(() => refreshProjects())
+        .catch(() => undefined);
+    },
+    [dispatch, refreshProjects],
+  );
+
   // Fetch existing projects on mount
   useEffect(() => {
     void refreshProjects();
   }, [refreshProjects]);
+
+  // Establish whether this workspace is encrypted at all. Until this resolves
+  // the gate stays closed, so a user with no encryption is never prompted (FR4).
+  useEffect(() => {
+    void dispatch(checkWorkspaceLock());
+  }, [dispatch]);
 
   /**
    * Called by {@link StartPage} after a new project has been successfully
@@ -725,6 +769,15 @@ export default function Home(): JSX.Element {
           projects={projects}
           onCreate={handleCreate}
           onOpen={handleOpen}
+          lockStatus={
+            lockStatus === "locked" || lockStatus === "unlocked"
+              ? lockStatus
+              : "absent"
+          }
+          encryptedProjectCount={encryptedProjectCount}
+          isUnlocking={isUnlocking}
+          unlockErrorMessage={unlockErrorMessage}
+          onUnlock={handleUnlock}
         />
       ) : (
         <section className="p-6">
