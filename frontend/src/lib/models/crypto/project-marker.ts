@@ -28,7 +28,7 @@
 import path from "node:path";
 import { z } from "zod";
 import { atomicWriteFile, runForTenant, type StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 
 /** Filename of the per-project encryption marker, inside the project root. */
 export const PROJECT_MARKER_FILENAME = ".encrypted.json";
@@ -79,7 +79,7 @@ function markerPath(projectRoot: string): string {
  */
 export async function readProjectMarker(
   projectRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ProjectEncryptionMarker | null> {
   const target = markerPath(projectRoot);
 
@@ -129,7 +129,7 @@ export async function readProjectMarker(
  */
 export async function isProjectEncrypted(
   projectRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<boolean> {
   return (await readProjectMarker(projectRoot, adapter)) !== null;
 }
@@ -144,7 +144,7 @@ export async function isProjectEncrypted(
  */
 export async function writeProjectMarker(
   projectRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
   now: Date = new Date(),
 ): Promise<ProjectEncryptionMarker> {
   const marker: ProjectEncryptionMarker = {
@@ -178,7 +178,7 @@ export async function writeProjectMarker(
  */
 export async function removeProjectMarker(
   projectRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<void> {
   await runForTenant(
     projectRoot,

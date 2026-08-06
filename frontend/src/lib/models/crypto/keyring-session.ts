@@ -22,7 +22,7 @@
  *   finds it unusable. Process exit frees the memory inherently.
  */
 import type { StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 import { runInStorageContext } from "../storage-context";
 import { createKeyring, unlockKeyring, type Keyring } from "./keyring";
 import { readWrappedKeyring, writeWrappedKeyring } from "./keyring-store";
@@ -90,7 +90,7 @@ export function requireSessionKeyring(): Keyring {
  */
 export async function workspaceHasKeyring(
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<boolean> {
   return (await readKeyringVia(workspaceRoot, adapter)) !== null;
 }
@@ -108,7 +108,7 @@ export async function workspaceHasKeyring(
  */
 export async function encryptedProjectIds(
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<string[]> {
   const wrapped = await readKeyringVia(workspaceRoot, adapter);
   return wrapped ? Object.keys(wrapped.projects) : [];
@@ -127,7 +127,7 @@ export async function encryptedProjectIds(
 export async function createWorkspaceKeyring(
   passphrase: string,
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<Keyring> {
   if (await workspaceHasKeyring(workspaceRoot, adapter)) {
     throw new Error(
@@ -160,13 +160,23 @@ export async function createWorkspaceKeyring(
 export async function registerProject(
   projectId: string,
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<CryptoKey> {
   const keyring = requireSessionKeyring();
   const snapshot = await keyring.addProject(projectId);
-  await runVia(workspaceRoot, adapter, () =>
-    writeWrappedKeyring(snapshot, workspaceRoot),
-  );
+  try {
+    await runVia(workspaceRoot, adapter, () =>
+      writeWrappedKeyring(snapshot, workspaceRoot),
+    );
+  } catch (error) {
+    // Undo the in-memory add. Leaving it would make `hasProject` true for a key
+    // that exists nowhere on disk, so a retry would take the "already
+    // registered" branch and seal the whole project under it — ciphertext with
+    // no recoverable key, which is the one failure in this feature that cannot
+    // be undone.
+    keyring.removeProject(projectId);
+    throw error;
+  }
   return keyring.projectKey(projectId);
 }
 
@@ -185,7 +195,7 @@ export async function registerProject(
 export async function unlockSession(
   passphrase: string,
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<Keyring> {
   const wrapped = await readKeyringVia(workspaceRoot, adapter);
   if (!wrapped) throw new NoKeyringError();

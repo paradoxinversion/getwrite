@@ -24,7 +24,7 @@
  */
 import path from "node:path";
 import type { StorageAdapter } from "../io";
-import { getStorageAdapter, readdir } from "../io";
+import { getPlainStorageAdapter, readdir } from "../io";
 import { resolveProjectsDir } from "../projects-dir";
 import {
   convertProject,
@@ -77,7 +77,7 @@ export async function enableProjectEncryption(
   // than in the UI, because a client-side gate leaves the path reachable.
   assertEncryptionAvailable();
 
-  const adapter = options.adapter ?? getStorageAdapter();
+  const adapter = options.adapter ?? getPlainStorageAdapter();
   const workspaceRoot = options.workspaceRoot ?? resolveProjectsDir();
 
   const keyring = passphrase
@@ -121,7 +121,7 @@ export async function enableProjectEncryption(
  */
 export async function resumeInterruptedConversions(
   workspaceRoot?: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<string[]> {
   const root = workspaceRoot ?? resolveProjectsDir();
   const keyring = requireSessionKeyring();

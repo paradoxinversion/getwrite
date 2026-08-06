@@ -25,7 +25,7 @@
 import path from "node:path";
 import type { Dirent } from "node:fs";
 import type { StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 import { isEnvelope, open } from "./envelope";
 import { PROJECT_MARKER_FILENAME } from "./project-marker";
 
@@ -65,7 +65,7 @@ export async function exportProjectAsPlaintext(
   options: ExportPlaintextOptions,
 ): Promise<ExportPlaintextResult> {
   const { projectRoot, destinationRoot, key, onProgress } = options;
-  const adapter = options.adapter ?? getStorageAdapter();
+  const adapter = options.adapter ?? getPlainStorageAdapter();
 
   assertSafeDestination(projectRoot, destinationRoot);
   await assertEmptyDestination(destinationRoot, adapter);

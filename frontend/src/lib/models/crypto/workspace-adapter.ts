@@ -30,9 +30,15 @@
  * check is not.
  */
 import path from "node:path";
-import type { ReaddirResult, StorageAdapter } from "../io";
+import {
+  UNDERLYING_ADAPTER,
+  type ReaddirResult,
+  type StorageAdapter,
+} from "../io";
 import type { Dirent, Stats } from "node:fs";
 import { encryptingAdapter } from "../encryptingAdapter";
+import { EnvelopeFormatError } from "./envelope";
+import { readConversionMarker } from "./convert-project";
 import type { Keyring } from "./keyring";
 
 /**
@@ -88,10 +94,60 @@ export function workspaceEncryptionAdapter(
     return created;
   }
 
-  return {
+  /**
+   * Reads through encryption, tolerating plaintext only mid-conversion.
+   *
+   * A project being converted holds both forms at once, and FR22 requires it to
+   * stay openable throughout. `encryptingAdapter`'s `tolerant` option exists for
+   * exactly this, but it has to be decided per read: whether a conversion is in
+   * flight is a fact on disk that can change between requests, and `adapterFor`
+   * is synchronous.
+   *
+   * Resolving it here — only after a read has actually failed as "not an
+   * envelope" — keeps the downgrade window as narrow as the rule allows. Nothing
+   * is tolerated unless a marker is present at that moment, and an envelope that
+   * fails *authentication* is never tolerated at all, because
+   * {@link EnvelopeIntegrityError} is a different error (FR15).
+   *
+   * @param target - File being read.
+   * @param read - The sealed read to attempt.
+   * @param fallback - The plain read to fall back to mid-conversion.
+   * @returns The file contents.
+   */
+  async function readTolerantly<T>(
+    target: string,
+    read: () => Promise<T>,
+    fallback: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await read();
+    } catch (error) {
+      if (!(error instanceof EnvelopeFormatError)) throw error;
+      const projectId = projectIdOf(target);
+      if (!projectId) throw error;
+      const converting = await readConversionMarker(
+        path.join(tenantRoot, projectId),
+        inner,
+      );
+      if (!converting) throw error;
+      return fallback();
+    }
+  }
+
+  const routed: StorageAdapter & { [UNDERLYING_ADAPTER]: StorageAdapter } = {
     writeFile: (p, d, o) => adapterFor(p).writeFile(p, d, o),
-    readFile: (p, e) => adapterFor(p).readFile(p, e),
-    readFileBuffer: (p) => adapterFor(p).readFileBuffer(p),
+    readFile: (p, e) =>
+      readTolerantly(
+        p,
+        () => adapterFor(p).readFile(p, e),
+        () => inner.readFile(p, e),
+      ),
+    readFileBuffer: (p) =>
+      readTolerantly(
+        p,
+        () => adapterFor(p).readFileBuffer(p),
+        () => inner.readFileBuffer(p),
+      ),
     appendFile: (p, d) => adapterFor(p).appendFile(p, d),
 
     // Path and directory semantics never differ between projects, so these go
@@ -109,5 +165,10 @@ export function workspaceEncryptionAdapter(
     copyFile: (from, to) => inner.copyFile(from, to),
     cp: (from, to, o) => inner.cp(from, to, o),
     fsyncFile: inner.fsyncFile ? (p) => inner.fsyncFile!(p) : undefined,
+
+    // The crypto layer's own bookkeeping must not be routed back through
+    // encryption. `getPlainStorageAdapter()` follows this to reach `inner`.
+    [UNDERLYING_ADAPTER]: inner,
   };
+  return routed;
 }

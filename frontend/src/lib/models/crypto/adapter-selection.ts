@@ -36,7 +36,7 @@ import path from "node:path";
 import { runInStorageContext } from "../storage-context";
 import { encryptingAdapter } from "../encryptingAdapter";
 import type { StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 import { readProjectMarker } from "./project-marker";
 import { readConversionMarker } from "./convert-project";
 import { UnknownProjectError, type Keyring } from "./keyring";
@@ -139,7 +139,7 @@ export async function runInProjectContext<T>(
   projectRoot: string,
   keyring: Keyring | null,
   fn: () => T | Promise<T>,
-  baseAdapter: StorageAdapter = getStorageAdapter(),
+  baseAdapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<T> {
   const adapter = await resolveProjectAdapter(
     projectRoot,

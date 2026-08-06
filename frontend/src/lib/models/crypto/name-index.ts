@@ -29,7 +29,7 @@
 import path from "node:path";
 import { z } from "zod";
 import { atomicWriteFile, type StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 import { runInStorageContext } from "../storage-context";
 import { withMetaLock } from "../meta-locks";
 import { EnvelopeFormatError, open, seal } from "./envelope";
@@ -78,7 +78,7 @@ function indexPath(workspaceRoot: string): string {
 export async function readNameIndex(
   workspaceKey: CryptoKey,
   workspaceRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ProjectNameIndex> {
   let sealed: Uint8Array;
   try {
@@ -190,7 +190,7 @@ export async function setProjectName(
   name: string,
   workspaceKey: CryptoKey,
   workspaceRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ProjectNameIndex> {
   return updateNameIndex(workspaceKey, workspaceRoot, adapter, (current) => ({
     ...current,
@@ -213,7 +213,7 @@ export async function removeProjectName(
   projectId: string,
   workspaceKey: CryptoKey,
   workspaceRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ProjectNameIndex> {
   return updateNameIndex(workspaceKey, workspaceRoot, adapter, (current) => {
     const next = { ...current };

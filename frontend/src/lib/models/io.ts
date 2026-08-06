@@ -224,9 +224,75 @@ function currentAdapter(): StorageAdapter {
  * @returns The {@link StorageAdapter} to use for this call.
  * @throws {ProjectBusyError} When the scope's project is mid-conversion.
  */
-function mutatingAdapter(): StorageAdapter {
-  assertWritable(getStorageContext()?.projectRoot);
+function mutatingAdapter(target?: string): StorageAdapter {
+  assertWritable(barrierSubject(target));
   return currentAdapter();
+}
+
+/**
+ * Works out which project a write should be checked against.
+ *
+ * The scope's own `projectRoot` wins when it is set, because a conversion binds
+ * it deliberately and is the barrier's holder. Almost nothing else sets it —
+ * `withStorageContext` binds only `{tenantRoot, adapter}` — so for every
+ * ordinary write the project has to come from the path instead.
+ *
+ * Deriving it here is what makes the barrier real. Reading `projectRoot` alone
+ * meant `assertWritable(undefined)` returned on its first line for every request
+ * write, so an autosave landing mid-conversion was never refused: precisely the
+ * race the barrier was built to stop.
+ *
+ * @param target - Path being written, when the caller has one.
+ * @returns The project root to check, or `undefined` when none applies.
+ */
+function barrierSubject(target?: string): string | undefined {
+  const context = getStorageContext();
+  if (context?.projectRoot) return context.projectRoot;
+  if (!context?.tenantRoot || !target) return undefined;
+
+  const relative = path.relative(context.tenantRoot, target);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    return undefined;
+  }
+  const [projectId] = relative.split(path.sep);
+  // Dot-prefixed entries are workspace-level artefacts, never projects.
+  return projectId && !projectId.startsWith(".")
+    ? path.join(context.tenantRoot, projectId)
+    : undefined;
+}
+
+/**
+ * Marks an adapter as a wrapper, exposing the plain adapter underneath it.
+ *
+ * Set by `crypto/workspace-adapter.ts`. Declared here, and not there, so that
+ * {@link getPlainStorageAdapter} does not have to import the crypto layer.
+ */
+export const UNDERLYING_ADAPTER = Symbol.for("getwrite.underlyingAdapter");
+
+/** An adapter that may be concealing a plain one beneath it. */
+type MaybeWrapping = { [UNDERLYING_ADAPTER]?: StorageAdapter };
+
+/**
+ * Returns the current adapter with any encryption wrapper stripped off.
+ *
+ * The crypto modules — the keyring, the encryption marker, the sealed name
+ * index, the conversion sweep — must read and write *through* encryption, not
+ * behind it. Their own bookkeeping is either plaintext by design (the marker,
+ * FR18) or sealed by their own hand (the keyring, the name index), so handing
+ * them a project-routed adapter double-encrypts writes and fails reads.
+ *
+ * They each documented this as "must be the plain one" and then defaulted to
+ * {@link getStorageAdapter}, which under a request is precisely the routed one.
+ * That is how encrypting a *second* project came to fail: registering its key
+ * flipped the ambient adapter into decrypting the plaintext the sweep was
+ * partway through sealing. Defaulting to this function instead makes the
+ * documented requirement the actual behaviour.
+ *
+ * @returns The active adapter, unwrapped when it is an encrypting wrapper.
+ */
+export function getPlainStorageAdapter(): StorageAdapter {
+  const active = currentAdapter();
+  return (active as MaybeWrapping)[UNDERLYING_ADAPTER] ?? active;
 }
 
 /**
@@ -283,7 +349,7 @@ export function runForTenant<T>(
  * @returns Resolves when the directory operation completes.
  */
 export const mkdir = async (p: string, o?: { recursive?: boolean }) =>
-  mutatingAdapter().mkdir(p, o);
+  mutatingAdapter(p).mkdir(p, o);
 
 /**
  * Writes file data using the active storage adapter.
@@ -297,7 +363,7 @@ export const writeFile = async (
   p: string,
   d: string | Buffer,
   o?: string | object,
-) => mutatingAdapter().writeFile(p, d, o);
+) => mutatingAdapter(p).writeFile(p, d, o);
 
 /**
  * Reads a text file using the active storage adapter.
@@ -361,7 +427,7 @@ export const stat = (p: string) => currentAdapter().stat(p);
 export const rm = async (
   p: string,
   o?: { recursive?: boolean; force?: boolean },
-) => mutatingAdapter().rm(p, o);
+) => mutatingAdapter(p).rm(p, o);
 
 /**
  * Renames or moves a file/directory using the active storage adapter.
@@ -371,7 +437,7 @@ export const rm = async (
  * @returns Resolves when rename completes.
  */
 export const rename = async (a: string, b: string) =>
-  mutatingAdapter().rename(a, b);
+  mutatingAdapter(a).rename(a, b);
 
 /**
  * Copies a single file using the active storage adapter (binary-safe).
@@ -381,7 +447,7 @@ export const rename = async (a: string, b: string) =>
  * @returns Resolves when the copy completes.
  */
 export const copyFile = async (s: string, d: string) =>
-  mutatingAdapter().copyFile(s, d);
+  mutatingAdapter(d).copyFile(s, d);
 
 /**
  * Recursively copies a file or directory tree using the active storage
@@ -393,7 +459,7 @@ export const copyFile = async (s: string, d: string) =>
  * @returns Resolves when the copy completes.
  */
 export const cp = async (s: string, d: string, o?: { recursive?: boolean }) =>
-  mutatingAdapter().cp(s, d, o);
+  mutatingAdapter(d).cp(s, d, o);
 
 /**
  * Appends data to a file using the active storage adapter, creating it when
@@ -404,7 +470,7 @@ export const cp = async (s: string, d: string, o?: { recursive?: boolean }) =>
  * @returns Resolves when the append completes.
  */
 export const appendFile = async (p: string, d: string | Buffer) =>
-  mutatingAdapter().appendFile(p, d);
+  mutatingAdapter(p).appendFile(p, d);
 
 /**
  * Reports whether a path exists, using the active storage adapter.

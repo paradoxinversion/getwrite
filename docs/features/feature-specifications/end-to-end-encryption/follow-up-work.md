@@ -80,6 +80,60 @@ both verified to carry no user-authored text. Details in `tasks.md` under T22.
       anyone already running a packaged build, so it is not a one-line change.
       Not fixed here — it belongs with desktop distribution, not encryption.
 
+## From the code review (2026-08-06)
+
+A review of the branch found thirteen issues. The four high-severity ones are
+**fixed** on this branch, together with two mediums that shared their root cause;
+`tests/integration/encryption-request-path.test.ts` covers all of them by binding
+the adapter the way `with-storage-context.ts` does and passing no explicit
+`adapter` anywhere.
+
+Fixed:
+
+- **Encrypting a second project failed outright.** Every crypto module documented
+  "must be the plain adapter" and then defaulted to `getStorageAdapter()`, which
+  under a request *is* the routed encrypting adapter. Registering the second
+  project's key mid-call flipped that adapter into decrypting the plaintext the
+  sweep was partway through sealing, and stranded a sealed, unparseable
+  `.converting.json`. Fixed with `getPlainStorageAdapter()` (`io.ts`), which
+  unwraps via `UNDERLYING_ADAPTER`. The same fix restored the marker read in
+  `project-crud-core.ts`, so FR21's lazy listing and the rename → name-index sync
+  work again while unlocked.
+- **The write barrier never engaged.** `assertWritable` read
+  `StorageContext.projectRoot`, which `withStorageContext` never sets, so it
+  returned on its first line for every ordinary write — the autosave-during-
+  conversion race it exists to stop was never actually blocked, despite two UI
+  components carrying comments claiming otherwise. The project is now derived
+  from the write's path.
+- **No tolerant reads on the request adapter**, so a half-converted project threw
+  on every unsealed file (FR22). Resolved per read, and only after a read has
+  already failed as "not an envelope", so the downgrade window stays narrow and
+  an integrity failure is still never tolerated.
+- **`registerProject` could strand a key in memory.** It mutated the keyring
+  before persisting, so a failed write left `hasProject` true for a key that
+  existed nowhere on disk; a retry would then seal the project under it. Now
+  rolled back on failure.
+
+Still open, in rough priority order:
+
+- [ ] **`POST /api/encryption` is only fail-closed for `enable`.** `unlock`,
+      `lock`, `resume` and `export` run unconditionally, so on hosted a client can
+      still derive keys and mutate session state while `GET` reports
+      `isAvailable: false` (FR23). Gate the whole handler.
+- [ ] **The FR27 plaintext-output warning is unreachable.** `isSourceEncrypted`
+      has no caller outside its own test, so neither preview modal can show it.
+- [ ] **The encryption panel offers "Encrypt" while the workspace is locked.**
+      `needsPassphrase={lockStatus === "absent"}` is false when locked, so it
+      submits `passphrase: null` and `requireSessionKeyring()` throws every time.
+- [ ] **`readConversionMarker`'s `JSON.parse` sits outside its `try`,** so a
+      truncated marker makes the project both unopenable and unresumable.
+- [ ] **`hasDeclinedUnlock` is never reset**, so after decline → unlock → lock the
+      prompt never returns for the rest of the mount — contrary to its own doc.
+- [ ] **`enable` never forwards `onProgress`,** so the setup modal's
+      "Encrypting N of M files" line can never appear.
+- [ ] An orphaned JSDoc block above `refreshProjects` in `app/(app)/page.tsx` now
+      documents the wrong function.
+
 ## Known coverage gap
 
 - [ ] **The Start-screen flag mapping in `app/(app)/page.tsx` is untested.**

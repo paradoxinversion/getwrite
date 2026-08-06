@@ -38,7 +38,7 @@ import path from "node:path";
 import { z } from "zod";
 import type { Dirent } from "node:fs";
 import { atomicWriteFile, type StorageAdapter } from "../io";
-import { getStorageAdapter } from "../io";
+import { getPlainStorageAdapter } from "../io";
 import { runInStorageContext } from "../storage-context";
 import { runWithWriteBarrier } from "../write-barrier";
 import { isEnvelope, open, seal } from "./envelope";
@@ -124,7 +124,7 @@ function conversionMarkerPath(projectRoot: string): string {
  */
 export async function readConversionMarker(
   projectRoot: string,
-  adapter: StorageAdapter = getStorageAdapter(),
+  adapter: StorageAdapter = getPlainStorageAdapter(),
 ): Promise<ConversionMarker | null> {
   let raw: string;
   try {
@@ -154,7 +154,7 @@ export async function convertProject(
   options: ConvertProjectOptions,
 ): Promise<ConversionResult> {
   const { projectRoot, direction, key, onProgress } = options;
-  const adapter = options.adapter ?? getStorageAdapter();
+  const adapter = options.adapter ?? getPlainStorageAdapter();
 
   return runWithWriteBarrier(projectRoot, async () => {
     await claimConversion(projectRoot, direction, adapter);
