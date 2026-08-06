@@ -4,6 +4,12 @@ import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import http from "http";
 import fs from "fs";
+import {
+  legacyProjectsDir,
+  migrateLegacyProjectsDir,
+  resolveProjectsDir,
+  type ProjectsDirEnvironment,
+} from "./projects-dir";
 
 const PORT = 3000;
 let serverProcess: ChildProcess | UtilityProcess | null = null;
@@ -46,10 +52,28 @@ function getRepoRoot(): string {
     : path.join(__dirname, "..", "..");
 }
 
+/**
+ * Describes this build's environment for `projects-dir.ts`.
+ *
+ * @returns The paths that decide where projects live.
+ */
+function projectsDirEnvironment(): ProjectsDirEnvironment {
+  return {
+    isPackaged: app.isPackaged,
+    userDataDir: app.isPackaged ? app.getPath("userData") : "",
+    resourcesPath: app.isPackaged ? process.resourcesPath : "",
+    repoRoot: getRepoRoot(),
+  };
+}
+
 function resolveDirectories() {
   const root = getRepoRoot();
   return {
-    projectsDir: path.join(root, "projects"),
+    // Packaged builds keep projects under userData, never inside the app
+    // bundle — see `projects-dir.ts` for why that distinction matters.
+    // Templates and the standalone server stay under `root`: they are read-only
+    // build output that *should* be replaced wholesale by an update.
+    projectsDir: resolveProjectsDir(projectsDirEnvironment()),
     templatesDir: path.join(
       root,
       "getwrite-config",
@@ -108,6 +132,13 @@ function startServer(
 
   if (app.isPackaged) {
     fs.mkdirSync(dirs.projectsDir, { recursive: true });
+    // Rescue anything an earlier build left inside the bundle. A no-op once
+    // there is nothing there, so it can run on every launch.
+    migrateLegacyProjectsDir(
+      legacyProjectsDir(projectsDirEnvironment()),
+      dirs.projectsDir,
+      log,
+    );
     // pnpm monorepo: Next.js standalone mirrors the workspace layout,
     // so server.js lands at standalone/frontend/server.js (not standalone/server.js).
     const serverCwd = path.join(dirs.standaloneDir, "frontend");

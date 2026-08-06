@@ -55,6 +55,16 @@ both verified to carry no user-authored text. Details in `tasks.md` under T22.
 
 ## Not caused by this feature, but found by it
 
+- [x] **FIXED** on `fix/desktop-projects-outside-bundle`. Packaged builds now
+      store projects under `app.getPath("userData")`, and
+      `migrateLegacyProjectsDir` moves anything still inside the bundle on each
+      packaged launch — never overwriting an existing entry, never deleting on
+      failure, and carrying the keyring and name index along with the projects.
+      The logic moved to `electron/src/projects-dir.ts` so it could be tested at
+      all, and `.github/workflows/electron-checks.yml` now runs those tests on
+      every PR; `build-electron.yml` only ran on a published release, which is
+      why nothing ever objected to this. Original report:
+
 - [ ] **The packaged desktop build stores projects inside the app bundle.**
       `electron/src/main.ts` resolves `projectsDir` to
       `path.join(process.resourcesPath, "projects")` when packaged, which on

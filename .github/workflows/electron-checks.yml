@@ -1,0 +1,39 @@
+name: Electron checks
+
+# `build-electron.yml` only runs on a published release, so nothing exercised
+# the desktop shell on a pull request. That is how the packaged build came to
+# store user projects inside its own app bundle — where a routine update
+# deleted them — without any check objecting.
+on:
+    push:
+        branches: [main, master]
+    pull_request:
+        branches: [main, master]
+
+jobs:
+    checks:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v2
+
+            - name: Use Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Typecheck Electron
+              run: pnpm --filter getwrite-electron typecheck
+
+            - name: Electron unit tests
+              run: pnpm --filter getwrite-electron test
+
+            - name: Compile Electron TypeScript
+              run: pnpm --filter getwrite-electron build

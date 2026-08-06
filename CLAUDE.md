@@ -155,6 +155,7 @@ All paths relative to `frontend/src/`. Use these as orientation; open the files 
 - Entry: `electron/src/main.ts` + `electron/src/preload.ts`; compiled to `electron/dist/` via `tsc`.
 - On launch, resolves repo root (or `process.resourcesPath` when packaged) and spawns the frontend's Next.js **standalone** server (`frontend/.next/standalone`) as a child process on port 3000, then opens a `BrowserWindow` pointed at it.
 - Injects `GETWRITE_PROJECTS_DIR` into the spawned server's environment, which `frontend/src/lib/models/projects-dir.ts` honors — this is how the desktop build can store projects somewhere other than `cwd/../projects`.
+- `electron/src/projects-dir.ts` decides that location and is unit-tested (`electron/tests/`, run in CI by `.github/workflows/electron-checks.yml`). A **packaged** build stores projects under `app.getPath("userData")`; a development build keeps using the repo's `projects/`. Packaged builds previously stored them under `process.resourcesPath` — inside `GetWrite.app` — where a drag-to-Applications update silently destroyed every project and runtime writes invalidated the bundle's code signature. `migrateLegacyProjectsDir` runs on each packaged launch and moves anything still in the old location, never overwriting an entry that already exists and never deleting on failure.
 - Build flow: `pnpm electron:build` (frontend `next build` → electron `tsc`); package with `pnpm electron:package` (electron-builder).
 - Logs go to `app.getPath("logs")/getwrite.log` in production.
 
