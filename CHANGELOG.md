@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.0.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.8.0...getwrite-v2.0.0) (2026-08-07)
+
+
+### ⚠ BREAKING CHANGES
+
+**Desktop projects move out of the application directory to `~/Documents/GetWrite`.**
+
+Earlier desktop builds stored your projects *inside the application itself*. Installing a new version replaces the application — and deletes everything in it. **Back up your work before installing this release.** GetWrite cannot do it for you: the files are gone before the new version first runs.
+
+**macOS** — copy this folder somewhere safe first:
+
+```
+/Applications/GetWrite.app/Contents/Resources/projects
+```
+
+Right-click GetWrite.app → *Show Package Contents* to get in. After installing 2.0.0, copy your project folders into `~/Documents/GetWrite`.
+
+**Windows** — copy this folder somewhere safe first:
+
+```
+%LOCALAPPDATA%\Programs\GetWrite\resources\projects
+```
+
+After installing, copy your project folders into `Documents\GetWrite`.
+
+**Linux** — nothing to back up. The AppImage runs from a read-only filesystem, so it could never create that folder and never saved anything. **This is the first build that can store your work at all.**
+
+**If you use encryption**, copy `.getwrite-keyring.json` and `.getwrite-names` from that folder too. They sit alongside the project folders and are easy to miss because they are hidden. An encrypted project without its keyring cannot be recovered by anyone, including us.
+
+### What else changed
+
+You can now choose where GetWrite keeps your projects: **User Preferences → Where your projects are stored**. Changing it points GetWrite at the new folder and requires a restart; it does not move your existing projects, so move those yourself if you want them to come along.
+
+### Features
+
+* **desktop:** default projects to Documents, and let users move them ([42f448d](https://github.com/saboteur-works/getwrite/commit/42f448d13d6cc0ed553c5fa05b13e82107e57cca))
+
+
+### Bug Fixes
+
+* **desktop:** store projects outside the app bundle ([709cf6b](https://github.com/saboteur-works/getwrite/commit/709cf6b86cd3086be378915bf7e38486b273145a))
+* **desktop:** store projects outside the app bundle, in Documents ([5a650a9](https://github.com/saboteur-works/getwrite/commit/5a650a94fe943dc8592d8d0aea55c7d55121aa5c))
+* **desktop:** surface a projects-folder failure instead of hiding it ([47062a1](https://github.com/saboteur-works/getwrite/commit/47062a1f437d06d378728692ac7e1bf8bad01a6f))
+
+
+### Documentation
+
+* **desktop:** state what the migration cannot rescue ([98f2be1](https://github.com/saboteur-works/getwrite/commit/98f2be1d63c6fc5b5578ff726d10b6d5237a6ef7))
+
 ## [1.8.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.7.0...getwrite-v1.8.0) (2026-07-29)
 
 
