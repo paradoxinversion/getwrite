@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import WorkspaceLocationSettings from "./WorkspaceLocationSettings";
 import useAppSelector from "../../src/store/hooks";
 import {
   selectProject,
@@ -162,6 +163,8 @@ export default function UserPreferencesPage({
           Close
         </Button>
       </header>
+
+      <WorkspaceLocationSettings />
 
       <section className="rounded-lg border-[0.5px] border-gw-border bg-gw-chrome p-5">
         <h2 className="text-sm font-semibold text-gw-primary">Theme</h2>

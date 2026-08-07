@@ -53,6 +53,29 @@ pnpm test:e2e   # Playwright — requires pnpm storybook on :6006
 
 From the repo root: `pnpm --filter getwrite-frontend exec vitest` runs frontend tests via the workspace.
 
+### Running git from outside the repo
+
+Claude Code's command sandbox allows writes only under the session's working
+directory. If the session's cwd is *not* this repo, writes into `.git/` are denied:
+
+```
+$ touch /path/to/getwrite/.git/probe
+touch: ... Operation not permitted
+```
+
+This splits git commands into two cases:
+
+- **Read-only (`git log`, `git diff`, `git show`, `git status`) — works from anywhere.**
+  These only *opportunistically* refresh `.git/index`; git tolerates that write failing
+  and still prints correct output. Use `git -C /path/to/getwrite …` rather than `cd`.
+- **Mutating (`git commit`, `git checkout`, `git merge`, `git rebase`) — needs cwd inside
+  the repo.** These genuinely must write to `.git/`, so they fail rather than degrade.
+  `-C` is not a workaround; start the session in the repo.
+
+**Do not disable the sandbox to run read-only git.** `git log --oneline main..HEAD` and
+`git diff --stat main..HEAD` both succeed sandboxed — a `dangerouslyDisableSandbox`
+prompt on those is a preemptive guess, not a real denial, and escaping buys nothing.
+
 ## Architecture
 
 ### Data Layer (No Database)
@@ -155,6 +178,7 @@ All paths relative to `frontend/src/`. Use these as orientation; open the files 
 - Entry: `electron/src/main.ts` + `electron/src/preload.ts`; compiled to `electron/dist/` via `tsc`.
 - On launch, resolves repo root (or `process.resourcesPath` when packaged) and spawns the frontend's Next.js **standalone** server (`frontend/.next/standalone`) as a child process on port 3000, then opens a `BrowserWindow` pointed at it.
 - Injects `GETWRITE_PROJECTS_DIR` into the spawned server's environment, which `frontend/src/lib/models/projects-dir.ts` honors — this is how the desktop build can store projects somewhere other than `cwd/../projects`.
+- `electron/src/projects-dir.ts` decides that location and is unit-tested (`electron/tests/`, run in CI by `.github/workflows/electron-checks.yml`). A **packaged** build defaults to `~/Documents/GetWrite` — visible, backup-friendly, and where writers look — with a per-user override recorded in `userData/workspace.json` (`resolveProjectsDir` = override ?? default). A development build keeps using the repo's `projects/`. Packaged builds previously stored projects under `process.resourcesPath` — inside `GetWrite.app` — where a drag-to-Applications update silently destroyed every project and runtime writes invalidated the bundle's code signature. `migrateLegacyProjectsDir` drains each `legacyProjectsDirs()` entry on every packaged launch, never overwriting an existing entry and never deleting on failure. Changing the location needs a restart, because `GETWRITE_PROJECTS_DIR` is fixed when the Next server is forked.
 - Build flow: `pnpm electron:build` (frontend `next build` → electron `tsc`); package with `pnpm electron:package` (electron-builder).
 - Logs go to `app.getPath("logs")/getwrite.log` in production.
 

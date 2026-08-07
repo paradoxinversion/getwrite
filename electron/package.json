@@ -10,6 +10,9 @@
     },
     "scripts": {
         "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "dev": "tsc && electron dist/main.js",
         "package": "electron-builder --config electron-builder.yml"
     },
@@ -17,6 +20,7 @@
         "@types/node": "^22.19.19",
         "electron": "^34.5.8",
         "electron-builder": "^25.1.8",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "vitest": "4.1.6"
     }
 }

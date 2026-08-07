@@ -1,9 +1,25 @@
-import { app, BrowserWindow, shell, utilityProcess } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  shell,
+  utilityProcess,
+} from "electron";
 import type { UtilityProcess } from "electron";
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import http from "http";
 import fs from "fs";
+import {
+  ensureProjectsDir,
+  legacyProjectsDirs,
+  migrateLegacyProjectsDir,
+  resolveProjectsDir,
+  validateWorkspaceDir,
+  writeConfiguredProjectsDir,
+  type ProjectsDirEnvironment,
+} from "./projects-dir";
 
 const PORT = 3000;
 let serverProcess: ChildProcess | UtilityProcess | null = null;
@@ -46,10 +62,29 @@ function getRepoRoot(): string {
     : path.join(__dirname, "..", "..");
 }
 
+/**
+ * Describes this build's environment for `projects-dir.ts`.
+ *
+ * @returns The paths that decide where projects live.
+ */
+function projectsDirEnvironment(): ProjectsDirEnvironment {
+  return {
+    isPackaged: app.isPackaged,
+    documentsDir: app.isPackaged ? app.getPath("documents") : "",
+    userDataDir: app.isPackaged ? app.getPath("userData") : "",
+    resourcesPath: app.isPackaged ? process.resourcesPath : "",
+    repoRoot: getRepoRoot(),
+  };
+}
+
 function resolveDirectories() {
   const root = getRepoRoot();
   return {
-    projectsDir: path.join(root, "projects"),
+    // Packaged builds keep projects under userData, never inside the app
+    // bundle — see `projects-dir.ts` for why that distinction matters.
+    // Templates and the standalone server stay under `root`: they are read-only
+    // build output that *should* be replaced wholesale by an update.
+    projectsDir: resolveProjectsDir(projectsDirEnvironment()),
     templatesDir: path.join(
       root,
       "getwrite-config",
@@ -107,7 +142,14 @@ function startServer(
   log(`templatesDir:  ${dirs.templatesDir}`);
 
   if (app.isPackaged) {
-    fs.mkdirSync(dirs.projectsDir, { recursive: true });
+    // Throws with a readable message rather than an opaque EROFS/EACCES; the
+    // caller turns that into the on-screen error. See `projects-dir.ts`.
+    ensureProjectsDir(dirs.projectsDir);
+    // Rescue anything an earlier build left elsewhere. Each is a no-op once
+    // drained, so this can run on every launch with no "have I migrated?" flag.
+    for (const legacy of legacyProjectsDirs(projectsDirEnvironment())) {
+      migrateLegacyProjectsDir(legacy, dirs.projectsDir, log);
+    }
     // pnpm monorepo: Next.js standalone mirrors the workspace layout,
     // so server.js lands at standalone/frontend/server.js (not standalone/server.js).
     const serverCwd = path.join(dirs.standaloneDir, "frontend");
@@ -131,6 +173,58 @@ function startServer(
     cwd: path.join(getRepoRoot(), "frontend"),
     env,
     shell: true,
+  });
+}
+
+/**
+ * Wires the three workspace-location channels the preload bridge calls.
+ *
+ * Changing the location needs a restart rather than a live switch: the Next
+ * server receives `GETWRITE_PROJECTS_DIR` in its environment when it is
+ * forked, so the running server is bound to the old directory for its whole
+ * life. Restarting is honest about that; quietly serving stale state would not
+ * be.
+ *
+ * Nothing here trusts the renderer with a path. The directory comes from a
+ * native picker in this process, and is validated before it is recorded.
+ */
+function registerWorkspaceHandlers(): void {
+  ipcMain.handle("getwrite:workspace-dir", () =>
+    resolveProjectsDir(projectsDirEnvironment()),
+  );
+
+  ipcMain.handle("getwrite:choose-workspace-dir", async () => {
+    const environment = projectsDirEnvironment();
+    const picked = await dialog.showOpenDialog({
+      title: "Choose where GetWrite keeps your projects",
+      defaultPath: resolveProjectsDir(environment),
+      properties: ["openDirectory", "createDirectory"],
+      buttonLabel: "Use this folder",
+    });
+    if (picked.canceled || picked.filePaths.length === 0) {
+      return { ok: false, cancelled: true };
+    }
+
+    const [projectsDir] = picked.filePaths;
+    const validation = validateWorkspaceDir(projectsDir, environment);
+    if (!validation.ok) {
+      log(`Rejected workspace location ${projectsDir}: ${validation.reason}`);
+      return { ok: false, message: validation.message };
+    }
+
+    // Recorded, not moved. Pointing at a folder and relocating a workspace are
+    // different intentions, and silently moving a user's manuscripts because
+    // they browsed to a folder would be the wrong guess to make on their
+    // behalf.
+    writeConfiguredProjectsDir(environment.userDataDir, projectsDir);
+    log(`Workspace location set to ${projectsDir}`);
+    return { ok: true, projectsDir };
+  });
+
+  ipcMain.handle("getwrite:restart", () => {
+    log("Restarting to apply a new workspace location");
+    app.relaunch();
+    app.quit();
   });
 }
 
@@ -255,16 +349,29 @@ if (!app.requestSingleInstanceLock()) {
     initLog();
     log(`app ready — isPackaged: ${app.isPackaged}`);
     log(`resourcesPath: ${process.resourcesPath}`);
+    registerWorkspaceHandlers();
 
     const dirs = resolveDirectories();
-    serverProcess = startServer(dirs);
+
+    // Open the window first, so anything that fails below has somewhere to say
+    // so. Previously `startServer` ran before the window existed, and a throw
+    // took the whole callback down with it — leaving a launched app with no
+    // window, no dialog, and no indication of what went wrong.
+    openMainWindow();
+
+    try {
+      serverProcess = startServer(dirs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      log(`FAILED to start: ${message}`);
+      currentAbort?.(message);
+      return;
+    }
 
     serverProcess.stdout?.on("data", (d) => log(d.toString().trim()));
     serverProcess.stderr?.on("data", (d) =>
       log(`[stderr] ${d.toString().trim()}`),
     );
-
-    openMainWindow();
 
     // ChildProcess and UtilityProcess both extend EventEmitter and emit "exit"
     // with the code first; subscribe via the common base so the union typechecks.
