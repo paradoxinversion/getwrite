@@ -328,3 +328,32 @@ export function validateWorkspaceDir(
 
   return { ok: true };
 }
+
+/**
+ * Creates the projects directory, failing with a message worth reading.
+ *
+ * The raw `mkdirSync` throw this replaces was invisible. It ran inside
+ * `app.whenReady()` before the window was created, so a failure killed the
+ * callback and the user got a launched app with no window, no dialog, and
+ * nothing to diagnose.
+ *
+ * Not hypothetical: the Linux AppImage runs from a read-only SquashFS mount,
+ * and this directory used to be created under `process.resourcesPath` inside
+ * it — raising EROFS on every launch since the first release. Moving the
+ * location fixes that particular cause; this makes the *next* cause legible,
+ * whatever it turns out to be (a redirected Documents folder, a full disk, a
+ * permissions change).
+ *
+ * @param projectsDir - The directory to create.
+ * @throws {Error} With a message naming the path and the underlying cause.
+ */
+export function ensureProjectsDir(projectsDir: string): void {
+  try {
+    fs.mkdirSync(projectsDir, { recursive: true });
+  } catch (error) {
+    throw new Error(
+      `GetWrite could not create its projects folder at ${projectsDir}. ` +
+        `Check that the folder is writable, then restart. (${String(error)})`,
+    );
+  }
+}

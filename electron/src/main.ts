@@ -12,6 +12,7 @@ import path from "path";
 import http from "http";
 import fs from "fs";
 import {
+  ensureProjectsDir,
   legacyProjectsDirs,
   migrateLegacyProjectsDir,
   resolveProjectsDir,
@@ -141,7 +142,9 @@ function startServer(
   log(`templatesDir:  ${dirs.templatesDir}`);
 
   if (app.isPackaged) {
-    fs.mkdirSync(dirs.projectsDir, { recursive: true });
+    // Throws with a readable message rather than an opaque EROFS/EACCES; the
+    // caller turns that into the on-screen error. See `projects-dir.ts`.
+    ensureProjectsDir(dirs.projectsDir);
     // Rescue anything an earlier build left elsewhere. Each is a no-op once
     // drained, so this can run on every launch with no "have I migrated?" flag.
     for (const legacy of legacyProjectsDirs(projectsDirEnvironment())) {
@@ -349,14 +352,26 @@ if (!app.requestSingleInstanceLock()) {
     registerWorkspaceHandlers();
 
     const dirs = resolveDirectories();
-    serverProcess = startServer(dirs);
+
+    // Open the window first, so anything that fails below has somewhere to say
+    // so. Previously `startServer` ran before the window existed, and a throw
+    // took the whole callback down with it — leaving a launched app with no
+    // window, no dialog, and no indication of what went wrong.
+    openMainWindow();
+
+    try {
+      serverProcess = startServer(dirs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      log(`FAILED to start: ${message}`);
+      currentAbort?.(message);
+      return;
+    }
 
     serverProcess.stdout?.on("data", (d) => log(d.toString().trim()));
     serverProcess.stderr?.on("data", (d) =>
       log(`[stderr] ${d.toString().trim()}`),
     );
-
-    openMainWindow();
 
     // ChildProcess and UtilityProcess both extend EventEmitter and emit "exit"
     // with the code first; subscribe via the common base so the union typechecks.

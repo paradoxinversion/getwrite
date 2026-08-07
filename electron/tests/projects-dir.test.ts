@@ -15,6 +15,7 @@ import path from "path";
 import {
   clearConfiguredProjectsDir,
   defaultProjectsDir,
+  ensureProjectsDir,
   legacyProjectsDirs,
   migrateLegacyProjectsDir,
   readConfiguredProjectsDir,
@@ -285,5 +286,39 @@ describe("migrateLegacyProjectsDir", () => {
     // Silent data movement is not acceptable here; the log is the only record
     // a user or a support request can appeal to.
     expect(lines.join("\n")).toMatch(/migrat/i);
+  });
+});
+
+describe("ensureProjectsDir", () => {
+  it("creates the directory and its parents", () => {
+    const target = path.join(root, "deep", "nested", "GetWrite");
+
+    ensureProjectsDir(target);
+
+    expect(fs.existsSync(target)).toBe(true);
+  });
+
+  it("is happy when the directory already exists", () => {
+    expect(() => ensureProjectsDir(destination)).not.toThrow();
+  });
+
+  it("names the path and the cause when it cannot create the folder", () => {
+    const readOnly = path.join(root, "read-only");
+    fs.mkdirSync(readOnly, { recursive: true });
+    fs.chmodSync(readOnly, 0o555);
+    const target = path.join(readOnly, "GetWrite");
+
+    // The raw mkdirSync throw this replaces ran before the window existed, so
+    // it killed app.whenReady() and left the user with no window and no
+    // dialog. The Linux AppImage hit exactly that, from a read-only SquashFS
+    // mount, on every launch since the first release.
+    try {
+      expect(() => ensureProjectsDir(target)).toThrow(/could not create/i);
+      expect(() => ensureProjectsDir(target)).toThrow(
+        new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+      );
+    } finally {
+      fs.chmodSync(readOnly, 0o755);
+    }
   });
 });
