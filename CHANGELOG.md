@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.8.0...getwrite-v2.0.0) (2026-08-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **desktop:** Desktop projects move out of the application directory to ~/Documents/GetWrite. What you must do before installing depends on your platform.
+
+### Features
+
+* **desktop:** default projects to Documents, and let users move them ([42f448d](https://github.com/saboteur-works/getwrite/commit/42f448d13d6cc0ed553c5fa05b13e82107e57cca))
+
+
+### Bug Fixes
+
+* **desktop:** store projects outside the app bundle ([709cf6b](https://github.com/saboteur-works/getwrite/commit/709cf6b86cd3086be378915bf7e38486b273145a))
+* **desktop:** store projects outside the app bundle, in Documents ([5a650a9](https://github.com/saboteur-works/getwrite/commit/5a650a94fe943dc8592d8d0aea55c7d55121aa5c))
+* **desktop:** surface a projects-folder failure instead of hiding it ([47062a1](https://github.com/saboteur-works/getwrite/commit/47062a1f437d06d378728692ac7e1bf8bad01a6f))
+
+
+### Documentation
+
+* **desktop:** state what the migration cannot rescue ([98f2be1](https://github.com/saboteur-works/getwrite/commit/98f2be1d63c6fc5b5578ff726d10b6d5237a6ef7))
+
 ## [1.8.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.7.0...getwrite-v1.8.0) (2026-07-29)
 
 
