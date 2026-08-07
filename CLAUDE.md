@@ -53,6 +53,29 @@ pnpm test:e2e   # Playwright — requires pnpm storybook on :6006
 
 From the repo root: `pnpm --filter getwrite-frontend exec vitest` runs frontend tests via the workspace.
 
+### Running git from outside the repo
+
+Claude Code's command sandbox allows writes only under the session's working
+directory. If the session's cwd is *not* this repo, writes into `.git/` are denied:
+
+```
+$ touch /path/to/getwrite/.git/probe
+touch: ... Operation not permitted
+```
+
+This splits git commands into two cases:
+
+- **Read-only (`git log`, `git diff`, `git show`, `git status`) — works from anywhere.**
+  These only *opportunistically* refresh `.git/index`; git tolerates that write failing
+  and still prints correct output. Use `git -C /path/to/getwrite …` rather than `cd`.
+- **Mutating (`git commit`, `git checkout`, `git merge`, `git rebase`) — needs cwd inside
+  the repo.** These genuinely must write to `.git/`, so they fail rather than degrade.
+  `-C` is not a workaround; start the session in the repo.
+
+**Do not disable the sandbox to run read-only git.** `git log --oneline main..HEAD` and
+`git diff --stat main..HEAD` both succeed sandboxed — a `dangerouslyDisableSandbox`
+prompt on those is a preemptive guess, not a real denial, and escaping buys nothing.
+
 ## Architecture
 
 ### Data Layer (No Database)
