@@ -1,0 +1,132 @@
+name: Linux AppImage storage smoke
+
+# Tests a claim the 2.0.0 release notes make to users:
+#
+#   "Linux — nothing to back up. The AppImage runs from a read-only filesystem,
+#    so it could never create that folder and never saved anything. This is the
+#    first build that can store your work at all."
+#
+# That was reasoned from the AppImage format and electron-builder.yml, never
+# observed — there was no Linux machine to hand. It is the only assertion in
+# that release that reached users untested, so it gets a real x86-64 Linux box
+# and a real FUSE mount here.
+#
+# Both versions run deliberately. 1.8.0 is expected to FAIL to create its
+# projects directory and 2.0.0 is expected to succeed; showing the regression
+# and the fix together is what makes this evidence rather than one data point.
+#
+# ⚠ Do NOT "fix" this with --appimage-extract-and-run. That unpacks the image
+# into a writable temp directory, which makes resourcesPath writable and the
+# bug vanish — the run would go green while proving nothing at all. The whole
+# test rests on the image being mounted read-only, which needs real FUSE.
+
+on:
+    pull_request:
+        branches: [main, master]
+    workflow_dispatch:
+
+jobs:
+    appimage-smoke:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    # Stored projects inside the read-only mount: expected to
+                    # fail before it can create anything.
+                    - version: "1.8.0"
+                      expectation: "fails"
+                    # Stores them in ~/Documents/GetWrite: expected to succeed.
+                    - version: "2.0.0"
+                      expectation: "succeeds"
+
+        steps:
+            - name: Install FUSE and a virtual display
+              # libfuse2 is what lets the AppImage mount itself read-only, which
+              # is the exact condition under test. xvfb gives Electron a display.
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libfuse2 xvfb
+
+            - name: Download the published AppImage
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release download getwrite-v${{ matrix.version }} \
+                    --repo ${{ github.repository }} \
+                    --pattern '*.AppImage' --output GetWrite.AppImage
+                  chmod +x GetWrite.AppImage
+
+            - name: Launch it
+              # --no-sandbox because CI has no user namespaces for Chromium's
+              # setuid sandbox. It does not affect where files are written.
+              run: |
+                  xvfb-run -a ./GetWrite.AppImage --no-sandbox > launch.log 2>&1 &
+                  echo "waiting for startup"
+                  for i in $(seq 1 40); do
+                    if [ -d "$HOME/Documents/GetWrite" ] || curl -sf -o /dev/null http://localhost:3000; then
+                      break
+                    fi
+                    sleep 2
+                  done
+
+            - name: Observe what it did
+              id: observe
+              run: |
+                  PROJECTS_DIR="$HOME/Documents/GetWrite"
+                  if [ -d "$PROJECTS_DIR" ]; then
+                    echo "projects_dir=present" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "projects_dir=absent" >> "$GITHUB_OUTPUT"
+                  fi
+                  if curl -sf -o /dev/null http://localhost:3000; then
+                    echo "server=up" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "server=down" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Show the evidence
+              # Printed whatever the outcome, because a surprise here is the
+              # interesting result — it would mean the release notes are wrong.
+              if: always()
+              run: |
+                  echo "=== ~/Documents ==="
+                  ls -la "$HOME/Documents" || echo "(no Documents directory)"
+                  echo "=== app log ==="
+                  cat "$HOME"/.config/*/logs/getwrite.log 2>/dev/null || echo "(no app log)"
+                  echo "=== stdout/stderr ==="
+                  cat launch.log || true
+
+            - name: Judge against the claim
+              env:
+                  PROJECTS_DIR: ${{ steps.observe.outputs.projects_dir }}
+                  SERVER: ${{ steps.observe.outputs.server }}
+              run: |
+                  echo "version=${{ matrix.version }} expectation=${{ matrix.expectation }}"
+                  echo "projects_dir=$PROJECTS_DIR server=$SERVER"
+
+                  if [ "${{ matrix.expectation }}" = "succeeds" ]; then
+                    # 2.0.0 stores in ~/Documents/GetWrite, so its presence is
+                    # the whole point, and the server must actually be serving.
+                    if [ "$PROJECTS_DIR" != "present" ]; then
+                      echo "::error::2.0.0 did not create ~/Documents/GetWrite. The fix does not work on Linux."
+                      exit 1
+                    fi
+                    if [ "$SERVER" != "up" ]; then
+                      echo "::error::2.0.0 created its projects directory but the app never started serving."
+                      exit 1
+                    fi
+                    echo "OK: 2.0.0 created its projects directory and came up."
+                  else
+                    # 1.8.0 never used ~/Documents/GetWrite, so that folder being
+                    # absent proves nothing on its own — it would be absent even
+                    # if the build worked perfectly. The load-bearing signal is
+                    # that the app cannot start at all: creating its projects
+                    # directory under the read-only mount throws before the Next
+                    # server is ever forked, so nothing answers on :3000.
+                    if [ "$SERVER" = "up" ]; then
+                      echo "::error::1.8.0 started and served on Linux, so it was NOT broken the way the 2.0.0 release notes claim. The notes need correcting — see the log above for where it put its projects."
+                      exit 1
+                    fi
+                    echo "OK: 1.8.0 never came up, consistent with being unable to create its projects directory."
+                  fi
