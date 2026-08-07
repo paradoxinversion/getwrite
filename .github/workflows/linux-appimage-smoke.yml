@@ -73,8 +73,20 @@ jobs:
             - name: Observe what it did
               id: observe
               run: |
-                  PROJECTS_DIR="$HOME/Documents/GetWrite"
-                  if [ -d "$PROJECTS_DIR" ]; then
+                  # Ask the app where it decided to put projects rather than
+                  # assuming a path. On Linux `app.getPath("documents")` falls
+                  # back to $HOME when xdg-user-dirs is not configured — as on a
+                  # bare runner — so a hard-coded ~/Documents/GetWrite reports a
+                  # false failure on exactly the machines CI provides.
+                  LOG=$(ls "$HOME"/.config/*/logs/getwrite.log 2>/dev/null | head -1)
+                  PROJECTS_DIR=""
+                  if [ -n "$LOG" ]; then
+                    PROJECTS_DIR=$(awk '/projectsDir:/ {sub(/.*projectsDir:[ \t]*/, ""); print}' "$LOG" | tail -1)
+                  fi
+                  echo "resolved projectsDir: ${PROJECTS_DIR:-<none logged>}"
+                  echo "resolved_dir=${PROJECTS_DIR}" >> "$GITHUB_OUTPUT"
+
+                  if [ -n "$PROJECTS_DIR" ] && [ -d "$PROJECTS_DIR" ]; then
                     echo "projects_dir=present" >> "$GITHUB_OUTPUT"
                   else
                     echo "projects_dir=absent" >> "$GITHUB_OUTPUT"
@@ -100,33 +112,39 @@ jobs:
             - name: Judge against the claim
               env:
                   PROJECTS_DIR: ${{ steps.observe.outputs.projects_dir }}
+                  RESOLVED_DIR: ${{ steps.observe.outputs.resolved_dir }}
                   SERVER: ${{ steps.observe.outputs.server }}
               run: |
                   echo "version=${{ matrix.version }} expectation=${{ matrix.expectation }}"
-                  echo "projects_dir=$PROJECTS_DIR server=$SERVER"
+                  echo "resolved=$RESOLVED_DIR projects_dir=$PROJECTS_DIR server=$SERVER"
 
                   if [ "${{ matrix.expectation }}" = "succeeds" ]; then
-                    # 2.0.0 stores in ~/Documents/GetWrite, so its presence is
-                    # the whole point, and the server must actually be serving.
+                    # 2.0.0 must actually create the directory it chose, and
+                    # must come up. Where that directory is depends on the
+                    # machine's XDG configuration, so it is read from the log.
                     if [ "$PROJECTS_DIR" != "present" ]; then
-                      echo "::error::2.0.0 did not create ~/Documents/GetWrite. The fix does not work on Linux."
+                      echo "::error::2.0.0 did not create its projects directory ($RESOLVED_DIR). The fix does not work on Linux."
                       exit 1
                     fi
                     if [ "$SERVER" != "up" ]; then
-                      echo "::error::2.0.0 created its projects directory but the app never started serving."
+                      echo "::error::2.0.0 created $RESOLVED_DIR but never started serving."
                       exit 1
                     fi
-                    echo "OK: 2.0.0 created its projects directory and came up."
+                    echo "OK: 2.0.0 created $RESOLVED_DIR and came up."
                   else
-                    # 1.8.0 never used ~/Documents/GetWrite, so that folder being
-                    # absent proves nothing on its own — it would be absent even
-                    # if the build worked perfectly. The load-bearing signal is
-                    # that the app cannot start at all: creating its projects
-                    # directory under the read-only mount throws before the Next
-                    # server is ever forked, so nothing answers on :3000.
-                    if [ "$SERVER" = "up" ]; then
-                      echo "::error::1.8.0 started and served on Linux, so it was NOT broken the way the 2.0.0 release notes claim. The notes need correcting — see the log above for where it put its projects."
+                    # For 1.8.0 both halves matter. Its chosen directory sits
+                    # inside the read-only mount, so it must NOT exist, and the
+                    # throw that follows happens before the Next server is
+                    # forked, so nothing may answer on :3000. Checking only the
+                    # server would not distinguish this from an unrelated CI
+                    # failure to start.
+                    if [ "$PROJECTS_DIR" = "present" ]; then
+                      echo "::error::1.8.0 DID create $RESOLVED_DIR, so it could store projects after all. The 2.0.0 release notes are wrong and need correcting."
                       exit 1
                     fi
-                    echo "OK: 1.8.0 never came up, consistent with being unable to create its projects directory."
+                    if [ "$SERVER" = "up" ]; then
+                      echo "::error::1.8.0 started and served on Linux, so it was NOT broken the way the 2.0.0 release notes claim. Correct the notes."
+                      exit 1
+                    fi
+                    echo "OK: 1.8.0 could not create $RESOLVED_DIR and never came up, exactly as the release notes state."
                   fi
