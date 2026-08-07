@@ -17,11 +17,26 @@ jobs:
         strategy:
             matrix:
                 include:
+                    # One macOS job builds BOTH architectures. There was a
+                    # second, macos-13, for the Intel dmg — but macos-13 runners
+                    # never picked the job up: it sat queued for 23h on the 1.8.0
+                    # build, was cancelled at GitHub's 24h timeout on the one
+                    # before, and was still queued when 2.0.0 shipped. Every
+                    # release therefore sat "in progress" for a day, and its logs
+                    # stayed unavailable until it was killed.
+                    #
+                    # It was also redundant. GetWrite-2.0.0-x64.dmg was published
+                    # while macos-13 was still queued, and `lipo -info` on that
+                    # artifact reports x86_64 for both the app binary and the
+                    # Electron Framework — so this runner had already produced a
+                    # genuine Intel build. Cross-building is safe here because
+                    # electron-builder downloads the prebuilt x64 Electron and
+                    # `npmRebuild: false` means nothing native is compiled.
+                    #
+                    # Both arches are named explicitly rather than relying on the
+                    # arch list in electron-builder.yml winning over the CLI flag.
                     - os: macos-14
-                      eb_args: --mac --arm64
-                      artifact_glob: dist-electron/*.dmg
-                    - os: macos-13
-                      eb_args: --mac --x64
+                      eb_args: --mac --x64 --arm64
                       artifact_glob: dist-electron/*.dmg
                     - os: windows-latest
                       eb_args: --win --x64
