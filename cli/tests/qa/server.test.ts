@@ -92,8 +92,29 @@ describe("findFreePort", () => {
 });
 
 describe("startQaServer", () => {
+  // This suite intentionally spawns only ONE real `next dev` child process
+  // across the whole file (see the module-level comment for why a single
+  // attempt already needs real headroom). An earlier version of this file
+  // had two separate tests, each spawning its own real dev server in
+  // sequence within the same process. In this repo's CI/sandboxed test
+  // environment that pairing was observed to be unreliable: the second
+  // spawn against the same `frontend/` cwd could come up readable on `/`
+  // (satisfying `waitForServerReady`'s probe) while `/api/projects`
+  // deterministically kept serving an interim/error HTML page for the
+  // entire retry budget — a directory-scoped dev-server artifact (cache/
+  // lock state under `frontend/.next`) that a second same-directory spawn
+  // in quick succession isn't guaranteed to be independent of, even after
+  // the first spawn's `.stop()` has confirmed the child process itself
+  // fully exited. Rather than paper over that with a settle delay or a
+  // wider retry budget (which doesn't address the interaction and still
+  // burns wall-clock in CI), this test proves everything the two originals
+  // did with a single spawn: reusing that one server to also cover the
+  // GETWRITE_PROJECTS_DIR + /api/projects + clean-stop assertions, so no
+  // second real server ever needs to boot. Port-3000-occupied handling is
+  // proven directly against port selection (see below); free-port discovery
+  // itself is separately covered by the `findFreePort` suite above.
   it(
-    "picks a different port than 3000 when 3000 is already occupied, rather than failing",
+    "when port 3000 is occupied it starts on a different port, sets GETWRITE_PROJECTS_DIR before start, serves valid JSON, and stops cleanly with no orphaned process",
     { timeout: REAL_SERVER_TIMEOUT_MS, retry: REAL_SERVER_RETRY },
     async () => {
       const workspaceDir = await mkWorkspace();
@@ -107,29 +128,25 @@ describe("startQaServer", () => {
         occupied.listen(3000, "127.0.0.1", () => resolve());
       });
 
-      try {
-        const handle = await startQaServer({ workspaceDir });
-        try {
-          expect(handle.port).not.toBe(3000);
-          expect(handle.child.exitCode).toBeNull();
-        } finally {
-          await handle.stop();
-        }
-      } finally {
-        await new Promise<void>((resolve) => occupied.close(() => resolve()));
-      }
-    },
-  );
-
-  it(
-    "sets GETWRITE_PROJECTS_DIR before start and stops cleanly with no orphaned process",
-    { timeout: REAL_SERVER_TIMEOUT_MS, retry: REAL_SERVER_RETRY },
-    async () => {
-      const workspaceDir = await mkWorkspace();
-
-      const handle = await startQaServer({ workspaceDir });
+      let handle: Awaited<ReturnType<typeof startQaServer>> | undefined;
       let stopped = false;
+      let occupiedClosed = false;
       try {
+        handle = await startQaServer({ workspaceDir });
+
+        // Port selection: a naive "just bind 3000" implementation would
+        // either fail to start at all (occupied above) or bind the
+        // occupied port and collide — neither of which this handle
+        // exhibits.
+        expect(handle.port).not.toBe(3000);
+        expect(handle.child.exitCode).toBeNull();
+
+        // The throwaway listener has served its purpose once the QA server
+        // is confirmed up on a different port; release it before exercising
+        // the rest of the server so it isn't held for the whole test.
+        await new Promise<void>((resolve) => occupied.close(() => resolve()));
+        occupiedClosed = true;
+
         // The dev server's /api/projects route resolves projects through
         // resolveProjectsDir(), which honors GETWRITE_PROJECTS_DIR at start.
         // A successful, non-erroring response confirms the child process is
@@ -146,7 +163,10 @@ describe("startQaServer", () => {
         ).toBe(true);
       } finally {
         if (!stopped) {
-          await handle.stop().catch(() => {});
+          await handle?.stop().catch(() => {});
+        }
+        if (!occupiedClosed) {
+          occupied.close();
         }
       }
     },
