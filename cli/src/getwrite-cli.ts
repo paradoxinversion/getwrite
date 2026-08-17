@@ -5,6 +5,7 @@ import registerScreenshots from "./commands/screenshots";
 import registerProject from "./commands/project";
 import registerReindex from "./commands/reindex";
 import registerDoctor from "./commands/doctor";
+import registerQa from "./commands/qa";
 
 const program = new Command("getwrite-cli");
 
@@ -17,6 +18,7 @@ registerScreenshots(program);
 registerProject(program);
 registerReindex(program);
 registerDoctor(program);
+registerQa(program);
 
 export async function main(argv: string[]): Promise<number> {
   // commander expects process.argv-like array
