@@ -57,6 +57,8 @@ import {
 import {
   writeRunReport,
   defaultReportPath,
+  parseInventoryItemIds,
+  reconcileWithInventory,
   type RunItemOutcome,
 } from "../qa/report";
 import { applyCleanupPolicy } from "../qa/cleanup";
@@ -149,6 +151,35 @@ async function removeSession(): Promise<void> {
 }
 
 /**
+ * Reads the declared inventory item ids from
+ * `specs/features/agentic-qa/inventory.md`, or `undefined` when the file is
+ * absent or declares none.
+ *
+ * Returning `undefined` rather than throwing is deliberate: a missing
+ * inventory should degrade the report to "no reconciliation possible", not
+ * prevent a run from producing a report at all.
+ */
+async function readInventoryItemIds(
+  repoRoot: string,
+): Promise<string[] | undefined> {
+  const inventoryPath = path.join(
+    repoRoot,
+    "specs",
+    "features",
+    "agentic-qa",
+    "inventory.md",
+  );
+  try {
+    const markdown = await readFile(inventoryPath, "utf8");
+    const ids = parseInventoryItemIds(markdown);
+    return ids.length > 0 ? ids : undefined;
+  } catch (err) {
+    if (isNotFoundError(err)) return undefined;
+    throw err;
+  }
+}
+
+/**
  * Unrefs a child process's piped stdio stream so it doesn't keep this
  * process's event loop alive. `child.stdout`/`child.stderr` are typed as
  * `Readable` (stdio's static type can't know it was configured as a pipe),
@@ -178,6 +209,25 @@ interface VerifyCliOptions {
   itemId?: string;
   description?: string;
   uiOutcome?: string;
+}
+
+/** CLI options accepted by `qa record`. */
+interface RecordCliOptions {
+  itemId: string;
+  description?: string;
+  uiOutcome?: string;
+  reason?: string;
+}
+
+/**
+ * Statuses `qa record` may set. `pass` is deliberately absent: a pass must be
+ * earned by a filesystem check via `qa verify`, never asserted by hand.
+ */
+const RECORDABLE_STATUSES = ["unreachable", "unverified", "fail"] as const;
+type RecordableStatus = (typeof RECORDABLE_STATUSES)[number];
+
+function isRecordableStatus(value: string): value is RecordableStatus {
+  return (RECORDABLE_STATUSES as readonly string[]).includes(value);
 }
 
 const VERIFY_KINDS = [
@@ -590,6 +640,93 @@ export function registerQa(program: Command) {
     );
 
   /**
+   * `qa record <status>`
+   *
+   * Records an outcome that has no filesystem check behind it.
+   *
+   * FR-11 requires a control the agent could not reach to be recorded as a
+   * distinct, explicitly-labelled outcome rather than silently omitted — but
+   * `qa verify` can only produce `pass`/`fail`, because it derives its status
+   * from reading an artifact. With no other route, an unreachable control had
+   * to be left unrecorded, which is precisely the silent omission FR-11
+   * forbids: the report then reads as a clean run, and `qa finish` deletes the
+   * workspace as "every exercised item passed".
+   *
+   * `--reason` is mandatory for `unreachable`: "the agent could not interact
+   * with this control" is only actionable if it says which control and why
+   * (FR-10).
+   */
+  qa.command("record <status>")
+    .description(
+      "Record an outcome with no filesystem check (status: unreachable, unverified, fail)",
+    )
+    .requiredOption(
+      "--item-id <id>",
+      "Stable inventory item id this outcome belongs to",
+    )
+    .option("--description <text>", "Human-readable description of the item")
+    .option("--ui-outcome <text>", "What the UI reported, if observed")
+    .option(
+      "--reason <text>",
+      "Why the control was unreachable (required for unreachable)",
+    )
+    .action(
+      async (status: string, options: RecordCliOptions): Promise<void> => {
+        try {
+          if (!isRecordableStatus(status)) {
+            throw new Error(
+              `Unknown status "${status}". Expected one of: ${RECORDABLE_STATUSES.join(", ")}.`,
+            );
+          }
+          if (status === "unreachable" && options.reason === undefined) {
+            throw new Error(
+              "--reason is required for unreachable: name the control and why it could not be used.",
+            );
+          }
+
+          const session = await readSession();
+          const existing = session.outcomes.find(
+            (o) => o.itemId === options.itemId,
+          );
+
+          if (existing !== undefined) {
+            // A non-pass recorded outcome overrides an earlier pass for the
+            // same item: an item is only as good as its weakest result.
+            existing.status = status;
+            if (options.reason !== undefined) {
+              existing.unreachableReason = options.reason;
+            }
+            if (options.description !== undefined) {
+              existing.description = options.description;
+            }
+            if (options.uiOutcome !== undefined) {
+              existing.uiOutcome = options.uiOutcome;
+            }
+          } else {
+            session.outcomes.push({
+              itemId: options.itemId,
+              description:
+                options.description ??
+                `Outcome recorded without a filesystem check for ${options.itemId}`,
+              status,
+              uiOutcome: options.uiOutcome,
+              unreachableReason: options.reason,
+            });
+          }
+
+          await writeSession(session);
+          console.log(
+            `[qa record] ${status.toUpperCase()} recorded for ${options.itemId}` +
+              (options.reason === undefined ? "" : ` — ${options.reason}`),
+          );
+        } catch (err) {
+          console.error("[qa record] Failed:", (err as Error).message);
+          if (!process.env.GETWRITE_CLI_TESTING) process.exit(2);
+        }
+      },
+    );
+
+  /**
    * `qa report`
    *
    * Reads the session record's accumulated outcomes and writes the run
@@ -603,11 +740,33 @@ export function registerQa(program: Command) {
     .action(async (): Promise<void> => {
       try {
         const session = await readSession();
-        const reportPath = defaultReportPath(repoRootFromThisModule());
-        await writeRunReport(session.outcomes, reportPath);
+        const repoRoot = repoRootFromThisModule();
+        const reportPath = defaultReportPath(repoRoot);
+
+        // Reconcile against the inventory so an item the run never recorded
+        // an outcome for is named in the report as a gap rather than being
+        // absent from it (FR-11). A missing or unreadable inventory must not
+        // block the report — it just means no reconciliation is possible, and
+        // the report says so by omitting the "N of M" phrasing.
+        const inventoryItemIds = await readInventoryItemIds(repoRoot);
+
+        await writeRunReport(session.outcomes, reportPath, inventoryItemIds);
+
+        const declared = inventoryItemIds?.length;
+        const recorded = session.outcomes.length;
+        const missing =
+          declared === undefined ? 0 : Math.max(0, declared - recorded);
         console.log(
-          `[qa report] Wrote report with ${session.outcomes.length} item(s) to ${reportPath}`,
+          `[qa report] Wrote report with ${recorded} recorded item(s)` +
+            (declared === undefined ? "" : ` of ${declared} declared`) +
+            ` to ${reportPath}`,
         );
+        if (missing > 0) {
+          console.log(
+            `[qa report] ${missing} inventory item(s) had no recorded outcome ` +
+              "and are listed as unverified — this run is not clean.",
+          );
+        }
       } catch (err) {
         console.error("[qa report] Failed:", (err as Error).message);
         if (!process.env.GETWRITE_CLI_TESTING) process.exit(2);
@@ -644,8 +803,20 @@ export function registerQa(program: Command) {
           );
         }
 
-        const cleanupResult = await applyCleanupPolicy(
+        // Reconcile against the inventory before deciding: an item the run
+        // never recorded an outcome for must count against a clean result,
+        // or a run that skipped an item deletes the very workspace someone
+        // would need to work out why it was skipped.
+        const inventoryItemIds = await readInventoryItemIds(
+          repoRootFromThisModule(),
+        );
+        const reconciled = reconcileWithInventory(
           session.outcomes,
+          inventoryItemIds,
+        );
+
+        const cleanupResult = await applyCleanupPolicy(
+          reconciled,
           session.workspacePath,
         );
         console.log(`[qa finish] ${cleanupResult.message}`);

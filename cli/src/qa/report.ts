@@ -88,6 +88,61 @@ export function defaultReportPath(
   );
 }
 
+/**
+ * Extracts the stable item ids declared in `inventory.md`.
+ *
+ * The report is reconciled against this list so an item the run never
+ * recorded an outcome for cannot vanish from the report. Without it, an
+ * inventory item the agent could not exercise is simply absent, and the
+ * summary reads "all pass" — a clean-looking report for a run that skipped
+ * something. FR-11 forbids exactly that silent omission.
+ *
+ * Parses the `- id: \`item-id\`` lines the inventory's documented shape
+ * guarantees, rather than imposing a new format on a hand-authored file.
+ */
+export function parseInventoryItemIds(markdown: string): string[] {
+  const ids: string[] = [];
+  const pattern = /^-\s+id:\s*`([^`]+)`\s*$/gm;
+  let match = pattern.exec(markdown);
+  while (match !== null) {
+    ids.push(match[1]);
+    match = pattern.exec(markdown);
+  }
+  return ids;
+}
+
+/**
+ * Synthesises an explicit `unverified` outcome for an inventory item the run
+ * recorded nothing for, so it appears in the report as a named gap instead of
+ * being silently missing.
+ */
+function notExercisedOutcome(itemId: string): RunItemOutcome {
+  return {
+    itemId,
+    description:
+      "Declared in inventory.md but no outcome was recorded for it in this run.",
+    status: "unverified",
+    uiOutcome: "(item was not exercised in this run)",
+  };
+}
+
+/**
+ * Merges recorded outcomes with the inventory, appending a `not exercised`
+ * entry for every declared item the run never reported on. Returns the
+ * recorded outcomes unchanged when no inventory is supplied.
+ */
+export function reconcileWithInventory(
+  outcomes: RunItemOutcome[],
+  inventoryItemIds: string[] | undefined,
+): RunItemOutcome[] {
+  if (inventoryItemIds === undefined || inventoryItemIds.length === 0) {
+    return outcomes;
+  }
+  const recorded = new Set(outcomes.map((outcome) => outcome.itemId));
+  const missing = inventoryItemIds.filter((id) => !recorded.has(id));
+  return [...outcomes, ...missing.map(notExercisedOutcome)];
+}
+
 interface StatusCounts {
   pass: number;
   fail: number;
@@ -135,17 +190,46 @@ function renderSummaryTable(counts: StatusCounts, total: number): string {
   return lines.join("\n");
 }
 
-function renderCoverageBoundary(total: number): string {
-  return [
-    `This run exercised ${total} inventory item${total === 1 ? "" : "s"}, ` +
-      `covering the following in-scope feature area${
-        IN_SCOPE_FEATURE_AREAS.length === 1 ? "" : "s"
-      }: ${IN_SCOPE_FEATURE_AREAS.join(", ")} (per FR-12's MVP inventory scope).`,
+function renderCoverageBoundary(
+  counts: StatusCounts,
+  recordedCount: number,
+  inventoryTotal: number | undefined,
+): string {
+  const exercised = counts.pass + counts.fail;
+  const lines: string[] = [];
+
+  if (inventoryTotal !== undefined) {
+    // FR-16 asks for the number of items that exist as well as the number
+    // exercised. Reporting only the latter lets a run that touched 3 of 4
+    // items read as complete. `recordedCount` is what the run actually
+    // reported on — not the reconciled total, which includes the items this
+    // report had to synthesise precisely because nothing recorded them.
+    lines.push(
+      `This run recorded an outcome for ${recordedCount} of ${inventoryTotal} ` +
+        `declared inventory item${inventoryTotal === 1 ? "" : "s"}, of which ` +
+        `${exercised} ${exercised === 1 ? "was" : "were"} actually exercised ` +
+        `against the filesystem. Any declared item with no recorded outcome ` +
+        `is listed below as unverified — it is not evidence of anything ` +
+        `working.`,
+    );
+  } else {
+    lines.push(
+      `This run exercised ${recordedCount} inventory item${recordedCount === 1 ? "" : "s"}.`,
+    );
+  }
+
+  lines.push(
+    "",
+    `In-scope feature area${
+      IN_SCOPE_FEATURE_AREAS.length === 1 ? "" : "s"
+    }: ${IN_SCOPE_FEATURE_AREAS.join(", ")} (per FR-12's MVP inventory scope).`,
     "",
     "All other product areas are unchecked by this run. A pass here confirms " +
       "only that the exercised items behaved correctly on disk — it says " +
       "nothing about any feature area not listed above.",
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 function renderVerifyResult(result: VerifyResult, index: number): string {
@@ -216,9 +300,17 @@ function renderItemSection(outcome: RunItemOutcome): string {
  * Pure with respect to the filesystem — it returns a string and performs no
  * I/O. {@link writeRunReport} is the thin I/O wrapper around this.
  */
-export function renderRunReport(outcomes: RunItemOutcome[]): string {
+export function renderRunReport(
+  recordedOutcomes: RunItemOutcome[],
+  inventoryItemIds?: string[],
+): string {
+  const outcomes = reconcileWithInventory(recordedOutcomes, inventoryItemIds);
   const counts = countByStatus(outcomes);
   const total = outcomes.length;
+  const inventoryTotal =
+    inventoryItemIds !== undefined && inventoryItemIds.length > 0
+      ? inventoryItemIds.length
+      : undefined;
 
   const sections = [
     "# Agentic QA Run Report",
@@ -233,7 +325,7 @@ export function renderRunReport(outcomes: RunItemOutcome[]): string {
     "",
     "## Coverage boundary",
     "",
-    renderCoverageBoundary(total),
+    renderCoverageBoundary(counts, recordedOutcomes.length, inventoryTotal),
     "",
     "## Items",
     "",
@@ -262,7 +354,8 @@ export function renderRunReport(outcomes: RunItemOutcome[]): string {
 export async function writeRunReport(
   outcomes: RunItemOutcome[],
   reportPath: string = defaultReportPath(),
+  inventoryItemIds?: string[],
 ): Promise<void> {
-  const markdown = renderRunReport(outcomes);
+  const markdown = renderRunReport(outcomes, inventoryItemIds);
   await writeFile(reportPath, markdown, "utf8");
 }

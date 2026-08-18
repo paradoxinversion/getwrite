@@ -1,10 +1,12 @@
-import { test, expect } from "vitest";
+import { describe, it, test, expect } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
   renderRunReport,
   writeRunReport,
+  parseInventoryItemIds,
+  reconcileWithInventory,
   type RunItemOutcome,
 } from "../../src/qa/report";
 import type { VerifyResult } from "../../src/qa/verify";
@@ -199,5 +201,72 @@ test("writeRunReport overwrites an existing report rather than appending", async
     const written = await fs.readFile(reportPath, "utf8");
     expect(written).toBe(renderRunReport(allPassOutcomes()));
     expect(written).not.toContain("ITEM-4");
+  });
+});
+
+describe("inventory reconciliation (FR-11)", () => {
+  const INVENTORY = `
+### proj-create-manifest
+
+- id: \`proj-create-manifest\`
+- status: pass
+
+### rev-create-snapshot
+
+- id: \`rev-create-snapshot\`
+- status: unverified
+`;
+
+  it("extracts the declared item ids from inventory markdown", () => {
+    expect(parseInventoryItemIds(INVENTORY)).toEqual([
+      "proj-create-manifest",
+      "rev-create-snapshot",
+    ]);
+  });
+
+  it("names an inventory item the run never recorded, instead of omitting it", () => {
+    // The defect this guards against: an item the agent could not exercise
+    // simply vanished from the report, so a partial run rendered as clean.
+    const recorded: RunItemOutcome[] = [
+      {
+        itemId: "proj-create-manifest",
+        description: "project manifest",
+        status: "pass",
+      },
+    ];
+
+    const markdown = renderRunReport(
+      recorded,
+      parseInventoryItemIds(INVENTORY),
+    );
+
+    expect(markdown).toContain("rev-create-snapshot");
+    expect(markdown).toMatch(/1 of 2 declared inventory items/);
+    expect(markdown).toContain("| Unverified | 1 |");
+  });
+
+  it("does not report an all-pass summary when an item was never exercised", () => {
+    const markdown = renderRunReport(
+      [
+        {
+          itemId: "proj-create-manifest",
+          description: "project manifest",
+          status: "pass",
+        },
+      ],
+      parseInventoryItemIds(INVENTORY),
+    );
+
+    // Total must count the declared item too, so the summary can never read
+    // as "everything passed" while an item is missing.
+    expect(markdown).toContain("| **Total** | **2** |");
+  });
+
+  it("leaves outcomes untouched when no inventory is available", () => {
+    const recorded: RunItemOutcome[] = [
+      { itemId: "only-item", description: "d", status: "pass" },
+    ];
+    expect(reconcileWithInventory(recorded, undefined)).toEqual(recorded);
+    expect(reconcileWithInventory(recorded, [])).toEqual(recorded);
   });
 });
