@@ -7,8 +7,9 @@ resources, and revisions only — no other feature area is included.
 
 Each item below records the three fields FR-8 requires at minimum: a
 stable `id`, a human-readable `description`, and a `status` drawn from
-exactly `pass | fail | unverified`. All statuses start as `unverified`
-because no QA run has executed yet; Task 13 updates them from a real run.
+exactly `pass | fail | unverified`. Statuses reflect the most recent run:
+all four were verified against a real, disposable workspace on 2026-08-18
+(see `run-report.md`), so none remain `unverified`.
 
 This file is meant to be read and updated programmatically-by-hand by the
 QA agent procedure (Task 8) during a live run (Task 13) — keep the
@@ -24,7 +25,7 @@ line-scoped changes rather than restructuring.
   project type) and confirm the app reports success and that
   `projects/<projectId>/project.json` exists on disk and validates against
   the project schema (`frontend/src/lib/models/schemas.ts`).
-- status: unverified
+- status: pass
 
 ### res-create-content-files
 
@@ -35,7 +36,7 @@ line-scoped changes rather than restructuring.
   `projects/<projectId>/resources/<resourceId>/content.txt` and
   `projects/<projectId>/resources/<resourceId>/content.tiptap.json` exist
   on disk for the new resource.
-- status: unverified
+- status: pass
 
 ### res-save-content-roundtrip
 
@@ -47,7 +48,7 @@ line-scoped changes rather than restructuring.
   (`projects/<projectId>/resources/<resourceId>/content.txt`), along with
   an updated sidecar at
   `projects/<projectId>/meta/resource-<resourceId>.meta.json`.
-- status: unverified
+- status: pass
 
 ### rev-create-snapshot
 
@@ -57,4 +58,4 @@ line-scoped changes rather than restructuring.
   and that a new snapshot directory exists at
   `projects/<projectId>/revisions/<resourceId>/v-<N>/` on disk, distinct
   from the resource's prior revisions.
-- status: unverified
+- status: pass
