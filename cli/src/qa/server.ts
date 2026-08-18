@@ -22,9 +22,26 @@
  * different task) — callers pass the workspace directory in directly.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+
+/**
+ * Name of the dev-server log file written inside the disposable workspace.
+ *
+ * The server's stdio goes to a file rather than a pipe. A pipe would be a
+ * correctness bug here, not just a style choice: `qa start` exits once the
+ * server is ready, leaving the detached child's pipes with no reader.
+ * `unref()` detaches a stream from the event loop but never drains it, so
+ * the ~64KB pipe buffer fills with Turbopack's compile output and the
+ * server blocks on its next write — permanently, after having served one
+ * request. Writing to a file removes the reader entirely.
+ *
+ * Living inside the workspace also means FR-14's retain-on-failure policy
+ * keeps the log exactly when a failing run needs it for FR-10 evidence.
+ */
+export const QA_SERVER_LOG_FILENAME = "qa-server.log";
 
 /** Options controlling how the QA dev server is spawned and awaited. */
 export interface StartQaServerOptions {
@@ -222,7 +239,18 @@ export async function startQaServer(
   } = options;
 
   const port = options.port ?? (await findFreePort());
-  const url = `http://127.0.0.1:${port}`;
+
+  // The URL handed to the QA agent must use `localhost`, not `127.0.0.1`.
+  // Next 16's dev server treats a bare IP as a foreign origin unless it is
+  // listed in `allowedDevOrigins`, and silently refuses the HMR socket and
+  // client chunks for it. The page still server-renders and returns 200, so
+  // it looks healthy — but React never hydrates and every control is inert.
+  //
+  // That failure mode is particularly dangerous for this harness: an agent
+  // driving the app would find every button present, click it, observe
+  // nothing happen, and conclude the *product* is broken. The server is
+  // still bound to 127.0.0.1 below, so this stays loopback-only.
+  const url = `http://localhost:${port}`;
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
@@ -240,12 +268,27 @@ export async function startQaServer(
   // negative pid targets the whole group instead. Avoiding `shell: true`
   // also means `child.pid` is pnpm's own pid rather than an intermediate
   // shell's, so it actually belongs to the group we create.
-  const child = spawn("pnpm", ["--filter", "getwrite-frontend", "dev"], {
-    cwd: repoRoot,
-    env,
-    detached: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // stdout/stderr go to a file, never a pipe. `qa start` exits as soon as the
+  // server is ready, so a piped child would be left writing into a buffer
+  // nobody reads; once it fills, the server blocks mid-compile and every
+  // subsequent request hangs. A file descriptor has no such backpressure.
+  const logPath = path.join(workspaceDir, QA_SERVER_LOG_FILENAME);
+  const logFd = fs.openSync(logPath, "a");
+
+  let child: ChildProcess;
+  try {
+    child = spawn("pnpm", ["--filter", "getwrite-frontend", "dev"], {
+      cwd: repoRoot,
+      env,
+      detached: true,
+      stdio: ["ignore", logFd, logFd],
+    });
+  } finally {
+    // The child holds its own duplicate of the descriptor once spawned, so
+    // this process closes its copy rather than leaking it for the lifetime
+    // of the command.
+    fs.closeSync(logFd);
+  }
 
   const earlyExit = new Promise<never>((_, reject) => {
     child.once("exit", (code, signal) => {

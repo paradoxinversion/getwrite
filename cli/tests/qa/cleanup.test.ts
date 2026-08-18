@@ -100,12 +100,17 @@ describe("applyCleanupPolicy", () => {
     expect(await pathExists(workspacePath)).toBe(true);
   });
 
-  it("treats an empty outcome list as all-passed and deletes the workspace", async () => {
+  it("retains the workspace when no item was exercised at all", async () => {
+    // A run that verified nothing must not be treated as a clean run. Reading
+    // FR-14's "delete only when every exercised item passed" as vacuously
+    // true for an empty set would make a harness that checked nothing report
+    // the same result as one that checked everything and passed.
     const workspacePath = await mkWorkspace();
 
     const result = await applyCleanupPolicy([], workspacePath);
 
-    expect(result.action).toBe("deleted");
-    expect(await pathExists(workspacePath)).toBe(false);
+    expect(result.action).toBe("retained");
+    expect(result.message).toMatch(/verified\s+nothing/);
+    expect(await pathExists(workspacePath)).toBe(true);
   });
 });

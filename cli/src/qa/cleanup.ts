@@ -56,12 +56,23 @@ export type CleanupResult =
     };
 
 /**
- * Returns `true` when every outcome in `outcomes` passed. An empty list
- * counts as all-passed (there is nothing that failed or was left
- * unverified), matching the "delete only when every exercised item passed"
- * phrasing — vacuously true when nothing was exercised.
+ * Returns `true` only when at least one item was exercised AND every one of
+ * them passed.
+ *
+ * The empty case is deliberately NOT treated as all-passed. Reading FR-14's
+ * "delete only when every exercised item passed" as vacuously true for an
+ * empty set makes a run that verified nothing indistinguishable from a run
+ * that verified everything: the harness deletes the workspace and reports
+ * "every exercised item passed" having checked nothing at all. That is the
+ * precise failure mode this feature exists to catch (see FR-16, which
+ * requires a report to state its own coverage boundary rather than let a
+ * clean result imply broad health), so the harness must not commit it
+ * itself. A run with no outcomes retains its workspace.
  */
 function allPassed(outcomes: CleanupOutcome[]): boolean {
+  if (outcomes.length === 0) {
+    return false;
+  }
   return outcomes.every((outcome) => outcome.status === "pass");
 }
 
@@ -94,12 +105,18 @@ export async function applyCleanupPolicy(
     if (serverHandle !== undefined) {
       await serverHandle.stop();
     }
+    const reason =
+      outcomes.length === 0
+        ? "no inventory item was exercised at all, so this run verified " +
+          "nothing and must not be reported as clean"
+        : "at least one exercised item did not pass (fail, unverified, or " +
+          "unreachable)";
+
     return {
       action: "retained",
       workspacePath,
       message:
-        `Retaining QA workspace at "${workspacePath}" — at least one ` +
-        "exercised item did not pass (fail, unverified, or unreachable). " +
+        `Retaining QA workspace at "${workspacePath}" — ${reason}. ` +
         "Inspect the on-disk state there before deleting it manually.",
     };
   }
