@@ -88,7 +88,26 @@ Run these once at the start and end of the QA session, in order:
    workspace, for the rest of the run.
 3. As each inventory item is exercised (Sections 3–4 below), call
    `getwrite-cli qa verify <kind> <args>` for the matching artifact kind
-   immediately after observing the UI outcome for that item. Do not batch
+   immediately after observing the UI outcome for that item.
+
+   **Every `qa verify` call MUST pass `--item-id <inventory id>` and
+   `--ui-outcome "<what the UI reported>"`.** These are not optional
+   bookkeeping:
+
+   - Without `--item-id`, the harness invents an id (`resource-content-2`),
+     so the report cannot be traced back to the inventory item it is
+     reporting on, defeating FR-8's stable identifiers. Passing the same
+     `--item-id` for two checks of one item (e.g. content and sidecar in
+     4.3) folds them into that single item, which is what makes the
+     report's item count match the inventory rather than counting checks.
+   - Without `--ui-outcome`, the report renders "(not recorded by the
+     agent)" for an item whose UI outcome the agent did in fact observe.
+     A report that understates what was checked is a defect in the same
+     family as one that overstates it.
+
+   The four ids to use are exactly those in `inventory.md`:
+   `proj-create-manifest`, `res-create-content-files`,
+   `res-save-content-roundtrip`, `rev-create-snapshot`. Do not batch
    verification calls to the end of the run — call each as soon as its
    action is done, so a `qa finish` invoked early still has a correct
    partial outcome set.
@@ -148,8 +167,13 @@ commit-verification poll), treat the editor surface as an `unreachable`
 control for whichever inventory item needed it (Section 1) — do not type
 into a surface that never signaled readiness.
 
-When typing, click into the editor body first (an element with role
-`textbox`, per the accessibility snapshot), then type the distinctive text
+When typing, click into the editor body first. Note that the TipTap surface
+exposes NO `role="textbox"` — it is a bare `contenteditable` and does not
+appear as a textbox in the accessibility tree at all (verified in the
+2026-08-18 run). Locate it the way `frontend/e2e/helpers/editor.ts` does, by
+falling back to the `.ProseMirror` contenteditable element. This is a
+readiness/eligibility concern about one already-known surface, not
+navigation, so it does not violate FR-3. Then type the distinctive text
 for that item. After typing, re-read the accessibility snapshot or use
 `browser_evaluate` to confirm the typed text is present in the editor's
 rendered content before treating the "type" step as done — do not assume
@@ -269,9 +293,8 @@ and note its revision count before this step, if the UI surfaces one, so
    a revisions/version list visible in the accessibility snapshot, or a
    confirmation toast/status region).
 4. Call `getwrite-cli qa verify revision <projectId> <resourceId>` (with an
-   `--expected-min-count` argument set to one more than the prior count if
-   known, otherwise omitted so `verifyRevision` defaults to requiring at
-   least 1), which invokes `verifyRevision(workspaceRoot, projectId,
+   `--min-count` argument set to one more than the prior count if known,
+   otherwise omitted so `verifyRevision` defaults to requiring at least 1), which invokes `verifyRevision(workspaceRoot, projectId,
    resourceId, expectedMinCount)`.
 5. Record the Section 1 outcome from steps 3–4.
 

@@ -542,14 +542,45 @@ export function registerQa(program: Command) {
             console.log(`  actual:   ${JSON.stringify(result.actual)}`);
           }
 
-          const outcome: RunItemOutcome = {
-            itemId: options.itemId ?? `${kind}-${session.outcomes.length + 1}`,
-            description: options.description ?? defaultDescription(kind, args),
-            status: result.status,
-            uiOutcome: options.uiOutcome,
-            filesystemChecks: [result],
-          };
-          session.outcomes.push(outcome);
+          // An inventory item can need more than one filesystem check to be
+          // judged (the save roundtrip needs both content and sidecar, and
+          // per the procedure passes only if both pass). When the caller
+          // names the item with `--item-id`, fold this check into that item
+          // rather than filing it as a separate one — otherwise the report
+          // counts checks as items and overstates how much of the inventory
+          // a run actually covered.
+          const existing =
+            options.itemId === undefined
+              ? undefined
+              : session.outcomes.find((o) => o.itemId === options.itemId);
+
+          if (existing !== undefined) {
+            existing.filesystemChecks = [
+              ...(existing.filesystemChecks ?? []),
+              result,
+            ];
+            // The item is only as good as its weakest check.
+            if (result.status !== "pass") {
+              existing.status = result.status;
+            }
+            if (options.description !== undefined) {
+              existing.description = options.description;
+            }
+            if (options.uiOutcome !== undefined) {
+              existing.uiOutcome = options.uiOutcome;
+            }
+          } else {
+            const outcome: RunItemOutcome = {
+              itemId:
+                options.itemId ?? `${kind}-${session.outcomes.length + 1}`,
+              description:
+                options.description ?? defaultDescription(kind, args),
+              status: result.status,
+              uiOutcome: options.uiOutcome,
+              filesystemChecks: [result],
+            };
+            session.outcomes.push(outcome);
+          }
           await writeSession(session);
         } catch (err) {
           console.error("[qa verify] Failed:", (err as Error).message);

@@ -7,9 +7,14 @@ resources, and revisions only — no other feature area is included.
 
 Each item below records the three fields FR-8 requires at minimum: a
 stable `id`, a human-readable `description`, and a `status` drawn from
-exactly `pass | fail | unverified`. Statuses reflect the most recent run:
-all four were verified against a real, disposable workspace on 2026-08-18
-(see `run-report.md`), so none remain `unverified`.
+exactly `pass | fail | unverified`. Statuses reflect the most recent run against a real, disposable workspace
+(2026-08-18; see `run-report.md`). Three items passed. `rev-create-snapshot`
+is `unverified`: the explicit-revision Save button was present and enabled but
+not clickable — the canonical revision card overlapped its centre, so
+`document.elementFromPoint` at the button resolved to the card. Per the
+procedure that is an `unreachable` control, but the CLI has no way to record
+`unreachable` or `unverified` (see the FR-11 gap noted in `run-report.md`'s
+absence of this item), so it is recorded here by hand.
 
 This file is meant to be read and updated programmatically-by-hand by the
 QA agent procedure (Task 8) during a live run (Task 13) — keep the
@@ -58,4 +63,4 @@ line-scoped changes rather than restructuring.
   and that a new snapshot directory exists at
   `projects/<projectId>/revisions/<resourceId>/v-<N>/` on disk, distinct
   from the resource's prior revisions.
-- status: pass
+- status: unverified

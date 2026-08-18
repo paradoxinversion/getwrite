@@ -179,7 +179,12 @@ function renderItemSection(outcome: RunItemOutcome): string {
   if (outcome.uiOutcome !== undefined) {
     lines.push(`UI-reported outcome: ${outcome.uiOutcome}`, "");
   } else {
-    lines.push("UI-reported outcome: (agent did not reach this point)", "");
+    // Distinct from "the agent never got here", which would be an
+    // `unreachable` status. The agent may well have performed the action and
+    // seen the UI respond; it simply did not record what it saw. Saying it
+    // never reached this point would misdescribe the run — the exact kind of
+    // false statement this report exists to avoid making.
+    lines.push("UI-reported outcome: (not recorded by the agent)", "");
   }
 
   if (outcome.status === "unreachable") {
