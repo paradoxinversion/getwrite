@@ -192,6 +192,7 @@ Bundled to `cli/dist/bin/getwrite-cli.cjs` via `pnpm cli:build` (esbuild, Node t
 - `getwrite-cli templates save|create|duplicate|list <projectRoot> …` — Manage resource templates under `<projectRoot>/meta/templates/`.
 - `getwrite-cli screenshots capture [-b <storybook-url>] [-o <out-dir>] [-l <limit>]` — Playwright-driven full-page screenshots of every Storybook story.
 - `getwrite-cli doctor [projectRoot]` — Check a project for broken folder associations (orphaned resources/folders). Logic in `cli/src/commands/doctor.ts`.
+- `getwrite-cli qa start|verify|record|report|finish` — Developer-facing agentic QA harness (MVP, on-demand, not wired into CI): `start` creates a disposable out-of-tree workspace and spawns a dev server against it on a free port; `verify <kind> …` (kinds: `project-manifest`, `resource-content`, `resource-sidecar`, `revision`) checks a UI-reported outcome against on-disk ground truth; `record <status>` logs an outcome with no filesystem check (`unreachable`/`unverified`/`fail` — `pass` must be earned via `verify`); `report` writes `specs/features/agentic-qa/run-report.md` reconciled against `specs/features/agentic-qa/inventory.md`; `finish` stops the server and retains the workspace on any failure/unverified item. Inventory scope is projects, resources, and revisions only. Logic in `cli/src/qa/`; spec and operating procedure in `specs/features/agentic-qa.md` / `specs/features/agentic-qa/procedure.md`.
 
 Set `GETWRITE_CLI_TESTING=1` to suppress `process.exit` when invoking commands from tests.
 

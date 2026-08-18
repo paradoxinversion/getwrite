@@ -1,6 +1,6 @@
 # GetWrite CLI
 
-The GetWrite CLI (`getwrite-cli`) is a Node.js command-line tool for project management, template operations, revision pruning, integrity checks, and screenshot capture.
+The GetWrite CLI (`getwrite-cli`) is a Node.js command-line tool for project management, template operations, revision pruning, integrity checks, screenshot capture, and a developer-facing agentic QA harness.
 
 It lives in its own pnpm workspace package, **`cli/`**, separate from the Next.js frontend. It consumes the framework-free model layer through the single `@gw/core` barrel (`frontend/src/lib/core.ts`), which esbuild bundles at build time. See [ADR-016](../architecture/ADRs/adr-016-cli-extraction-and-deferred-core-package.md) for the rationale and the deferred follow-up (promoting `@gw/core` to a standalone package).
 
@@ -268,6 +268,74 @@ node cli/dist/bin/getwrite-cli.cjs screenshots capture \
 
 ---
 
+### `qa`
+
+Developer-facing agentic QA harness (MVP, on-demand, not wired into CI). An
+agent — a Claude Code session driving the Playwright MCP server declared in
+`.mcp.json` — drives the real GetWrite web app against a disposable, out-of-tree
+workspace, and every UI-reported success is independently confirmed against
+the filesystem. Inventory scope is limited to projects, resources, and
+revisions; see `specs/features/agentic-qa.md` for the full spec and
+`specs/features/agentic-qa/procedure.md` for the agent's operating procedure.
+
+Each sub-command below is a separate process invocation; state (workspace
+path, server port/pid, accumulated outcomes) is persisted between them to
+`<os.tmpdir()>/getwrite-qa/session.json`.
+
+```sh
+getwrite-cli qa start
+getwrite-cli qa verify project-manifest <projectId>
+getwrite-cli qa verify resource-content <projectId> <resourceId> --expected-text "hello"
+getwrite-cli qa record unreachable --item-id <id> --reason "control not present"
+getwrite-cli qa report
+getwrite-cli qa finish
+```
+
+**`qa start`** — Creates a fresh disposable workspace via `fs.mkdtemp` outside
+the repo tree, starts a Next.js dev server against it (`GETWRITE_PROJECTS_DIR`
+pre-set, bound to a free port, URL reported as `http://localhost:<port>`, not
+`127.0.0.1` — see note below), and writes the session record.
+
+**`qa verify <kind> [args...]`** — Checks on-disk state for one inventory item
+and records the outcome. `kind` is one of `project-manifest`,
+`resource-content`, `resource-sidecar`, `revision`. Options: `--expected
+<json>` (project-manifest, resource-sidecar), `--expected-text <text>`
+(resource-content), `--min-count <n>` (revision), `--item-id <id>`,
+`--description <text>`, `--ui-outcome <text>`.
+
+**`qa record <status>`** — Records an outcome with no filesystem check, for
+when the agent could not reach a control at all. `status` is one of
+`unreachable`, `unverified`, `fail` — `pass` is deliberately not recordable
+here; it must be earned via `qa verify`. `--item-id <id>` is required;
+`--reason <text>` is required for `unreachable`.
+
+**`qa report`** — Writes `specs/features/agentic-qa/run-report.md`, reconciled
+against `specs/features/agentic-qa/inventory.md` so an inventory item the run
+never recorded an outcome for is listed as unverified rather than silently
+omitted.
+
+**`qa finish`** — Stops the dev server (confirmed by PID, not assumed),
+deletes the workspace only if every exercised item passed, and removes the
+session record. Any failure or unverified item retains the workspace for
+diagnosis.
+
+Two non-obvious behaviors baked into the harness:
+- The server URL must use `localhost`, not `127.0.0.1` — Next 16 treats a
+  bare IP as a foreign origin absent `allowedDevOrigins` and refuses the HMR
+  socket and client chunks, so the page returns 200 but React never hydrates.
+- The dev server's stdio is redirected to a log file inside the workspace
+  (`qa-server.log`), never a pipe — `qa start`'s process exits immediately,
+  and an unread pipe buffer would deadlock the server after one request.
+
+**Example:**
+```sh
+node cli/dist/bin/getwrite-cli.cjs qa start
+# [qa start] Workspace: /var/folders/.../getwrite-qa-xxxxxx
+# [qa start] Server URL: http://localhost:54213
+```
+
+---
+
 ## Environment Variables
 
 | Variable                | Effect                                                     |
@@ -281,5 +349,6 @@ node cli/dist/bin/getwrite-cli.cjs screenshots capture \
 Package: `cli/` (workspace package `getwrite-cli`)
 CLI entry point: `cli/src/getwrite-cli.ts`
 Command implementations: `cli/src/commands/`
+QA harness modules: `cli/src/qa/`
 Tests: `cli/tests/`
 Model layer access: the single `@gw/core` barrel (`frontend/src/lib/core.ts`), aliased in `cli/tsconfig.json` and `cli/vitest.config.ts`.
