@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.1.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v2.0.0...getwrite-v2.1.0) (2026-08-18)
+
+
+### Features
+
+* **task-13:** first live QA run — four items verified against real disk state ([3a99b13](https://github.com/saboteur-works/getwrite/commit/3a99b13b8a8a25333e45bc7d0f26728533624003))
+* **task-1:** scaffold the qa CLI command group ([79a7dac](https://github.com/saboteur-works/getwrite/commit/79a7dacf71c2b2fe2852d4c75f638bb7a0eeb9b7))
+* **task-2:** disposable QA workspace creation with containment guard ([979de8b](https://github.com/saboteur-works/getwrite/commit/979de8bfde0ca28fe188e2f80e61591fb9a90bee))
+* **task-3:** spawn/stop QA dev server with pre-set GETWRITE_PROJECTS_DIR ([6b2dc78](https://github.com/saboteur-works/getwrite/commit/6b2dc78606c1da1a39dd3593c18987ddfccfa985))
+* **task-4:** retain-on-failure-or-unverified workspace cleanup policy ([a264115](https://github.com/saboteur-works/getwrite/commit/a2641152b9988e6dea5dd1c1914ddccf9a82aba1))
+* **task-5:** filesystem ground-truth verification module ([22475dd](https://github.com/saboteur-works/getwrite/commit/22475ddd88a9cc6993bb09d7c710b50e04bc0019))
+* **task-6:** QA run report writer module ([1abf828](https://github.com/saboteur-works/getwrite/commit/1abf828a53fd6f891adaa70e534ee9179eef3a6e))
+* **task-7:** hand-author the agentic QA feature inventory ([cf9edc2](https://github.com/saboteur-works/getwrite/commit/cf9edc2dff4e849745b3e0d41b956e1c61a528c9))
+* **task-8:** write the QA agent operating procedure ([49e17ac](https://github.com/saboteur-works/getwrite/commit/49e17acaca98cec13470b5065d38bb67b1eab767))
+* **task-9:** wire qa start/verify/report/finish subcommands ([8574fc1](https://github.com/saboteur-works/getwrite/commit/8574fc12387760d88fb9ca18568dcf73604d1f32))
+
+
+### Bug Fixes
+
+* **ci:** drop the Intel mac runner that never ran ([acd74bd](https://github.com/saboteur-works/getwrite/commit/acd74bd0eabf5416c6272bbd571d745ed63d2583))
+* **ci:** drop the Intel mac runner that never ran ([0658785](https://github.com/saboteur-works/getwrite/commit/0658785cfe3155a6ec155357b87cfdb09015950b))
+* **qa:** make FR-11 satisfiable — an unexercised item can no longer vanish ([63e42c0](https://github.com/saboteur-works/getwrite/commit/63e42c0d9a7643f914d113c6e708b37c3a0e500f))
+* **qa:** make the run report describe the run it actually performed ([1ef122f](https://github.com/saboteur-works/getwrite/commit/1ef122f42eda2546e6acb2a3de509aba848f05b5))
+* **qa:** stop the harness deadlocking, lying, and serving an unhydratable URL ([06e087f](https://github.com/saboteur-works/getwrite/commit/06e087f144a86ba0aa9acb7f7e787fed1bea9b7e))
+* **task-10:** collapse server.test.ts to one real-server spawn ([415844e](https://github.com/saboteur-works/getwrite/commit/415844ecf8190f40c0eb0e2b7b733e8926acb8c8))
+* **task-10:** disable cli vitest file parallelism ([895e910](https://github.com/saboteur-works/getwrite/commit/895e9102ab1a7a6116731d3884ca4de5b61f8615))
+
 ## [2.0.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v1.8.0...getwrite-v2.0.0) (2026-08-07)
 
 
