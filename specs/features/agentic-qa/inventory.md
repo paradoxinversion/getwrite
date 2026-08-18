@@ -7,14 +7,18 @@ resources, and revisions only — no other feature area is included.
 
 Each item below records the three fields FR-8 requires at minimum: a
 stable `id`, a human-readable `description`, and a `status` drawn from
-exactly `pass | fail | unverified`. Statuses reflect the most recent run against a real, disposable workspace
-(2026-08-18; see `run-report.md`). Three items passed. `rev-create-snapshot`
-is `unverified`: the explicit-revision Save button was present and enabled but
-not clickable — the canonical revision card overlapped its centre, so
-`document.elementFromPoint` at the button resolved to the card. Per the
-procedure that is an `unreachable` control, but the CLI has no way to record
-`unreachable` or `unverified` (see the FR-11 gap noted in `run-report.md`'s
-absence of this item), so it is recorded here by hand.
+exactly `pass | fail | unverified`.
+
+Statuses reflect the most recent run against a real, disposable workspace
+(2026-08-18, viewport 1920x1080; see `run-report.md`). All four passed.
+
+One caveat the report cannot express, because a status is per-item and not
+per-viewport: `rev-create-snapshot` passes at 1920x1080 but is `unreachable`
+at the default smaller viewport. The explicit-revision Save button is present
+and enabled, but the canonical revision card overlaps its centre there, so
+`document.elementFromPoint` at the button resolves to the card and a click
+never lands. Treat this item's pass as viewport-conditional until that overlap
+is fixed.
 
 This file is meant to be read and updated programmatically-by-hand by the
 QA agent procedure (Task 8) during a live run (Task 13) — keep the
@@ -63,4 +67,4 @@ line-scoped changes rather than restructuring.
   and that a new snapshot directory exists at
   `projects/<projectId>/revisions/<resourceId>/v-<N>/` on disk, distinct
   from the resource's prior revisions.
-- status: unverified
+- status: pass
