@@ -55,6 +55,11 @@ const eslintConfig = [
       // aren't valid lint targets.
       ".native-build/**",
       "out/**",
+      // Agentic QA harness: each run's Next build output lands in its own
+      // `.next-qa/<runId>/` (see cli/src/qa/server.ts). Same reasoning as
+      // `.next/**` above — generated, gitignored, not a lint target. Without
+      // this, a QA run leaves `pnpm lint` failing on its own build artifacts.
+      ".next-qa/**",
     ],
   },
   ...coreWebVitals,

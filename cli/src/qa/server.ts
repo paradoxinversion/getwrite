@@ -28,7 +28,7 @@ import net from "node:net";
 import path from "node:path";
 
 /**
- * Name of the dev-server log file written inside the disposable workspace.
+ * Name of the dev-server log file.
  *
  * The server's stdio goes to a file rather than a pipe. A pipe would be a
  * correctness bug here, not just a style choice: `qa start` exits once the
@@ -38,8 +38,11 @@ import path from "node:path";
  * server blocks on its next write — permanently, after having served one
  * request. Writing to a file removes the reader entirely.
  *
- * Living inside the workspace also means FR-14's retain-on-failure policy
- * keeps the log exactly when a failing run needs it for FR-10 evidence.
+ * The file no longer lives inside the run's `GETWRITE_PROJECTS_DIR`: that
+ * directory is scanned by the app for projects, and a log sitting in it is a
+ * foreign entry in a tree that should hold nothing else. Callers pass an
+ * explicit `logPath` (see `workspace.ts`'s `qaServerLogPath`), which keeps
+ * the log readable after `qa finish` deletes a passing run's workspace.
  */
 export const QA_SERVER_LOG_FILENAME = "qa-server.log";
 
@@ -64,10 +67,15 @@ export interface StartQaServerOptions {
    */
   port?: number;
   /**
-   * How long to wait for the server to start responding before giving up,
-   * in milliseconds. Defaults to 60s: a cold Next.js dev server compile can
-   * legitimately take the better part of a minute, especially the first
-   * request after a fresh `.next` cache.
+   * How long to wait for the server to start *serving compiled routes*
+   * before giving up, in milliseconds. Defaults to 4 minutes.
+   *
+   * The previous 60s budget was sized for "the socket answers". Two changes
+   * made that far too tight: readiness now means an actual 200 from the app
+   * (not any response), and each run builds into its own fresh `distDir`, so
+   * every run pays a cold Turbopack compile rather than reusing a warm shared
+   * cache. Both are deliberate — but they move real compile time inside this
+   * budget, and a timeout here fails the whole run.
    */
   readyTimeoutMs?: number;
   /**
@@ -75,6 +83,27 @@ export interface StartQaServerOptions {
    * milliseconds. Defaults to 500ms.
    */
   pollIntervalMs?: number;
+  /**
+   * Absolute path to the Next.js build directory (`distDir`) this run should
+   * use. Passed to the child as `GETWRITE_QA_DIST_DIR`, which
+   * `frontend/next.config.mjs` reads. Omit only in tests that do not care
+   * about cache isolation — a real run must always pass a run-scoped path so
+   * it neither reads nor writes the shared `frontend/.next`.
+   */
+  distDir?: string;
+  /**
+   * Absolute path the child's stdout/stderr is appended to. Defaults to
+   * {@link QA_SERVER_LOG_FILENAME} inside `workspaceDir` for backwards
+   * compatibility; real runs pass a path outside the scanned workspace.
+   */
+  logPath?: string;
+  /**
+   * Paths probed for readiness, relative to the server's base URL. Every one
+   * must answer `200` with a body that is not Next's not-found page before
+   * the server is considered ready. Defaults to
+   * {@link DEFAULT_READY_PROBE_PATHS}.
+   */
+  readyProbePaths?: readonly string[];
 }
 
 /** A running QA dev server, with its resolved port/URL and a stop handle. */
@@ -93,7 +122,13 @@ export interface QaServerHandle {
   stop(killTimeoutMs?: number): Promise<void>;
 }
 
-const DEFAULT_READY_TIMEOUT_MS = 60_000;
+const DEFAULT_READY_TIMEOUT_MS = 240_000;
+/**
+ * Per-request ceiling for one readiness probe. Bounded well below the overall
+ * readiness budget so a single unanswered socket costs one poll interval
+ * rather than the whole run.
+ */
+const PROBE_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_POLL_INTERVAL_MS = 500;
 const DEFAULT_KILL_TIMEOUT_MS = 10_000;
 
@@ -138,45 +173,195 @@ export function findFreePort(): Promise<number> {
 }
 
 /**
- * Polls `url` until it responds with a status code below 500 (the same
- * "server is up, even if the page itself 404s" threshold used by the
- * Electron shell's dev-server bootstrap), or rejects once `timeoutMs` has
- * elapsed.
+ * Routes probed before a run is allowed to proceed.
+ *
+ * `/` proves the app shell compiles and renders; `/api/projects` proves the
+ * route handlers — the surface every `qa verify` check ultimately depends on
+ * — compile and serve too. Both are hit on the very first navigation an
+ * agent makes, so warming them here moves the compile cost into `qa start`
+ * rather than into the agent's first (and easily misread) interaction.
  */
-function waitForServerReady(
+export const DEFAULT_READY_PROBE_PATHS: readonly string[] = [
+  "/",
+  "/api/projects",
+];
+
+/**
+ * Substrings that mark Next's dev-mode not-found response. A 200-with-404-page
+ * is possible in App Router (`notFound()` renders the not-found boundary with
+ * a 404 status, but an uncompiled route can serve the same shell), so status
+ * alone is not sufficient evidence the app is serving real routes.
+ */
+const NOT_FOUND_BODY_MARKERS = [
+  "This page could not be found",
+  "__next_error__",
+];
+
+/** One probe attempt's outcome, carrying why it failed for the timeout error. */
+interface ProbeOutcome {
+  ready: boolean;
+  detail: string;
+}
+
+/**
+ * Issues a single GET and decides whether it proves the app is *serving*, not
+ * merely *listening*.
+ *
+ * The previous implementation accepted any status below 500, which meant a
+ * dev server that had bound its port but not yet compiled a single route
+ * reported ready — and the agent's first navigation landed on a 404 that
+ * looked like a product defect. Requiring a 200 whose body carries no
+ * not-found marker makes "ready" mean what the harness needs it to mean.
+ */
+function probeOnce(
   url: string,
+  timeoutMs = PROBE_REQUEST_TIMEOUT_MS,
+): Promise<ProbeOutcome> {
+  return new Promise((resolve) => {
+    const request = http.get(url, { timeout: timeoutMs }, (res) => {
+      const status = res.statusCode ?? 0;
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk: string) => {
+        // Only the head of the response is needed to spot a not-found page;
+        // capping it keeps a large HTML shell out of memory.
+        if (body.length < 8192) body += chunk;
+      });
+      res.on("end", () => {
+        if (status !== 200) {
+          resolve({ ready: false, detail: `${url} responded ${status}` });
+          return;
+        }
+        const marker = NOT_FOUND_BODY_MARKERS.find((m) => body.includes(m));
+        if (marker !== undefined) {
+          resolve({
+            ready: false,
+            detail: `${url} responded 200 but served Next's not-found page`,
+          });
+          return;
+        }
+        resolve({ ready: true, detail: `${url} responded 200` });
+      });
+    });
+    // A dev server mid-compile can accept a connection and then hold it open
+    // without ever answering. Without this the whole readiness loop parks on
+    // that one socket and sails past its own deadline, reporting nothing.
+    request.on("timeout", () => {
+      request.destroy();
+      resolve({
+        ready: false,
+        detail: `${url} accepted the connection but did not respond within ${timeoutMs}ms`,
+      });
+    });
+    request.on("error", (err) => {
+      resolve({
+        ready: false,
+        detail: `${url} did not respond: ${err.message}`,
+      });
+    });
+  });
+}
+
+/**
+ * Polls every path in `probePaths` until all of them report app-serving
+ * responses (see {@link probeOnce}), or rejects once `timeoutMs` has elapsed —
+ * naming the probe that was still failing, so a timeout says which route
+ * never came up rather than only that something didn't.
+ */
+export async function waitForServerReady(
+  baseUrl: string,
   timeoutMs: number,
   pollIntervalMs: number,
+  probePaths: readonly string[] = DEFAULT_READY_PROBE_PATHS,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const deadline = Date.now() + timeoutMs;
+  const deadline = Date.now() + timeoutMs;
+  let lastDetail = "no probe attempted yet";
 
-    const attempt = (): void => {
-      const request = http.get(url, (res) => {
-        res.resume(); // drain so the socket can close
-        if (res.statusCode !== undefined && res.statusCode < 500) {
-          resolve();
-        } else {
-          scheduleRetry();
-        }
-      });
-      request.on("error", scheduleRetry);
-    };
-
-    const scheduleRetry = (): void => {
-      if (Date.now() > deadline) {
-        reject(
-          new Error(
-            `QA dev server did not become ready within ${timeoutMs}ms (${url})`,
-          ),
-        );
-        return;
+  for (;;) {
+    let allReady = true;
+    for (const probePath of probePaths) {
+      const outcome = await probeOnce(`${baseUrl}${probePath}`);
+      if (!outcome.ready) {
+        allReady = false;
+        lastDetail = outcome.detail;
+        break;
       }
-      setTimeout(attempt, pollIntervalMs);
-    };
+    }
+    if (allReady) return;
 
-    attempt();
-  });
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `QA dev server did not become ready within ${timeoutMs}ms (${baseUrl}) — ${lastDetail}`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+}
+
+/**
+ * Raised when the run's `distDir` holds a dev-server lock belonging to a
+ * process that is still alive. Failing loudly beats either hanging on Next's
+ * own retry-then-exit path or clobbering a live server's state.
+ */
+export class DevServerLockHeldError extends Error {
+  constructor(lockPath: string, pid: number) {
+    super(
+      `A live Next dev server (pid ${pid}) already holds the lock at ` +
+        `"${lockPath}". Stop it (kill ${pid}) before starting a QA run.`,
+    );
+    this.name = "DevServerLockHeldError";
+  }
+}
+
+/** `true` when `pid` names a process this host currently knows about. */
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    // ESRCH is the only confirmation the process is gone. EPERM means it
+    // exists but belongs to another user — treating that as dead and deleting
+    // the lock would be exactly the "silently overwrite a live server" case
+    // this guard exists to prevent.
+    return (err as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+/**
+ * Clears a stale `<distDir>/dev/lock` left behind by a dev server that died
+ * without releasing it.
+ *
+ * Next records `{"pid":…,"port":…}` in that file and refuses to start a second
+ * dev server for the same directory while it exists, so a killed server (or a
+ * `qa finish` that could not confirm a stop) makes every subsequent `qa start`
+ * fail until the file is deleted by hand. A lock naming a dead PID is removed;
+ * one naming a live PID raises {@link DevServerLockHeldError}.
+ *
+ * @throws {DevServerLockHeldError} when the recorded PID is still alive.
+ */
+export function clearStaleDevLock(distDir: string): void {
+  const lockPath = path.join(distDir, "dev", "lock");
+  let raw: string;
+  try {
+    raw = fs.readFileSync(lockPath, "utf8");
+  } catch {
+    return; // No lock file — nothing to clear.
+  }
+
+  let pid: unknown;
+  try {
+    pid = (JSON.parse(raw) as { pid?: unknown }).pid;
+  } catch {
+    pid = undefined; // Unparseable lock: no owner to attribute it to.
+  }
+
+  if (typeof pid === "number" && Number.isInteger(pid) && isPidAlive(pid)) {
+    throw new DevServerLockHeldError(lockPath, pid);
+  }
+
+  // Either the lock names a dead PID or it carries no usable owner at all;
+  // in both cases no running server depends on it.
+  fs.rmSync(lockPath, { force: true });
 }
 
 /**
@@ -236,7 +421,18 @@ export async function startQaServer(
     repoRoot = defaultRepoRoot(),
     readyTimeoutMs = DEFAULT_READY_TIMEOUT_MS,
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    distDir,
+    logPath = path.join(workspaceDir, QA_SERVER_LOG_FILENAME),
+    readyProbePaths = DEFAULT_READY_PROBE_PATHS,
   } = options;
+
+  // A run-scoped distDir gets its own lock file, which can go stale the same
+  // way the shared one does (a killed server never releases it). Checking
+  // before spawn turns "hangs until the readiness timeout" into an immediate,
+  // explanatory failure.
+  if (distDir !== undefined) {
+    clearStaleDevLock(distDir);
+  }
 
   const port = options.port ?? (await findFreePort());
 
@@ -259,6 +455,10 @@ export async function startQaServer(
     GETWRITE_PROJECTS_DIR: workspaceDir,
     PORT: String(port),
     HOSTNAME: "127.0.0.1",
+    // Read by `frontend/next.config.mjs`. `next dev` has no `--dist-dir`
+    // flag, so a run-scoped build directory can only be passed through the
+    // config, which means through the environment.
+    ...(distDir === undefined ? {} : { GETWRITE_QA_DIST_DIR: distDir }),
   };
 
   // `detached: true` makes this child the leader of a new process group
@@ -272,7 +472,7 @@ export async function startQaServer(
   // server is ready, so a piped child would be left writing into a buffer
   // nobody reads; once it fills, the server blocks mid-compile and every
   // subsequent request hangs. A file descriptor has no such backpressure.
-  const logPath = path.join(workspaceDir, QA_SERVER_LOG_FILENAME);
+  fs.mkdirSync(path.dirname(logPath), { recursive: true });
   const logFd = fs.openSync(logPath, "a");
 
   let child: ChildProcess;
@@ -306,7 +506,7 @@ export async function startQaServer(
   });
 
   await Promise.race([
-    waitForServerReady(url, readyTimeoutMs, pollIntervalMs),
+    waitForServerReady(url, readyTimeoutMs, pollIntervalMs, readyProbePaths),
     earlyExit,
   ]);
 

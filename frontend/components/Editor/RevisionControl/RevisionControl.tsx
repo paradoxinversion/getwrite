@@ -212,13 +212,31 @@ export default function RevisionControl() {
           className="p-4 border-b-hairline border-b-gw-border"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="w-full lg:w-4/12 lg:max-w-sm">
+            {/*
+              `min-w-0`/`shrink-0` here are load-bearing, not cosmetic. A flex
+              item defaults to `min-width: auto`, so without them this column
+              cannot shrink below the intrinsic width of the input + button it
+              contains: it overruns its declared `lg:w-4/12` and pushes into
+              the revision-card column beside it, where the later-painted
+              canonical card covers the Save button and takes clicks meant for
+              it. `shrink-0` on the button makes the input absorb the slack, so
+              the control the user is aiming at keeps its size.
+
+              That is the diagnosis for a reported defect (Save unclickable
+              below 1920px), NOT a confirmed reproduction — the overlap does
+              not occur in the Storybook story, which renders this panel
+              full-bleed rather than inside the editor pane. See
+              `specs/features/agentic-qa/follow-ups.md` Task 7 for the
+              measurements and what verifying it needs.
+            */}
+            <div className="w-full min-w-0 lg:w-4/12 lg:max-w-sm">
               <h3 className="font-mono text-gw-nano uppercase tracking-label text-gw-secondary">
                 Save Explicit Revision
               </h3>
               <div className="mt-2 flex items-center gap-2">
                 <Input
                   type="text"
+                  className="min-w-0 flex-1"
                   value={revisionName}
                   onChange={(event) => setRevisionName(event.target.value)}
                   placeholder="Revision name"
@@ -227,6 +245,7 @@ export default function RevisionControl() {
                 <Button
                   variant="secondary"
                   type="button"
+                  className="shrink-0"
                   onClick={handleSaveRevision}
                   disabled={!canInteract || isSaving || !revisionName.trim()}
                 >

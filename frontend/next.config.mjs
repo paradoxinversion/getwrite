@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { version } = JSON.parse(
@@ -12,6 +12,26 @@ const { version } = JSON.parse(
 // instead of the standalone Node server bundle web/desktop use. Gated behind an
 // opt-in env var so web/desktop builds are completely unaffected when unset.
 const isNativeTarget = process.env.GETWRITE_BUILD_TARGET === "native";
+
+// The agentic QA harness (`cli/src/qa/server.ts`) spawns this dev server as a
+// disposable child and needs it isolated from the checkout's shared build
+// state: a stale or corrupt `frontend/.next` made a QA run's `/` serve a 404
+// indefinitely, and conversely a QA run rewriting that cache disturbed
+// ordinary development and the harness's own test suite. `next dev` has no
+// `--dist-dir` flag, so the only channel for a per-run build directory is the
+// config — hence these env vars, which are unset (and therefore inert) for
+// every normal `dev`/`build` invocation.
+//
+// `distDir` is resolved by Next as `join(<project dir>, distDir)`, so an
+// absolute path handed in via the env var has to be made relative to this
+// file's directory first.
+const qaDistDir = process.env.GETWRITE_QA_DIST_DIR;
+const resolvedQaDistDir =
+  qaDistDir === undefined || qaDistDir.length === 0
+    ? undefined
+    : isAbsolute(qaDistDir)
+      ? relative(__dirname, qaDistDir)
+      : qaDistDir;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -29,7 +49,11 @@ const nextConfig = {
   // with no separate copy-back step. This branch is unreachable for
   // web/desktop (`isNativeTarget` is false), so `distDir` stays unset
   // there and standalone builds are unaffected.
-  ...(isNativeTarget ? { distDir: "../out" } : {}),
+  ...(isNativeTarget
+    ? { distDir: "../out" }
+    : resolvedQaDistDir === undefined
+      ? {}
+      : { distDir: resolvedQaDistDir }),
   // The app doesn't use next/image, so disable image optimization. This stops
   // Next from ever loading the native `sharp` binary at runtime — it's required
   // only lazily by the image optimizer, which is now never invoked. That matters

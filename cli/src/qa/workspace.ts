@@ -16,13 +16,105 @@
  * the real `projects/` directory") a build-time guarantee rather than a
  * convention.
  */
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Prefix applied to every QA workspace directory name. */
 const WORKSPACE_PREFIX = "getwrite-qa-";
+
+/**
+ * Environment variable overriding where the QA session record is stored.
+ * Takes an absolute path to the session *file* (not its directory).
+ */
+export const QA_SESSION_PATH_ENV = "GETWRITE_QA_SESSION_PATH";
+
+/**
+ * Directory the QA harness keeps its cross-invocation state in, relative to
+ * the repo root.
+ *
+ * `.git/` rather than the OS temp dir: the session record is the harness's
+ * recovery mechanism, so it has to be findable by `qa verify`/`report`/
+ * `finish` even when they run with a different `TMPDIR` than `qa start` did
+ * (which is exactly what made the previous `os.tmpdir()`-derived path fail).
+ * `.git/` is stable per checkout, always writable when the repo is, never
+ * tracked by git, and outside every directory the app scans for projects.
+ */
+const QA_STATE_DIRNAME = path.join(".git", "getwrite-qa");
+
+/**
+ * Absolute path to the directory holding the harness's cross-invocation
+ * state (the session record and the dev-server log).
+ *
+ * Honors {@link QA_SESSION_PATH_ENV} when set, so callers that need the state
+ * somewhere else (tests, or a checkout without a `.git/` directory) get a
+ * single override that every sub-command resolves through.
+ */
+export function qaStateDir(repoRoot: string = defaultRepoRoot()): string {
+  const override = process.env[QA_SESSION_PATH_ENV];
+  if (override !== undefined && override.length > 0) {
+    return path.dirname(path.resolve(override));
+  }
+  return path.join(path.resolve(repoRoot), QA_STATE_DIRNAME);
+}
+
+/**
+ * Absolute path to the QA session record, shared by `qa start`, `qa verify`,
+ * `qa record`, `qa report`, and `qa finish`.
+ */
+export function qaSessionFilePath(
+  repoRoot: string = defaultRepoRoot(),
+): string {
+  const override = process.env[QA_SESSION_PATH_ENV];
+  if (override !== undefined && override.length > 0) {
+    return path.resolve(override);
+  }
+  return path.join(qaStateDir(repoRoot), "session.json");
+}
+
+/**
+ * Absolute path the spawned dev server's stdout/stderr is written to.
+ *
+ * Deliberately *not* inside the run's `GETWRITE_PROJECTS_DIR`: the app scans
+ * that directory for projects, and a log file sitting in it is a foreign
+ * entry in a tree that should contain nothing but projects. Keeping it beside
+ * the session record also means it survives `qa finish`'s workspace deletion,
+ * so a failing run's evidence is still readable afterwards.
+ */
+export function qaServerLogPath(repoRoot: string = defaultRepoRoot()): string {
+  return path.join(qaStateDir(repoRoot), "qa-server.log");
+}
+
+/**
+ * Absolute path to the run-scoped Next.js `distDir` for `runId`.
+ *
+ * Every QA run gets its own build directory so it can neither be poisoned by
+ * a stale/corrupt shared `frontend/.next` nor poison that cache for ordinary
+ * development or the harness's own test suite. It lives under `frontend/`
+ * (rather than in the run's workspace) because Next resolves `distDir`
+ * relative to the project directory; `frontend/.next-qa/` is gitignored, so a
+ * run still leaves `git status` clean.
+ */
+export function qaDistDir(runId: string, repoRoot: string): string {
+  return path.join(path.resolve(repoRoot), "frontend", ".next-qa", runId);
+}
+
+/**
+ * Path to the tracked TypeScript config that starting `next dev` rewrites.
+ *
+ * Next verifies this file on start and writes back a reformatted copy with
+ * the run's `distDir` type paths appended, leaving a QA run's checkout dirty.
+ * Redirecting Next at an untracked config via `typescript.tsconfigPath` was
+ * tried and rejected: with a non-default tsconfig path this Next version
+ * stops discovering the App Router routes entirely (every request 404s, with
+ * a plain copy of the real config as much as with one that `extends` it). So
+ * the harness lets the rewrite happen and restores the file afterwards — see
+ * `qa start`/`qa finish`, which snapshot and restore it around the run.
+ */
+export function qaTrackedTsconfigPath(repoRoot: string): string {
+  return path.join(path.resolve(repoRoot), "frontend", "tsconfig.json");
+}
 
 /**
  * The repository root, resolved relative to this module's location
@@ -94,6 +186,16 @@ export async function createQaWorkspace(
   const resolvedWorkspacePath = path.resolve(workspacePath);
 
   if (isPathContainedBy(resolvedWorkspacePath, resolvedRepoRoot)) {
+    // `mkdtemp` both names and creates the directory, so it already exists by
+    // the time containment can be checked. Throwing without removing it leaks
+    // a `getwrite-qa-*` directory into the OS temp dir on every rejected
+    // call — including from this module's own test suite, which is where the
+    // observed accumulation came from.
+    await rm(resolvedWorkspacePath, { recursive: true, force: true }).catch(
+      () => {
+        // Best effort: the containment violation is the error worth raising.
+      },
+    );
     throw new WorkspaceContainmentError(
       resolvedWorkspacePath,
       resolvedRepoRoot,

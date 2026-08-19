@@ -27,7 +27,8 @@ import {
 } from "./revision";
 import { readSidecar, writeSidecar } from "./sidecar";
 import type { Revision } from "./types";
-import { persistResourceContent } from "../tiptap-utils";
+import { persistResourceContent, tiptapToPlainText } from "../tiptap-utils";
+import { countWords } from "../word-count";
 import type { TipTapDocument } from "../models";
 import { resolveProjectRoot } from "./project-root-resolver";
 
@@ -114,12 +115,16 @@ async function writeRevisionContent(
  *
  * Silently no-ops when the content is not a TipTap document (e.g. a legacy
  * plain-text revision); the revision write remains the source of truth then.
+ *
+ * @returns The word count of the plain text just written, or `undefined` when
+ *   nothing was synced. The caller needs it to keep the sidecar's `wordCount`
+ *   from drifting behind the content — see {@link updateRevisionInPlace}.
  */
 async function syncDerivedResourceContent(
   projectPath: string,
   resourceId: string,
   content: string,
-): Promise<void> {
+): Promise<number | undefined> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
@@ -132,14 +137,15 @@ async function syncDerivedResourceContent(
     typeof parsed !== "object" ||
     (parsed as { type?: unknown }).type !== "doc"
   ) {
-    return;
+    return undefined;
   }
 
-  await persistResourceContent(
-    projectPath,
-    resourceId,
-    parsed as TipTapDocument,
-  );
+  const doc = parsed as TipTapDocument;
+  await persistResourceContent(projectPath, resourceId, doc);
+  // Counted from the same document that was just written, so the returned
+  // value describes the content actually on disk rather than whatever the
+  // caller believed it was saving.
+  return countWords(tiptapToPlainText(doc));
 }
 
 /**
@@ -279,13 +285,24 @@ export async function updateRevisionInPlace(
 
   // Keep the derived content files (read by compile/export/search) in sync
   // with the canonical revision so they cannot drift behind the editor.
-  await syncDerivedResourceContent(projectRoot, resourceId, content);
+  const wordCount = await syncDerivedResourceContent(
+    projectRoot,
+    resourceId,
+    content,
+  );
 
   const updatedAt = new Date().toISOString();
   const existingSidecar = await readSidecar(projectRoot, resourceId);
   await writeSidecar(projectRoot, resourceId, {
     ...(existingSidecar ?? {}),
     updatedAt,
+    // Autosave is the only thing that ever writes a resource's content after
+    // creation, so a sidecar whose wordCount is not refreshed here keeps its
+    // creation-time value (0) forever — which list views read as "Needs
+    // content" for a resource that has plenty. Left alone when nothing was
+    // synced (a legacy plain-text revision), since there is then no saved
+    // plain text to count and the stored value is the better answer.
+    ...(wordCount === undefined ? {} : { wordCount }),
   });
 
   return { ...target, updatedAt };
