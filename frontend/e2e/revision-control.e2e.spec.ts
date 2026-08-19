@@ -91,8 +91,17 @@ for (const panelWidth of [560, 760]) {
     const box = await saveBtn.boundingBox();
     expect(box).not.toBeNull();
 
-    const isButtonTopmost = await page.evaluate(
-      ({ x, y }) => document.elementFromPoint(x, y)?.closest("button") !== null,
+    // Resolve the hit against *this* button, not "any button". Two traps here:
+    // `elementFromPoint` returns null for a point outside the viewport, and
+    // `null?.closest(...)` is `undefined` — so a `!== null` test passes
+    // vacuously in precisely the case this is meant to catch. Comparing
+    // against the button's own handle fails closed instead, and also rejects
+    // an unrelated button painted over Save.
+    const isButtonTopmost = await saveBtn.evaluate(
+      (button, { x, y }) => {
+        const hit = document.elementFromPoint(x, y);
+        return hit !== null && hit.closest("button") === button;
+      },
       { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 },
     );
 

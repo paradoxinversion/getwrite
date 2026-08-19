@@ -13,6 +13,7 @@ import {
   WorkspaceContainmentError,
 } from "../../src/qa/workspace";
 import {
+  cleanUpFailedStart,
   restoreTrackedTsconfig,
   snapshotTrackedTsconfig,
 } from "../../src/commands/qa";
@@ -260,5 +261,148 @@ describe("tracked tsconfig restoration", () => {
 
     expect(await snapshotTrackedTsconfig(missing)).toBeUndefined();
     expect(await restoreTrackedTsconfig(missing, undefined)).toBe(false);
+  });
+});
+
+describe("state directory resolution across checkout shapes", () => {
+  const originalOverride = process.env[QA_SESSION_PATH_ENV];
+
+  beforeEach(() => {
+    delete process.env[QA_SESSION_PATH_ENV];
+  });
+
+  afterEach(() => {
+    if (originalOverride === undefined) {
+      delete process.env[QA_SESSION_PATH_ENV];
+    } else {
+      process.env[QA_SESSION_PATH_ENV] = originalOverride;
+    }
+  });
+
+  async function fakeCheckout(): Promise<string> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-cli-qa-co-"));
+    createdDirs.push(dir);
+    return dir;
+  }
+
+  it("uses .git/ directly in an ordinary clone", async () => {
+    const root = await fakeCheckout();
+    await fs.mkdir(path.join(root, ".git"), { recursive: true });
+
+    expect(qaStateDir(root)).toBe(path.join(root, ".git", "getwrite-qa"));
+  });
+
+  it("follows the gitdir pointer when .git is a file (linked worktree)", async () => {
+    // In a worktree `.git` is a FILE, so treating it as a directory makes the
+    // session record's mkdir fail with ENOTDIR — which would leave the harness
+    // unusable in exactly the worktrees this repo creates for background
+    // agents.
+    const root = await fakeCheckout();
+    const realGitDir = path.join(root, "main-repo", ".git", "worktrees", "wt1");
+    await fs.mkdir(realGitDir, { recursive: true });
+    await fs.writeFile(
+      path.join(root, ".git"),
+      `gitdir: ${realGitDir}\n`,
+      "utf8",
+    );
+
+    expect(qaStateDir(root)).toBe(path.join(realGitDir, "getwrite-qa"));
+  });
+
+  it("resolves a relative gitdir pointer against the checkout root", async () => {
+    const root = await fakeCheckout();
+    await fs.mkdir(path.join(root, "nested", "gitdir"), { recursive: true });
+    await fs.writeFile(
+      path.join(root, ".git"),
+      "gitdir: ./nested/gitdir\n",
+      "utf8",
+    );
+
+    expect(qaStateDir(root)).toBe(
+      path.join(root, "nested", "gitdir", "getwrite-qa"),
+    );
+  });
+
+  it("falls back to an untracked directory when there is no git dir at all", async () => {
+    // A source export has no `.git` — the harness should still have somewhere
+    // stable to keep its state rather than failing outright.
+    const root = await fakeCheckout();
+
+    expect(qaStateDir(root)).toBe(path.join(root, ".getwrite-qa"));
+  });
+
+  it("creates the resolved state directory successfully in a worktree layout", async () => {
+    // The regression this guards is an ENOTDIR at mkdir time, so actually
+    // create it rather than only asserting the computed path.
+    const root = await fakeCheckout();
+    const realGitDir = path.join(root, "wt-gitdir");
+    await fs.mkdir(realGitDir, { recursive: true });
+    await fs.writeFile(
+      path.join(root, ".git"),
+      `gitdir: ${realGitDir}`,
+      "utf8",
+    );
+
+    const stateDir = qaStateDir(root);
+    await fs.mkdir(stateDir, { recursive: true });
+
+    expect((await fs.stat(stateDir)).isDirectory()).toBe(true);
+  });
+});
+
+describe("failed `qa start` rollback", () => {
+  async function scratch(): Promise<string> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-cli-qa-fs-"));
+    createdDirs.push(dir);
+    return dir;
+  }
+
+  it("removes the run's build directory and restores the tsconfig", async () => {
+    // A failure before the session record is written leaves `qa finish` with
+    // nothing to act on ("No active QA session found"), so this is the only
+    // chance to undo what starting the run already changed. Observed for real:
+    // a readiness timeout left both the build dir and Next's tsconfig rewrite
+    // behind permanently.
+    const root = await scratch();
+    const distDir = path.join(root, ".next-qa", "run-1");
+    await fs.mkdir(distDir, { recursive: true });
+    await fs.writeFile(path.join(distDir, "build.json"), "{}", "utf8");
+
+    const tsconfigPath = path.join(root, "tsconfig.json");
+    const original = '{ "compilerOptions": {} }\n';
+    await fs.writeFile(tsconfigPath, original, "utf8");
+    const snapshot = await snapshotTrackedTsconfig(tsconfigPath);
+    await fs.writeFile(
+      tsconfigPath,
+      '{ "include": [".next-qa/run-1/types/**/*.ts"] }\n',
+      "utf8",
+    );
+
+    await cleanUpFailedStart({
+      distDir,
+      tsconfigPath,
+      tsconfigSnapshot: snapshot,
+    });
+
+    await expect(fs.access(distDir)).rejects.toThrow();
+    expect(await fs.readFile(tsconfigPath, "utf8")).toBe(original);
+  });
+
+  it("is a no-op when nothing was recorded yet", async () => {
+    // Failing before the snapshot is taken must not throw out of the catch
+    // block and mask the original error.
+    await expect(cleanUpFailedStart({})).resolves.toBeUndefined();
+  });
+
+  it("does not throw when the recorded paths are already gone", async () => {
+    const root = await scratch();
+
+    await expect(
+      cleanUpFailedStart({
+        distDir: path.join(root, "missing-dist"),
+        tsconfigPath: path.join(root, "missing-tsconfig.json"),
+        tsconfigSnapshot: "{}\n",
+      }),
+    ).resolves.toBeUndefined();
   });
 });

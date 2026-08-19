@@ -523,6 +523,44 @@ export async function restoreTrackedTsconfig(
   return true;
 }
 
+/**
+ * What `qa start` has already changed on disk by the time it can fail, and
+ * therefore has to undo itself.
+ *
+ * A failure before the session record is written leaves nothing for
+ * `qa finish` to act on — it reports "No active QA session found" — so without
+ * this the run's build directory and Next's rewrite of the tracked tsconfig
+ * persist with no recovery path. That is the exact outcome the tsconfig
+ * snapshot exists to prevent, so it has to cover the failure path too.
+ */
+interface FailedStartArtifacts {
+  distDir?: string;
+  tsconfigPath?: string;
+  tsconfigSnapshot?: string;
+}
+
+/** Best-effort rollback of {@link FailedStartArtifacts}. Never throws. */
+export async function cleanUpFailedStart(
+  artifacts: FailedStartArtifacts,
+): Promise<void> {
+  if (artifacts.distDir !== undefined) {
+    await rm(artifacts.distDir, { recursive: true, force: true }).catch(
+      () => {},
+    );
+  }
+  if (artifacts.tsconfigPath !== undefined) {
+    const restored = await restoreTrackedTsconfig(
+      artifacts.tsconfigPath,
+      artifacts.tsconfigSnapshot,
+    ).catch(() => false);
+    if (restored) {
+      console.log(
+        "[qa start] Restored frontend/tsconfig.json to its pre-run state.",
+      );
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Command registration
 // ---------------------------------------------------------------------------
@@ -561,6 +599,7 @@ export function registerQa(program: Command) {
   qa.command("start")
     .description("Start a disposable QA workspace and dev server")
     .action(async (): Promise<void> => {
+      const startArtifacts: FailedStartArtifacts = {};
       try {
         const repoRoot = repoRootFromThisModule();
         const workspacePath = await createQaWorkspace(repoRoot);
@@ -577,6 +616,9 @@ export function registerQa(program: Command) {
         const tsconfigSnapshot = await snapshotTrackedTsconfig(
           qaTrackedTsconfigPath(repoRoot),
         );
+        startArtifacts.distDir = distDir;
+        startArtifacts.tsconfigPath = qaTrackedTsconfigPath(repoRoot);
+        startArtifacts.tsconfigSnapshot = tsconfigSnapshot;
 
         const handle = await startQaServer({
           workspaceDir: workspacePath,
@@ -616,6 +658,13 @@ export function registerQa(program: Command) {
           "[qa start] Failed to start QA session:",
           (err as Error).message,
         );
+
+        // No session record exists on this path, so `qa finish` has nothing to
+        // clean up from — this is the only chance to undo what starting the
+        // run already changed. `startQaServer` stops the child it spawned, so
+        // what is left here is the build directory and the tsconfig rewrite.
+        await cleanUpFailedStart(startArtifacts);
+
         if (!process.env.GETWRITE_CLI_TESTING) process.exit(2);
       }
     });
@@ -915,27 +964,48 @@ export function registerQa(program: Command) {
         );
         console.log(`[qa finish] ${cleanupResult.message}`);
 
-        // Build output is disposable in every case: unlike the workspace it
-        // carries no evidence about what the run observed, and leaving it
-        // behind would accumulate a full Next build per run under
-        // `frontend/.next-qa/`.
-        if (session.distDir !== undefined) {
-          await rm(session.distDir, { recursive: true, force: true });
-        }
         if (session.serverLogPath !== undefined) {
           console.log(`[qa finish] Server log: ${session.serverLogPath}`);
         }
 
-        // Undo Next's start-time rewrite of the tracked tsconfig so a QA run
-        // leaves no working-tree changes behind.
-        const restored = await restoreTrackedTsconfig(
-          qaTrackedTsconfigPath(repoRootFromThisModule()),
-          session.tsconfigSnapshot,
-        );
-        if (restored) {
-          console.log(
-            "[qa finish] Restored frontend/tsconfig.json to its pre-run state.",
+        // Both of the steps below assume the dev server is gone. Neither is
+        // safe against one that might still be running: deleting its build
+        // directory pulls the ground out from under a live process, and it
+        // would re-append its `distDir` type globs to the tsconfig after the
+        // restore — leaving the tree dirty anyway, but silently. When the stop
+        // could not be confirmed, say what was skipped instead of doing damage.
+        if (!confirmed) {
+          console.warn(
+            "[qa finish] Skipped removing the run's build directory and " +
+              "restoring frontend/tsconfig.json, because the server's stop " +
+              "could not be confirmed. Stop it, then re-run `qa finish` or " +
+              "undo both by hand:",
           );
+          if (session.distDir !== undefined) {
+            console.warn(`[qa finish]   build dir: ${session.distDir}`);
+          }
+          console.warn(
+            `[qa finish]   tsconfig:  ${qaTrackedTsconfigPath(repoRootFromThisModule())}`,
+          );
+        } else {
+          // Build output is disposable: unlike the workspace it carries no
+          // evidence about what the run observed, and leaving it behind would
+          // accumulate a full Next build per run under `frontend/.next-qa/`.
+          if (session.distDir !== undefined) {
+            await rm(session.distDir, { recursive: true, force: true });
+          }
+
+          // Undo Next's start-time rewrite of the tracked tsconfig so a QA run
+          // leaves no working-tree changes behind.
+          const restored = await restoreTrackedTsconfig(
+            qaTrackedTsconfigPath(repoRootFromThisModule()),
+            session.tsconfigSnapshot,
+          );
+          if (restored) {
+            console.log(
+              "[qa finish] Restored frontend/tsconfig.json to its pre-run state.",
+            );
+          }
         }
 
         await removeSession();

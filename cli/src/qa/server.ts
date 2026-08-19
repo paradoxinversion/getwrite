@@ -459,6 +459,14 @@ export async function startQaServer(
     // flag, so a run-scoped build directory can only be passed through the
     // config, which means through the environment.
     ...(distDir === undefined ? {} : { GETWRITE_QA_DIST_DIR: distDir }),
+    // A QA run is account-free by definition: it drives a disposable
+    // filesystem workspace, not a tenant. Inheriting a developer's hosted-auth
+    // env would activate `isHostedAuthActive()` in the child, and the `(app)`
+    // layout would then redirect the unauthenticated readiness probe — a 307
+    // the probe never accepts, burning the full readiness budget before
+    // failing. Cleared explicitly rather than left to chance.
+    DATABASE_URL: undefined,
+    BETTER_AUTH_SECRET: undefined,
   };
 
   // `detached: true` makes this child the leader of a new process group
@@ -505,11 +513,6 @@ export async function startQaServer(
     });
   });
 
-  await Promise.race([
-    waitForServerReady(url, readyTimeoutMs, pollIntervalMs, readyProbePaths),
-    earlyExit,
-  ]);
-
   async function stop(
     killTimeoutMs: number = DEFAULT_KILL_TIMEOUT_MS,
   ): Promise<void> {
@@ -531,6 +534,25 @@ export async function startQaServer(
       killProcessGroup(child, "SIGKILL");
       await exited;
     }
+  }
+
+  try {
+    await Promise.race([
+      waitForServerReady(url, readyTimeoutMs, pollIntervalMs, readyProbePaths),
+      earlyExit,
+    ]);
+  } catch (err) {
+    // This function spawned the child, so it owns it until it hands back a
+    // handle — and on this path it never does. Leaving it running orphans a
+    // detached process-group leader that no caller has a PID for: `qa start`
+    // writes its session record only on success, so nothing can ever stop it
+    // afterwards. Observed in practice, as a dev server surviving a readiness
+    // timeout and having to be killed by hand.
+    await stop().catch(() => {
+      // The readiness failure is the error worth surfacing, not a secondary
+      // failure to clean up after it.
+    });
+    throw err;
   }
 
   return { child, port, url, stop };

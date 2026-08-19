@@ -17,6 +17,7 @@
  * convention.
  */
 import { mkdtemp, rm } from "node:fs/promises";
+import { readFileSync, statSync, type Stats } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,19 +32,6 @@ const WORKSPACE_PREFIX = "getwrite-qa-";
 export const QA_SESSION_PATH_ENV = "GETWRITE_QA_SESSION_PATH";
 
 /**
- * Directory the QA harness keeps its cross-invocation state in, relative to
- * the repo root.
- *
- * `.git/` rather than the OS temp dir: the session record is the harness's
- * recovery mechanism, so it has to be findable by `qa verify`/`report`/
- * `finish` even when they run with a different `TMPDIR` than `qa start` did
- * (which is exactly what made the previous `os.tmpdir()`-derived path fail).
- * `.git/` is stable per checkout, always writable when the repo is, never
- * tracked by git, and outside every directory the app scans for projects.
- */
-const QA_STATE_DIRNAME = path.join(".git", "getwrite-qa");
-
-/**
  * Absolute path to the directory holding the harness's cross-invocation
  * state (the session record and the dev-server log).
  *
@@ -56,7 +44,53 @@ export function qaStateDir(repoRoot: string = defaultRepoRoot()): string {
   if (override !== undefined && override.length > 0) {
     return path.dirname(path.resolve(override));
   }
-  return path.join(path.resolve(repoRoot), QA_STATE_DIRNAME);
+  const resolvedRoot = path.resolve(repoRoot);
+  const gitDir = resolveGitDir(resolvedRoot);
+  // No usable git directory (a source export, say) — keep the state in an
+  // untracked dot-directory at the root rather than failing outright.
+  return gitDir === null
+    ? path.join(resolvedRoot, ".getwrite-qa")
+    : path.join(gitDir, "getwrite-qa");
+}
+
+/**
+ * Resolves the real git directory for a checkout.
+ *
+ * `.git` is only a directory in an ordinary clone. In a linked worktree or a
+ * submodule it is a *file* containing `gitdir: <path>`, and treating it as a
+ * directory makes `mkdir(<root>/.git/getwrite-qa)` fail with `ENOTDIR` — which
+ * would leave the harness unusable in exactly the worktrees this repo creates
+ * for background agents.
+ *
+ * Returns `null` when there is no usable git directory, leaving the caller to
+ * pick a fallback.
+ */
+function resolveGitDir(resolvedRepoRoot: string): string | null {
+  const dotGit = path.join(resolvedRepoRoot, ".git");
+  let stats: Stats;
+  try {
+    stats = statSync(dotGit);
+  } catch {
+    return null;
+  }
+
+  if (stats.isDirectory()) return dotGit;
+
+  // A worktree/submodule pointer file: `gitdir: /abs/or/relative/path`.
+  try {
+    const pointer = readFileSync(dotGit, "utf8");
+    const match = /^gitdir:\s*(.+)$/m.exec(pointer);
+    if (match?.[1] !== undefined) {
+      const target = match[1].trim();
+      return path.isAbsolute(target)
+        ? target
+        : path.resolve(resolvedRepoRoot, target);
+    }
+  } catch {
+    // Unreadable pointer — fall through.
+  }
+
+  return null;
 }
 
 /**
