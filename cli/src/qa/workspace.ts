@@ -116,8 +116,18 @@ export function qaSessionFilePath(
  * the session record also means it survives `qa finish`'s workspace deletion,
  * so a failing run's evidence is still readable afterwards.
  */
-export function qaServerLogPath(repoRoot: string = defaultRepoRoot()): string {
-  return path.join(qaStateDir(repoRoot), "qa-server.log");
+export function qaServerLogPath(
+  repoRoot: string = defaultRepoRoot(),
+  runId?: string,
+): string {
+  // Run-scoped, because a single shared file is opened with "a" and never
+  // truncated: every run's output piles into it, so a failing run's evidence
+  // arrives interleaved with every previous run's. That is not a tidiness
+  // point — it actively misleads. A diagnosis during this harness's own
+  // development read a *previous* run's 404s as the current run's, because
+  // both were in the same file.
+  const name = runId === undefined ? "qa-server.log" : `qa-server-${runId}.log`;
+  return path.join(qaStateDir(repoRoot), name);
 }
 
 /**

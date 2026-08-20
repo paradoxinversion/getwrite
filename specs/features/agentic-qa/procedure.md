@@ -124,6 +124,44 @@ Run these once at the start and end of the QA session, in order:
 Do not modify, delete, or disable any existing Vitest or
 Playwright/Storybook test file at any point in this procedure (FR-13).
 
+### 2.1 Do not run the harness inside a command sandbox
+
+`qa start` must be run **without** a command sandbox (in Claude Code, that
+means `dangerouslyDisableSandbox`). The same applies to
+`cli/tests/qa/server.test.ts`, which spawns a real dev server.
+
+Sandboxed, the run appears to work and then fails in a way that looks like a
+product defect: the dev server starts, reports `✓ Ready`, and then answers
+**every** request with a 404 until the readiness budget expires (4 minutes),
+ending in
+
+```
+[qa start] Failed to start QA session: QA dev server did not become ready
+within 240000ms (http://localhost:<port>) — .../ responded 404
+```
+
+It needs *both* the sandbox and the run-scoped `distDir` the harness uses.
+Measured directly:
+
+| Sandbox | `distDir`          | `/` |
+| ------- | ------------------ | --- |
+| on      | default `.next`    | 200 in ~7s |
+| off     | run-scoped `.next-qa/<runId>` | 200 in ~8s |
+| **on**  | **run-scoped**     | **404, indefinitely** |
+
+Two things make this expensive to diagnose from inside a run, so recognise it
+from the table rather than re-deriving it:
+
+- The 404s are fast (~20ms) and log no compile step, so they read as "the app
+  has no routes" rather than "the server is still starting".
+- It is *not* caused by machine load, `NODE_ENV`, hosted-auth env vars, or
+  probe cadence — all four were tested and excluded.
+
+If a run must happen under a sandbox, the only known workaround is to let the
+server use the default `frontend/.next` (which forfeits the cache isolation
+`distDir` exists to provide, and can leave the shared cache poisoned for
+ordinary development). Running unsandboxed is strongly preferred.
+
 ## 3. TipTap editor readiness wait (FR-15) — read before Section 4
 
 Two of the four inventory items (`res-save-content-roundtrip`, and

@@ -406,3 +406,37 @@ describe("failed `qa start` rollback", () => {
     ).resolves.toBeUndefined();
   });
 });
+
+describe("dev-server log is per-run", () => {
+  it("gives each run its own log file", () => {
+    // A single shared, append-mode log interleaves every run's output, so a
+    // failing run's evidence arrives mixed with previous runs'. During this
+    // harness's own development that actively misled a diagnosis: a previous
+    // run's 404s were read as the current run's.
+    const repoRoot = defaultRepoRoot();
+    const first = qaServerLogPath(repoRoot, "run-one");
+    const second = qaServerLogPath(repoRoot, "run-two");
+
+    expect(first).not.toBe(second);
+    expect(first).toContain("run-one");
+    expect(second).toContain("run-two");
+  });
+
+  it("keeps per-run logs beside the session record, outside the scanned tree", async () => {
+    const repoRoot = defaultRepoRoot();
+    const workspace = await createQaWorkspace(repoRoot);
+    createdDirs.push(workspace);
+
+    const logPath = qaServerLogPath(repoRoot, path.basename(workspace));
+
+    expect(path.dirname(logPath)).toBe(qaStateDir(repoRoot));
+    expect(
+      path.relative(path.resolve(workspace), logPath).startsWith(".."),
+    ).toBe(true);
+  });
+
+  it("still resolves a stable default when no runId is given", () => {
+    // server.ts's own fallback and older call sites rely on this shape.
+    expect(qaServerLogPath(defaultRepoRoot())).toContain("qa-server.log");
+  });
+});

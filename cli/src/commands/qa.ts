@@ -610,7 +610,7 @@ export function registerQa(program: Command) {
         // (mkdtemp), which makes it a ready-made run id.
         const runId = path.basename(workspacePath);
         const distDir = qaDistDir(runId, repoRoot);
-        const serverLogPath = qaServerLogPath(repoRoot);
+        const serverLogPath = qaServerLogPath(repoRoot, runId);
         // Captured before the server starts, because starting it is what
         // rewrites the file.
         const tsconfigSnapshot = await snapshotTrackedTsconfig(
@@ -964,8 +964,18 @@ export function registerQa(program: Command) {
         );
         console.log(`[qa finish] ${cleanupResult.message}`);
 
+        // The log follows the workspace's fate: it is the same run's evidence,
+        // so retaining one while discarding the other would leave a failing
+        // run half-documented, and keeping both on a clean run would grow a
+        // log per run forever.
         if (session.serverLogPath !== undefined) {
-          console.log(`[qa finish] Server log: ${session.serverLogPath}`);
+          if (cleanupResult.action === "retained") {
+            console.log(
+              `[qa finish] Retained server log at "${session.serverLogPath}".`,
+            );
+          } else {
+            await rm(session.serverLogPath, { force: true });
+          }
         }
 
         // Both of the steps below assume the dev server is gone. Neither is
