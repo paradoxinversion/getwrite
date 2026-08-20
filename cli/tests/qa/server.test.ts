@@ -111,6 +111,45 @@ async function startStubServer(
   };
 }
 
+/**
+ * Resolves `true` when something is still accepting TCP connections on `port`.
+ *
+ * This is how the test detects a dev server that outlived its `stop()`:
+ * process-level checks either look at the wrong process (the direct child,
+ * whose exit says nothing about the descendants `next dev` forks) or need
+ * signalling permission a sandbox may withhold. A listening socket is
+ * unambiguous and always observable.
+ */
+function isPortAccepting(port: number, timeoutMs = 1000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.connect({ port, host: "127.0.0.1" });
+    const settle = (accepting: boolean): void => {
+      socket.destroy();
+      resolve(accepting);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once("connect", () => settle(true));
+    socket.once("timeout", () => settle(false));
+    socket.once("error", () => settle(false));
+  });
+}
+
+/**
+ * Probes whether the process group led by `pid` still has members.
+ *
+ * Returns "gone" only on a confirmed ESRCH. Anything else (notably EPERM, when
+ * the sandbox forbids signalling) is "unknown" — the group must not be called
+ * dead just because the probe was refused.
+ */
+function processGroupState(pid: number): "alive" | "gone" | "unknown" {
+  try {
+    process.kill(-pid, 0);
+    return "alive";
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown";
+  }
+}
+
 async function mkWorkspace(): Promise<string> {
   const tmp = await fs.mkdtemp(
     path.join(os.tmpdir(), "getwrite-cli-qa-server-"),
@@ -279,12 +318,34 @@ describe("startQaServer", () => {
         // which the app scans for projects.
         expect(await fs.readdir(workspaceDir)).not.toContain("qa-server.log");
 
+        const stoppedPort = handle.port;
+        const stoppedPid = handle.child.pid;
+
         await handle.stop();
         stopped = true;
 
         expect(
           handle.child.exitCode !== null || handle.child.signalCode !== null,
         ).toBe(true);
+
+        // The direct child's exit code above is NOT evidence of "no orphaned
+        // process", despite this test's name. `next dev` forks descendants
+        // (next-server, Turbopack workers) into the child's process group, and
+        // pnpm's exit says nothing about them — this assertion was observed
+        // passing while twelve next-server processes were still alive.
+        //
+        // A closed port is the signal that actually catches that: a surviving
+        // server is still listening on it, and unlike a `process.kill` probe
+        // this needs no signalling permission, so it works in a sandbox too.
+        expect(await isPortAccepting(stoppedPort)).toBe(false);
+
+        // Belt and braces where signalling is permitted: the whole process
+        // group should be gone. An ambiguous probe (EPERM) reports "unknown"
+        // rather than failing, so this tightens the check where it can and
+        // never produces a false failure where it cannot.
+        if (stoppedPid !== undefined) {
+          expect(processGroupState(stoppedPid)).not.toBe("alive");
+        }
 
         // H1: the run built into its own distDir...
         const runDistStat = await statOrNull(runDistDir);

@@ -405,6 +405,53 @@ function killProcessGroup(child: ChildProcess, signal: NodeJS.Signals): void {
 }
 
 /**
+ * Reports whether the process group led by `pid` still has any member.
+ *
+ * `process.kill(-pid, 0)` sends no signal; it only asks. ESRCH is the one
+ * answer that confirms the group is empty — anything else (notably EPERM) is
+ * ambiguous, and an ambiguous answer must not be read as "gone", or a live
+ * group gets reported as reaped.
+ */
+function isProcessGroupAlive(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+/**
+ * Waits for every process in the child's group to disappear, escalating to
+ * `SIGKILL` if they do not go quietly.
+ *
+ * Resolves once the group is confirmed empty, or once `timeoutMs` has elapsed
+ * with the group's state still ambiguous — this is best-effort teardown, not a
+ * guarantee, and it must never hang a caller that is only trying to clean up.
+ */
+async function reapProcessGroup(
+  child: ChildProcess,
+  timeoutMs: number,
+): Promise<void> {
+  const pid = child.pid;
+  if (pid === undefined) return;
+
+  const graceDeadline = Date.now() + timeoutMs;
+  while (Date.now() < graceDeadline) {
+    if (!isProcessGroupAlive(pid)) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  killProcessGroup(child, "SIGKILL");
+
+  const killDeadline = Date.now() + timeoutMs;
+  while (Date.now() < killDeadline) {
+    if (!isProcessGroupAlive(pid)) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
+/**
  * Spawns the frontend's Next.js dev server (`pnpm --filter getwrite-frontend
  * dev`) pointed at a disposable QA workspace, with `GETWRITE_PROJECTS_DIR`
  * set before the process starts and a free port discovered up front rather
@@ -516,24 +563,35 @@ export async function startQaServer(
   async function stop(
     killTimeoutMs: number = DEFAULT_KILL_TIMEOUT_MS,
   ): Promise<void> {
-    if (child.exitCode !== null || child.signalCode !== null) {
-      return;
+    const alreadyExited = child.exitCode !== null || child.signalCode !== null;
+
+    if (!alreadyExited) {
+      const exited = waitForExit(child);
+      killProcessGroup(child, "SIGTERM");
+
+      const timedOut = await Promise.race([
+        exited.then(() => false),
+        new Promise<boolean>((resolve) =>
+          setTimeout(() => resolve(true), killTimeoutMs),
+        ),
+      ]);
+
+      if (timedOut) {
+        killProcessGroup(child, "SIGKILL");
+        await exited;
+      }
     }
 
-    const exited = waitForExit(child);
-    killProcessGroup(child, "SIGTERM");
-
-    const timedOut = await Promise.race([
-      exited.then(() => false),
-      new Promise<boolean>((resolve) =>
-        setTimeout(() => resolve(true), killTimeoutMs),
-      ),
-    ]);
-
-    if (timedOut) {
-      killProcessGroup(child, "SIGKILL");
-      await exited;
-    }
+    // The direct child exiting is NOT the end of it. `child` is pnpm, which
+    // exits promptly on SIGTERM, while the `next dev` / next-server /
+    // Turbopack-worker processes it forked into this group can outlive it —
+    // observed as a dozen next-server processes still running long after
+    // their tests had "cleanly stopped". Returning here without reaping the
+    // group is what orphaned them.
+    //
+    // The early-return-when-already-exited path had the same hole, and worse:
+    // it skipped teardown entirely.
+    await reapProcessGroup(child, killTimeoutMs);
   }
 
   try {
