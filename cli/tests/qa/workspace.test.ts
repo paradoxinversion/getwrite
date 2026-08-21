@@ -223,7 +223,9 @@ describe("tracked tsconfig restoration", () => {
       "utf8",
     );
 
-    expect(await restoreTrackedTsconfig(tsconfigPath, snapshot)).toBe(true);
+    expect(
+      (await restoreTrackedTsconfig(tsconfigPath, snapshot)).restored,
+    ).toBe(true);
     expect(await fs.readFile(tsconfigPath, "utf8")).toBe(original);
   });
 
@@ -235,7 +237,9 @@ describe("tracked tsconfig restoration", () => {
 
     const snapshot = await snapshotTrackedTsconfig(tsconfigPath);
 
-    expect(await restoreTrackedTsconfig(tsconfigPath, snapshot)).toBe(false);
+    expect(
+      (await restoreTrackedTsconfig(tsconfigPath, snapshot)).restored,
+    ).toBe(false);
   });
 
   it("preserves uncommitted edits rather than restoring from git", async () => {
@@ -260,7 +264,83 @@ describe("tracked tsconfig restoration", () => {
     const missing = path.join(dir, "tsconfig.json");
 
     expect(await snapshotTrackedTsconfig(missing)).toBeUndefined();
-    expect(await restoreTrackedTsconfig(missing, undefined)).toBe(false);
+    expect((await restoreTrackedTsconfig(missing, undefined)).restored).toBe(
+      false,
+    );
+  });
+
+  it("preserves what it overwrites, so a mid-run edit is recoverable", async () => {
+    // The restore is indiscriminate by necessity: an edit a developer makes to
+    // frontend/tsconfig.json while a run is open is indistinguishable by
+    // content from Next's own rewrite, so restoring silently reverted it.
+    // Nothing can tell them apart — but nothing has to be lost either.
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-cli-qa-ts-"));
+    createdDirs.push(dir);
+    const tsconfigPath = path.join(dir, "tsconfig.json");
+    await fs.writeFile(tsconfigPath, '{ "compilerOptions": {} }\n', "utf8");
+    const snapshot = await snapshotTrackedTsconfig(tsconfigPath);
+
+    const midRunEdit = '{ "compilerOptions": { "strict": true } }\n';
+    await fs.writeFile(tsconfigPath, midRunEdit, "utf8");
+
+    const backupPath = path.join(dir, "state", "tsconfig-at-finish-run.json");
+    const result = await restoreTrackedTsconfig(
+      tsconfigPath,
+      snapshot,
+      backupPath,
+    );
+
+    expect(result.restored).toBe(true);
+    expect(result.backupPath).toBe(backupPath);
+    // The tree is still left clean...
+    expect(await fs.readFile(tsconfigPath, "utf8")).toBe(snapshot);
+    // ...and the overwritten edit is recoverable rather than gone.
+    expect(await fs.readFile(backupPath, "utf8")).toBe(midRunEdit);
+  });
+
+  it("still restores when the backup cannot be written", async () => {
+    // Losing the backup is bad; leaving the checkout dirty is the problem the
+    // restore exists to solve. Preserving is best effort, never a gate.
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-cli-qa-ts-"));
+    createdDirs.push(dir);
+    const tsconfigPath = path.join(dir, "tsconfig.json");
+    const original = "{}\n";
+    await fs.writeFile(tsconfigPath, original, "utf8");
+    const snapshot = await snapshotTrackedTsconfig(tsconfigPath);
+    await fs.writeFile(tsconfigPath, '{ "rewritten": true }\n', "utf8");
+
+    // A file where the backup's parent directory needs to be: mkdir fails.
+    const blocker = path.join(dir, "blocker");
+    await fs.writeFile(blocker, "not a directory", "utf8");
+
+    const result = await restoreTrackedTsconfig(
+      tsconfigPath,
+      snapshot,
+      path.join(blocker, "tsconfig-at-finish-run.json"),
+    );
+
+    expect(result.restored).toBe(true);
+    expect(result.backupPath).toBeUndefined();
+    expect(await fs.readFile(tsconfigPath, "utf8")).toBe(original);
+  });
+
+  it("writes no backup when there was nothing to overwrite", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "getwrite-cli-qa-ts-"));
+    createdDirs.push(dir);
+    const tsconfigPath = path.join(dir, "tsconfig.json");
+    await fs.writeFile(tsconfigPath, "{}\n", "utf8");
+    const snapshot = await snapshotTrackedTsconfig(tsconfigPath);
+
+    const backupPath = path.join(dir, "tsconfig-at-finish-run.json");
+    // Unchanged file: no restore, and therefore no backup clutter either.
+    const result = await restoreTrackedTsconfig(
+      tsconfigPath,
+      snapshot,
+      backupPath,
+    );
+
+    expect(result.restored).toBe(false);
+    await expect(fs.access(backupPath)).rejects.toThrow();
   });
 });
 

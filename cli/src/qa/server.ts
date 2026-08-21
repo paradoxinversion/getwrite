@@ -337,6 +337,17 @@ function isPidAlive(pid: number): boolean {
  * fail until the file is deleted by hand. A lock naming a dead PID is removed;
  * one naming a live PID raises {@link DevServerLockHeldError}.
  *
+ * **Not reachable on the harness's current wiring**, and deliberately kept
+ * anyway. `startQaServer` is handed `frontend/.next-qa/<runId>` with a
+ * per-run-unique `runId`, so the directory is always freshly created and never
+ * holds a lock to begin with — every call returns at the first `readFileSync`
+ * failure. What makes it worth keeping is that the guarantee is external to
+ * this function: reuse the build directory across runs (a plausible change,
+ * since a warm `distDir` is the obvious cure for the harness's slow start) and
+ * a stale lock becomes reachable immediately, with the failure showing up as
+ * an unexplained hang until the readiness timeout. Its tests exercise it
+ * directly, so treat green here as covering the function, not the call site.
+ *
  * @throws {DevServerLockHeldError} when the recorded PID is still alive.
  */
 export function clearStaleDevLock(distDir: string): void {
@@ -473,10 +484,12 @@ export async function startQaServer(
     readyProbePaths = DEFAULT_READY_PROBE_PATHS,
   } = options;
 
-  // A run-scoped distDir gets its own lock file, which can go stale the same
-  // way the shared one does (a killed server never releases it). Checking
-  // before spawn turns "hangs until the readiness timeout" into an immediate,
-  // explanatory failure.
+  // A no-op as `qa start` currently calls this — the run-scoped distDir is
+  // always new, so there is never a lock to clear. It stays because the
+  // emptiness is a property of the caller, not of this code: any change that
+  // reuses a build directory across runs makes a stale lock reachable, and
+  // this turns "hangs until the readiness timeout" into an immediate,
+  // explanatory failure. See `clearStaleDevLock`.
   if (distDir !== undefined) {
     clearStaleDevLock(distDir);
   }

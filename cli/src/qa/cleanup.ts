@@ -132,3 +132,41 @@ export async function applyCleanupPolicy(
     message: `Deleted QA workspace at "${workspacePath}" — every exercised item passed.`,
   };
 }
+
+/** What {@link applyServerLogPolicy} did with a run's dev-server log. */
+export type ServerLogDisposition =
+  /** The log was kept, alongside a retained workspace. */
+  | "retained"
+  /** The log was deleted, alongside a deleted workspace. */
+  | "removed"
+  /** The run recorded no log path, so there was nothing to act on. */
+  | "absent";
+
+/**
+ * Ties the run's dev-server log to the same fate as its workspace.
+ *
+ * The log is the same run's evidence as the workspace, so the two must be
+ * kept or discarded together: retaining a workspace while deleting its log
+ * leaves a failing run half-documented, and keeping both on every clean run
+ * grows one log per run forever.
+ *
+ * Split out of `qa finish`'s handler so both branches are reachable from a
+ * test. Inline, the delete branch could only be exercised by a full run in
+ * which every inventory item passed — which is an entire agent-driven QA
+ * session, not something a unit test can stage.
+ *
+ * @param serverLogPath - The run's log path, or `undefined` if none was
+ *   recorded (a session started before per-run logs existed).
+ * @param cleanupAction - What {@link applyCleanupPolicy} did with the
+ *   workspace.
+ * @returns What happened to the log.
+ */
+export async function applyServerLogPolicy(
+  serverLogPath: string | undefined,
+  cleanupAction: CleanupResult["action"],
+): Promise<ServerLogDisposition> {
+  if (serverLogPath === undefined) return "absent";
+  if (cleanupAction === "retained") return "retained";
+  await rm(serverLogPath, { force: true });
+  return "removed";
+}

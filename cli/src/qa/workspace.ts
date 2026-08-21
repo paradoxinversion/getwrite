@@ -131,6 +131,21 @@ export function qaServerLogPath(
 }
 
 /**
+ * Absolute path where a run preserves whatever `frontend/tsconfig.json` held
+ * immediately before the restore overwrote it.
+ *
+ * The restore writes back a snapshot taken at `qa start`, which is correct for
+ * Next's own rewrite but indiscriminate: it cannot tell that rewrite apart
+ * from an edit the developer made to the same tracked file while the run was
+ * open, and would silently revert it. Content alone can't distinguish the two,
+ * so rather than guess, the harness keeps the overwritten bytes here and says
+ * where they went — the restore stays automatic and nothing is unrecoverable.
+ */
+export function qaTsconfigBackupPath(repoRoot: string, runId: string): string {
+  return path.join(qaStateDir(repoRoot), `tsconfig-at-finish-${runId}.json`);
+}
+
+/**
  * Absolute path to the run-scoped Next.js `distDir` for `runId`.
  *
  * Every QA run gets its own build directory so it can neither be poisoned by

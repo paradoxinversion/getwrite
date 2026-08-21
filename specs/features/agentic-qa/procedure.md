@@ -119,7 +119,18 @@ Run these once at the start and end of the QA session, in order:
    retain-or-delete workspace policy from the recorded outcomes (FR-14: keep
    the workspace if any item is `fail` or `unverified` or `unreachable`;
    delete it only if every exercised item is `pass`), and removes the
-   session record.
+   session record. The run's dev-server log shares the workspace's fate —
+   kept beside a retained workspace as that run's evidence, removed with a
+   deleted one.
+
+   `qa finish` also restores `frontend/tsconfig.json`, which starting
+   `next dev` rewrites. That restore cannot tell Next's rewrite apart from an
+   edit **you** made to the same file while the run was open — the only
+   available signal is that the contents differ from the `qa start` snapshot.
+   So it preserves whatever it overwrites at
+   `.git/getwrite-qa/tsconfig-at-finish-<runId>.json` and prints the path. If
+   you edited that file during a run, recover your version from there; these
+   backups are not cleaned up automatically, so delete them once checked.
 
 Do not modify, delete, or disable any existing Vitest or
 Playwright/Storybook test file at any point in this procedure (FR-13).

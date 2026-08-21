@@ -55,6 +55,7 @@ import {
   qaSessionFilePath,
   qaStateDir,
   qaTrackedTsconfigPath,
+  qaTsconfigBackupPath,
 } from "../qa/workspace";
 import { startQaServer } from "../qa/server";
 import {
@@ -71,7 +72,7 @@ import {
   reconcileWithInventory,
   type RunItemOutcome,
 } from "../qa/report";
-import { applyCleanupPolicy } from "../qa/cleanup";
+import { applyCleanupPolicy, applyServerLogPolicy } from "../qa/cleanup";
 
 /**
  * Cross-process session state persisted between separate `qa` sub-command
@@ -507,20 +508,54 @@ export async function snapshotTrackedTsconfig(
   }
 }
 
+/** What a restore of the tracked tsconfig did. */
+export interface TsconfigRestoreResult {
+  /** `true` when the file was actually overwritten. */
+  restored: boolean;
+  /**
+   * Where the overwritten contents were preserved, when a `backupPath` was
+   * supplied and the write succeeded. `undefined` means nothing was kept —
+   * either no path was given, or preserving it failed.
+   */
+  backupPath?: string;
+}
+
 /**
  * Restores the tracked tsconfig from a `qa start` snapshot, if Next changed
- * it. Returns `true` when a restore actually happened, so the caller can say
- * so rather than claim it unconditionally.
+ * it. Reports whether a restore actually happened, so the caller can say so
+ * rather than claim it unconditionally.
+ *
+ * The restore is indiscriminate by necessity: the only signal available is
+ * that the file's contents differ from the snapshot, and an edit a developer
+ * made during the run is indistinguishable from Next's rewrite by content.
+ * Overwriting either way would silently revert real work, so when
+ * `backupPath` is given the pre-restore contents are preserved there first
+ * and the path is returned for the caller to surface. Preserving is best
+ * effort — failing to write a backup must not leave the tree dirty, which is
+ * the problem the restore exists to solve.
  */
 export async function restoreTrackedTsconfig(
   tsconfigPath: string,
   snapshot: string | undefined,
-): Promise<boolean> {
-  if (snapshot === undefined) return false;
+  backupPath?: string,
+): Promise<TsconfigRestoreResult> {
+  if (snapshot === undefined) return { restored: false };
   const current = await snapshotTrackedTsconfig(tsconfigPath);
-  if (current === snapshot) return false;
+  if (current === snapshot) return { restored: false };
+
+  let preservedAt: string | undefined;
+  if (backupPath !== undefined && current !== undefined) {
+    try {
+      await mkdir(path.dirname(backupPath), { recursive: true });
+      await writeFile(backupPath, current, "utf8");
+      preservedAt = backupPath;
+    } catch {
+      // Best effort — see above.
+    }
+  }
+
   await writeFile(tsconfigPath, snapshot, "utf8");
-  return true;
+  return { restored: true, backupPath: preservedAt };
 }
 
 /**
@@ -537,6 +572,8 @@ interface FailedStartArtifacts {
   distDir?: string;
   tsconfigPath?: string;
   tsconfigSnapshot?: string;
+  /** Where to preserve the tsconfig this rollback is about to overwrite. */
+  tsconfigBackupPath?: string;
 }
 
 /** Best-effort rollback of {@link FailedStartArtifacts}. Never throws. */
@@ -549,14 +586,20 @@ export async function cleanUpFailedStart(
     );
   }
   if (artifacts.tsconfigPath !== undefined) {
-    const restored = await restoreTrackedTsconfig(
+    const result = await restoreTrackedTsconfig(
       artifacts.tsconfigPath,
       artifacts.tsconfigSnapshot,
-    ).catch(() => false);
-    if (restored) {
+      artifacts.tsconfigBackupPath,
+    ).catch((): TsconfigRestoreResult => ({ restored: false }));
+    if (result.restored) {
       console.log(
         "[qa start] Restored frontend/tsconfig.json to its pre-run state.",
       );
+      if (result.backupPath !== undefined) {
+        console.log(
+          `[qa start] Overwritten contents preserved at "${result.backupPath}".`,
+        );
+      }
     }
   }
 }
@@ -619,6 +662,10 @@ export function registerQa(program: Command) {
         startArtifacts.distDir = distDir;
         startArtifacts.tsconfigPath = qaTrackedTsconfigPath(repoRoot);
         startArtifacts.tsconfigSnapshot = tsconfigSnapshot;
+        startArtifacts.tsconfigBackupPath = qaTsconfigBackupPath(
+          repoRoot,
+          runId,
+        );
 
         const handle = await startQaServer({
           workspaceDir: workspacePath,
@@ -964,18 +1011,14 @@ export function registerQa(program: Command) {
         );
         console.log(`[qa finish] ${cleanupResult.message}`);
 
-        // The log follows the workspace's fate: it is the same run's evidence,
-        // so retaining one while discarding the other would leave a failing
-        // run half-documented, and keeping both on a clean run would grow a
-        // log per run forever.
-        if (session.serverLogPath !== undefined) {
-          if (cleanupResult.action === "retained") {
-            console.log(
-              `[qa finish] Retained server log at "${session.serverLogPath}".`,
-            );
-          } else {
-            await rm(session.serverLogPath, { force: true });
-          }
+        const logDisposition = await applyServerLogPolicy(
+          session.serverLogPath,
+          cleanupResult.action,
+        );
+        if (logDisposition === "retained") {
+          console.log(
+            `[qa finish] Retained server log at "${session.serverLogPath}".`,
+          );
         }
 
         // Both of the steps below assume the dev server is gone. Neither is
@@ -1007,14 +1050,26 @@ export function registerQa(program: Command) {
 
           // Undo Next's start-time rewrite of the tracked tsconfig so a QA run
           // leaves no working-tree changes behind.
-          const restored = await restoreTrackedTsconfig(
+          const restore = await restoreTrackedTsconfig(
             qaTrackedTsconfigPath(repoRootFromThisModule()),
             session.tsconfigSnapshot,
+            qaTsconfigBackupPath(
+              repoRootFromThisModule(),
+              path.basename(session.workspacePath),
+            ),
           );
-          if (restored) {
+          if (restore.restored) {
             console.log(
               "[qa finish] Restored frontend/tsconfig.json to its pre-run state.",
             );
+            if (restore.backupPath !== undefined) {
+              // The restore cannot tell Next's rewrite apart from an edit made
+              // during the run, so say where the overwritten bytes went.
+              console.log(
+                `[qa finish] Overwritten contents preserved at "${restore.backupPath}" ` +
+                  "— delete it once you have confirmed it held nothing of yours.",
+              );
+            }
           }
         }
 
