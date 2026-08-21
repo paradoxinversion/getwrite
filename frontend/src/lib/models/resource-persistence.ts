@@ -173,8 +173,14 @@ export async function writeResourceToFile(
     userMetadata: resource.userMetadata || {},
   };
 
-  if (isTextResource(resource) && resource.wordCount !== undefined) {
-    sidecarData.wordCount = resource.wordCount;
+  if (isTextResource(resource)) {
+    // A caller that saves content without also supplying a count would
+    // otherwise write a sidecar with no `wordCount` at all, leaving the
+    // resource indistinguishable from an empty stub until something re-derived
+    // it. The plain text written above is the authoritative source, so count
+    // that rather than requiring every call site to remember.
+    sidecarData.wordCount =
+      resource.wordCount ?? countWords(resource.plainText ?? "");
   }
 
   if (isMediaResource(resource)) {

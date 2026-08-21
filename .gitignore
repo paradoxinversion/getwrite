@@ -32,3 +32,11 @@ dist-electron/
 .claude/.plan-approved
 # Scratch git worktrees created by background agents
 .claude/worktrees/
+
+# Agentic QA harness: run-scoped Next build dirs and the tsconfig Next
+# rewrites on start (see cli/src/qa/server.ts, specs/features/agentic-qa.md)
+/frontend/.next-qa/
+/frontend/tsconfig.qa.json
+# Fallback location for the QA harness's session record when a checkout has no
+# usable .git directory (see cli/src/qa/workspace.ts)
+/.getwrite-qa/

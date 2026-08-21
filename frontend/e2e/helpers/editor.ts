@@ -12,7 +12,22 @@ import { expect, type Locator, type Page } from "@playwright/test";
  */
 
 export function editorBody(page: Page): Locator {
+  // The surface now carries `role="textbox"`, so it is reachable by role
+  // rather than only by the `.ProseMirror`/contenteditable selector fallback.
+  // The fallback is kept for any surface that has not adopted the role yet
+  // (e.g. the Markdown source textarea's sibling shells in older stories).
   return page.locator('[role="textbox"], [contenteditable="true"]').first();
+}
+
+/**
+ * Resolves the editing surface strictly through the accessibility tree.
+ *
+ * Distinct from {@link editorBody}, which tolerates a role-less surface: this
+ * fails if the editor is not discoverable the way assistive technology (and
+ * accessibility-tree-driven automation) finds it.
+ */
+export function editorBodyByRole(page: Page): Locator {
+  return page.getByRole("textbox").first();
 }
 
 /**

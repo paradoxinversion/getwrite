@@ -16,8 +16,12 @@
  *
  * ### Session record
  *
- * `qa start` writes `<os.tmpdir()>/getwrite-qa/session.json`, a JSON file
- * shaped like {@link QaSessionRecord}. `qa verify` reads it, appends one more
+ * `qa start` writes the session record to `<repo>/.git/getwrite-qa/session.json`
+ * (overridable with `GETWRITE_QA_SESSION_PATH`), a JSON file shaped like
+ * {@link QaSessionRecord}. The path is deliberately derived from the repo
+ * rather than `os.tmpdir()`: `TMPDIR` varies between invocations, and a
+ * session record the later sub-commands cannot find defeats the one thing
+ * the record exists for. `qa verify` reads it, appends one more
  * outcome, and writes it back (read-modify-write — there is no cross-process
  * locking here, matching the harness's single-agent, one-run-at-a-time usage
  * model). `qa report` reads it to render the report. `qa finish` reads it,
@@ -43,9 +47,16 @@
  */
 import { Command } from "commander";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { createQaWorkspace } from "../qa/workspace";
+import {
+  createQaWorkspace,
+  qaDistDir,
+  qaServerLogPath,
+  qaSessionFilePath,
+  qaStateDir,
+  qaTrackedTsconfigPath,
+  qaTsconfigBackupPath,
+} from "../qa/workspace";
 import { startQaServer } from "../qa/server";
 import {
   verifyProjectManifest,
@@ -61,7 +72,7 @@ import {
   reconcileWithInventory,
   type RunItemOutcome,
 } from "../qa/report";
-import { applyCleanupPolicy } from "../qa/cleanup";
+import { applyCleanupPolicy, applyServerLogPolicy } from "../qa/cleanup";
 
 /**
  * Cross-process session state persisted between separate `qa` sub-command
@@ -77,6 +88,21 @@ export interface QaSessionRecord {
   serverPort: number;
   /** PID of the spawned QA dev server child process (process-group leader). */
   serverPid: number;
+  /**
+   * Run-scoped Next.js build directory this run's dev server used. Recorded
+   * so `qa finish` can delete it: build output is disposable, and unlike the
+   * workspace it is never evidence worth retaining after a failure.
+   */
+  distDir?: string;
+  /** Where the run's dev-server log was written (FR-10 evidence). */
+  serverLogPath?: string;
+  /**
+   * Byte-for-byte contents of `frontend/tsconfig.json` as it stood before the
+   * run started, so `qa finish` can undo Next's rewrite of it. Snapshotting
+   * the pre-run state (rather than restoring from git) preserves any
+   * uncommitted edits the developer already had.
+   */
+  tsconfigSnapshot?: string;
   /** Per-item outcomes accumulated across `qa verify` invocations so far. */
   outcomes: RunItemOutcome[];
 }
@@ -98,14 +124,18 @@ function repoRootFromThisModule(): string {
   return path.resolve(__dirname, "..", "..", "..");
 }
 
-/** Directory the session record lives under, inside the OS temp directory. */
+/**
+ * Directory the session record lives under. Resolved through `workspace.ts`
+ * so every sub-command — each its own process — agrees on the location
+ * regardless of the `TMPDIR` it happens to inherit.
+ */
 function sessionDir(): string {
-  return path.join(os.tmpdir(), "getwrite-qa");
+  return qaStateDir(repoRootFromThisModule());
 }
 
 /** Absolute path to the session record file. */
 function sessionFilePath(): string {
-  return path.join(sessionDir(), "session.json");
+  return qaSessionFilePath(repoRootFromThisModule());
 }
 
 /** `true` when `err` is a Node `ENOENT` (file/dir does not exist) error. */
@@ -453,6 +483,127 @@ export async function stopServerByPid(
   return { confirmed };
 }
 
+/**
+ * Reads the tracked tsconfig so `qa finish` can put it back exactly as it was.
+ *
+ * Starting `next dev` makes Next verify and rewrite `frontend/tsconfig.json`
+ * — reformatting its arrays and appending the run's `distDir` type globs — so
+ * a QA run left the checkout dirty with changes nobody asked for. Pointing
+ * Next at an untracked config instead (`typescript.tsconfigPath`) was tried
+ * and does not work: with a non-default tsconfig path this Next version stops
+ * discovering App Router routes and serves 404 for everything. Snapshot and
+ * restore is what remains, and it is enough — the rewrite is transient state
+ * that only needs to not survive the run.
+ *
+ * Returns `undefined` if the file cannot be read, which simply means there is
+ * nothing to restore.
+ */
+export async function snapshotTrackedTsconfig(
+  tsconfigPath: string,
+): Promise<string | undefined> {
+  try {
+    return await readFile(tsconfigPath, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/** What a restore of the tracked tsconfig did. */
+export interface TsconfigRestoreResult {
+  /** `true` when the file was actually overwritten. */
+  restored: boolean;
+  /**
+   * Where the overwritten contents were preserved, when a `backupPath` was
+   * supplied and the write succeeded. `undefined` means nothing was kept —
+   * either no path was given, or preserving it failed.
+   */
+  backupPath?: string;
+}
+
+/**
+ * Restores the tracked tsconfig from a `qa start` snapshot, if Next changed
+ * it. Reports whether a restore actually happened, so the caller can say so
+ * rather than claim it unconditionally.
+ *
+ * The restore is indiscriminate by necessity: the only signal available is
+ * that the file's contents differ from the snapshot, and an edit a developer
+ * made during the run is indistinguishable from Next's rewrite by content.
+ * Overwriting either way would silently revert real work, so when
+ * `backupPath` is given the pre-restore contents are preserved there first
+ * and the path is returned for the caller to surface. Preserving is best
+ * effort — failing to write a backup must not leave the tree dirty, which is
+ * the problem the restore exists to solve.
+ */
+export async function restoreTrackedTsconfig(
+  tsconfigPath: string,
+  snapshot: string | undefined,
+  backupPath?: string,
+): Promise<TsconfigRestoreResult> {
+  if (snapshot === undefined) return { restored: false };
+  const current = await snapshotTrackedTsconfig(tsconfigPath);
+  if (current === snapshot) return { restored: false };
+
+  let preservedAt: string | undefined;
+  if (backupPath !== undefined && current !== undefined) {
+    try {
+      await mkdir(path.dirname(backupPath), { recursive: true });
+      await writeFile(backupPath, current, "utf8");
+      preservedAt = backupPath;
+    } catch {
+      // Best effort — see above.
+    }
+  }
+
+  await writeFile(tsconfigPath, snapshot, "utf8");
+  return { restored: true, backupPath: preservedAt };
+}
+
+/**
+ * What `qa start` has already changed on disk by the time it can fail, and
+ * therefore has to undo itself.
+ *
+ * A failure before the session record is written leaves nothing for
+ * `qa finish` to act on — it reports "No active QA session found" — so without
+ * this the run's build directory and Next's rewrite of the tracked tsconfig
+ * persist with no recovery path. That is the exact outcome the tsconfig
+ * snapshot exists to prevent, so it has to cover the failure path too.
+ */
+interface FailedStartArtifacts {
+  distDir?: string;
+  tsconfigPath?: string;
+  tsconfigSnapshot?: string;
+  /** Where to preserve the tsconfig this rollback is about to overwrite. */
+  tsconfigBackupPath?: string;
+}
+
+/** Best-effort rollback of {@link FailedStartArtifacts}. Never throws. */
+export async function cleanUpFailedStart(
+  artifacts: FailedStartArtifacts,
+): Promise<void> {
+  if (artifacts.distDir !== undefined) {
+    await rm(artifacts.distDir, { recursive: true, force: true }).catch(
+      () => {},
+    );
+  }
+  if (artifacts.tsconfigPath !== undefined) {
+    const result = await restoreTrackedTsconfig(
+      artifacts.tsconfigPath,
+      artifacts.tsconfigSnapshot,
+      artifacts.tsconfigBackupPath,
+    ).catch((): TsconfigRestoreResult => ({ restored: false }));
+    if (result.restored) {
+      console.log(
+        "[qa start] Restored frontend/tsconfig.json to its pre-run state.",
+      );
+      if (result.backupPath !== undefined) {
+        console.log(
+          `[qa start] Overwritten contents preserved at "${result.backupPath}".`,
+        );
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Command registration
 // ---------------------------------------------------------------------------
@@ -491,9 +642,37 @@ export function registerQa(program: Command) {
   qa.command("start")
     .description("Start a disposable QA workspace and dev server")
     .action(async (): Promise<void> => {
+      const startArtifacts: FailedStartArtifacts = {};
       try {
-        const workspacePath = await createQaWorkspace(repoRootFromThisModule());
-        const handle = await startQaServer({ workspaceDir: workspacePath });
+        const repoRoot = repoRootFromThisModule();
+        const workspacePath = await createQaWorkspace(repoRoot);
+
+        // One build directory per run, so this server can neither be poisoned
+        // by a stale shared `frontend/.next` nor poison it for ordinary
+        // development. `path.basename` of the workspace is already unique
+        // (mkdtemp), which makes it a ready-made run id.
+        const runId = path.basename(workspacePath);
+        const distDir = qaDistDir(runId, repoRoot);
+        const serverLogPath = qaServerLogPath(repoRoot, runId);
+        // Captured before the server starts, because starting it is what
+        // rewrites the file.
+        const tsconfigSnapshot = await snapshotTrackedTsconfig(
+          qaTrackedTsconfigPath(repoRoot),
+        );
+        startArtifacts.distDir = distDir;
+        startArtifacts.tsconfigPath = qaTrackedTsconfigPath(repoRoot);
+        startArtifacts.tsconfigSnapshot = tsconfigSnapshot;
+        startArtifacts.tsconfigBackupPath = qaTsconfigBackupPath(
+          repoRoot,
+          runId,
+        );
+
+        const handle = await startQaServer({
+          workspaceDir: workspacePath,
+          repoRoot,
+          distDir,
+          logPath: serverLogPath,
+        });
 
         if (handle.child.pid === undefined) {
           throw new Error("QA dev server started but reported no PID");
@@ -511,17 +690,28 @@ export function registerQa(program: Command) {
           serverUrl: handle.url,
           serverPort: handle.port,
           serverPid: handle.child.pid,
+          distDir,
+          serverLogPath,
+          tsconfigSnapshot,
           outcomes: [],
         };
         await writeSession(record);
 
         console.log(`[qa start] Workspace: ${workspacePath}`);
         console.log(`[qa start] Server URL: ${handle.url}`);
+        console.log(`[qa start] Server log: ${serverLogPath}`);
       } catch (err) {
         console.error(
           "[qa start] Failed to start QA session:",
           (err as Error).message,
         );
+
+        // No session record exists on this path, so `qa finish` has nothing to
+        // clean up from — this is the only chance to undo what starting the
+        // run already changed. `startQaServer` stops the child it spawned, so
+        // what is left here is the build directory and the tsconfig rewrite.
+        await cleanUpFailedStart(startArtifacts);
+
         if (!process.env.GETWRITE_CLI_TESTING) process.exit(2);
       }
     });
@@ -820,6 +1010,68 @@ export function registerQa(program: Command) {
           session.workspacePath,
         );
         console.log(`[qa finish] ${cleanupResult.message}`);
+
+        const logDisposition = await applyServerLogPolicy(
+          session.serverLogPath,
+          cleanupResult.action,
+        );
+        if (logDisposition === "retained") {
+          console.log(
+            `[qa finish] Retained server log at "${session.serverLogPath}".`,
+          );
+        }
+
+        // Both of the steps below assume the dev server is gone. Neither is
+        // safe against one that might still be running: deleting its build
+        // directory pulls the ground out from under a live process, and it
+        // would re-append its `distDir` type globs to the tsconfig after the
+        // restore — leaving the tree dirty anyway, but silently. When the stop
+        // could not be confirmed, say what was skipped instead of doing damage.
+        if (!confirmed) {
+          console.warn(
+            "[qa finish] Skipped removing the run's build directory and " +
+              "restoring frontend/tsconfig.json, because the server's stop " +
+              "could not be confirmed. Stop it, then re-run `qa finish` or " +
+              "undo both by hand:",
+          );
+          if (session.distDir !== undefined) {
+            console.warn(`[qa finish]   build dir: ${session.distDir}`);
+          }
+          console.warn(
+            `[qa finish]   tsconfig:  ${qaTrackedTsconfigPath(repoRootFromThisModule())}`,
+          );
+        } else {
+          // Build output is disposable: unlike the workspace it carries no
+          // evidence about what the run observed, and leaving it behind would
+          // accumulate a full Next build per run under `frontend/.next-qa/`.
+          if (session.distDir !== undefined) {
+            await rm(session.distDir, { recursive: true, force: true });
+          }
+
+          // Undo Next's start-time rewrite of the tracked tsconfig so a QA run
+          // leaves no working-tree changes behind.
+          const restore = await restoreTrackedTsconfig(
+            qaTrackedTsconfigPath(repoRootFromThisModule()),
+            session.tsconfigSnapshot,
+            qaTsconfigBackupPath(
+              repoRootFromThisModule(),
+              path.basename(session.workspacePath),
+            ),
+          );
+          if (restore.restored) {
+            console.log(
+              "[qa finish] Restored frontend/tsconfig.json to its pre-run state.",
+            );
+            if (restore.backupPath !== undefined) {
+              // The restore cannot tell Next's rewrite apart from an edit made
+              // during the run, so say where the overwritten bytes went.
+              console.log(
+                `[qa finish] Overwritten contents preserved at "${restore.backupPath}" ` +
+                  "— delete it once you have confirmed it held nothing of yours.",
+              );
+            }
+          }
+        }
 
         await removeSession();
         console.log("[qa finish] Session record removed.");

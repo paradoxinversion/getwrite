@@ -3,7 +3,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { ChildProcess } from "node:child_process";
-import { applyCleanupPolicy, type CleanupOutcome } from "../../src/qa/cleanup";
+import {
+  applyCleanupPolicy,
+  applyServerLogPolicy,
+  type CleanupOutcome,
+} from "../../src/qa/cleanup";
 import type { QaServerHandle } from "../../src/qa/server";
 
 const createdDirs: string[] = [];
@@ -112,5 +116,48 @@ describe("applyCleanupPolicy", () => {
     expect(result.action).toBe("retained");
     expect(result.message).toMatch(/verified\s+nothing/);
     expect(await pathExists(workspacePath)).toBe(true);
+  });
+});
+
+describe("applyServerLogPolicy", () => {
+  async function mkLog(): Promise<string> {
+    const dir = await mkWorkspace();
+    const logPath = path.join(dir, "qa-server-run.log");
+    await fs.writeFile(logPath, "ready in 3.2s\n", "utf8");
+    return logPath;
+  }
+
+  it("deletes the log when the workspace was deleted", async () => {
+    // The branch this asserts was previously only reachable via a full run in
+    // which every inventory item passed — an entire agent-driven QA session.
+    // Left untested, a clean run would accumulate one dev-server log forever.
+    const logPath = await mkLog();
+
+    expect(await applyServerLogPolicy(logPath, "deleted")).toBe("removed");
+
+    expect(await pathExists(logPath)).toBe(false);
+  });
+
+  it("keeps the log when the workspace was retained", async () => {
+    // The log is the same run's evidence as the workspace: discarding it while
+    // keeping the workspace leaves a failing run half-documented.
+    const logPath = await mkLog();
+
+    expect(await applyServerLogPolicy(logPath, "retained")).toBe("retained");
+
+    expect(await pathExists(logPath)).toBe(true);
+  });
+
+  it("does nothing when the session recorded no log path", async () => {
+    // Sessions started before per-run logs existed carry no path at all.
+    expect(await applyServerLogPolicy(undefined, "deleted")).toBe("absent");
+  });
+
+  it("does not fail when the log is already gone", async () => {
+    const dir = await mkWorkspace();
+
+    expect(
+      await applyServerLogPolicy(path.join(dir, "missing.log"), "deleted"),
+    ).toBe("removed");
   });
 });

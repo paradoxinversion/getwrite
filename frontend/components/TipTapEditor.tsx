@@ -48,6 +48,30 @@ import { useSelector } from "react-redux";
 import { selectResolvedEditorConfig } from "../src/store/editorConfigSlice";
 import { selectActiveProjectDirectoryId } from "../src/store/projectsSlice";
 import { deriveSelectionNodeLabels } from "../src/lib/node-display-selection";
+
+/**
+ * Attributes applied to TipTap's `.ProseMirror` contenteditable — the app's
+ * primary editing surface.
+ *
+ * `role`/`aria-multiline` are not decoration. A bare `contenteditable="true"`
+ * div carries no role, so the editor did not appear in the accessibility tree
+ * at all: assistive technology could not announce it as an editable field, and
+ * accessibility-tree-driven automation had to fall back to the `.ProseMirror`
+ * CSS selector because there was no role to query by.
+ *
+ * Exported so the contract can be asserted directly — the component renders a
+ * simplified mock under test, so the real editor view never mounts there.
+ */
+export const EDITOR_SURFACE_ATTRIBUTES = {
+  // Use focus:outline-none to remove the default browser outline
+  // and optionally focus:ring-0 to remove the ring added by
+  // the Tailwind CSS forms plugin (if used)
+  class: "focus:outline-none focus:ring-0 h-full min-h-full px-4 py-4",
+  role: "textbox",
+  "aria-multiline": "true",
+  "aria-label": "Document body",
+} as const;
+
 /**
  * Props accepted by {@link TipTapEditor}.
  */
@@ -300,14 +324,7 @@ export default function TipTapEditor({
       // avoid SSR hydration mismatches by explicitly opting out of
       // immediate render on the server
       immediatelyRender: false,
-      editorProps: {
-        attributes: {
-          // Use focus:outline-none to remove the default browser outline
-          // and optionally focus:ring-0 to remove the ring added by
-          // the Tailwind CSS forms plugin (if used)
-          class: "focus:outline-none focus:ring-0 h-full min-h-full px-4 py-4",
-        },
-      },
+      editorProps: { attributes: EDITOR_SURFACE_ATTRIBUTES },
     },
     [headingsConfigKey],
   );
