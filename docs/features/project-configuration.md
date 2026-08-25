@@ -23,6 +23,7 @@ Meta/Derived storage
 - Sidecars: `meta/resource-<id>.meta.json` (written by `writeSidecar()`)
 - Index: `meta/index/inverted.json` (managed by `frontend/src/lib/models/inverted-index.ts`)
 - Backlinks: `meta/backlinks.json` (managed by `frontend/src/lib/models/backlinks.ts`)
+- Entity mentions: `meta/index/mentions.json` (managed by `frontend/src/lib/models/mention-index.ts`)
 - Templates: `meta/templates/<id>.json`
 - Previews: `meta/previews/<resourceId>.json`
 

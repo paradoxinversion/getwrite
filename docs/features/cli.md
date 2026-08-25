@@ -200,7 +200,7 @@ node cli/dist/bin/getwrite-cli.cjs prune /path/to/my-project --max 10
 
 ### `reindex`
 
-Rebuilds the inverted index and backlinks for a project from scratch by re-scanning all resources. Use after bulk filesystem changes that bypassed the normal save path, or to recover from a corrupted/stale index.
+Rebuilds the inverted index, backlinks, and entity mention index for a project from scratch by re-scanning all resources. Use after bulk filesystem changes that bypassed the normal save path, or to recover from a corrupted/stale index.
 
 ```sh
 getwrite-cli reindex [projectRoot]
@@ -215,6 +215,7 @@ getwrite-cli reindex [projectRoot]
 1. Reads all resource UUIDs from `<projectRoot>/resources/`.
 2. For each resource, loads its content and re-indexes it into `meta/index/inverted.json`.
 3. Recomputes backlinks across all resources and persists `meta/backlinks.json`.
+4. Rebuilds the entity mention index from scratch (declared entities detected by name/alias in every resource's prose) and persists `meta/index/mentions.json`.
 
 **Exit codes:** `0` = success, `2` = unexpected error
 

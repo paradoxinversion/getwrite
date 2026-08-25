@@ -39,6 +39,7 @@ Persistence
 
 - Index file: `<projectRoot>/meta/index/inverted.json`
 - Backlink index: `<projectRoot>/meta/backlinks.json`
+- Entity mention index: `<projectRoot>/meta/index/mentions.json` (see [Entity mentions](#entity-mentions) below)
 
 ## Backlinks
 
@@ -83,6 +84,35 @@ Each key is a resource UUID; its value is the list of resource UUIDs that the ke
 
 **Storage**: `<projectRoot>/meta/backlinks.json`
 
+## Entity mentions
+
+Separate from backlinks (explicit `[[wiki-link]]`/UUID references), the entity mention index tracks resources whose prose _mentions_ a declared entity by name or alias, without an explicit link. A mention is detected, never authored; an explicit link is authored, never detected. The two are computed and stored independently and are only merged for display (see below) — never conflated into one record.
+
+**What it tracks**
+
+- A resource becomes an entity by setting `entityKind` (an open string, e.g. `"character"`, `"place"`) on its sidecar, optionally with an `aliases` array of alternate names.
+- `frontend/src/lib/models/entity-detection.ts` scans other resources' persisted plain text for case-insensitive, word-boundary occurrences of an entity's name/aliases, including possessive (`Aria's`) and simple plural (`Arias`) forms.
+- `frontend/src/lib/models/entity-alias-table.ts` builds the per-project table of every entity's matchable terms and flags terms claimed by more than one entity as ambiguous.
+- `frontend/src/lib/models/entity-alias-warnings.ts` is a non-blocking heuristic (never rejects an alias) that flags very short or common-word aliases as noise-prone.
+
+**`MentionIndex` type** (`frontend/src/lib/models/mention-index.ts`)
+
+```ts
+type MentionIndex = Record<string, MentionRecord[]>;
+// { resourceId: [{ entityId, resourceId, count, offsets }, ...] }
+```
+
+Keyed by `resourceId` so a resource's own mentions are a direct lookup; `invertMentionIndex` flips it to `entityId -> MentionRecord[]` for an entity's own "mentioned in" view.
+
+**Reads** (`frontend/src/lib/models/mentions-core.ts`) — transport-agnostic, read-only (never triggers detection):
+
+- `getResourceMentions(projectRoot, resourceId)` — which entities a resource mentions.
+- `getEntityMentionedIn(projectRoot, entityId)` — which resources mention an entity, one snippet per occurrence, merged with the entity's explicit `linkedFrom` backlinks (a resource that is both linked and mentioned appears once with both flags set) and annotated with ambiguity when another entity's alias claims the same occurrence.
+
+**Wiring**: `indexer-queue.ts` detects mentions on the normal per-resource save path, plus a targeted rescan of every resource whenever an entity's `name`/`aliases`/`entityKind` changes (so other resources are re-matched against the updated terms). `getwrite-cli reindex` rebuilds the mention index from scratch alongside the inverted index and backlinks.
+
+**Storage**: `<projectRoot>/meta/index/mentions.json`
+
 Testing and determinism
 
 - `flushIndexer()` is exported and used in unit tests to wait for background indexing to complete before test cleanup (this avoids `ENOTEMPTY` directory errors on some platforms).
@@ -111,7 +141,7 @@ await flushIndexer(); // optional timeout: await flushIndexer(3000);
 
 Maintenance
 
-- To rebuild a project's inverted index and backlinks from scratch (after bulk filesystem changes that bypassed the save path, or to recover from a corrupted/stale index), run the `reindex` CLI command: `getwrite-cli reindex [projectRoot]`. See [docs/features/cli.md](./cli.md).
+- To rebuild a project's inverted index, backlinks, and entity mention index from scratch (after bulk filesystem changes that bypassed the save path, or to recover from a corrupted/stale index), run the `reindex` CLI command: `getwrite-cli reindex [projectRoot]`. See [docs/features/cli.md](./cli.md).
 - The index format is intentionally simple (JSON). For larger projects or better performance, consider moving to a binary/LMDB-backed store or using a search engine (e.g., SQLite FTS, Tantivy, or Elastic).
 - Keep the tokenization and ranking logic in `inverted-index.ts` consistent with search UI expectations.
 
