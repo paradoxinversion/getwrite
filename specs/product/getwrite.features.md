@@ -111,9 +111,10 @@ silently vanishes from where it's cited.
 **Vertical slice:** Per-field `refFolder` scoping chosen in the schema
 manager, offering every folder plus an "Any folder" option and an
 include-descendants toggle; single-reference fields are unscoped. The
-`isMetadataSource` folder flag is authored in the project-type editor,
-validated, and written onto the folder at scaffold time, but never read back —
-it records intent and changes no behaviour. Reference-nullification on delete (`{id: null, name}`
+`isMetadataSource` folder flag is a superseded mechanism: the sidebar
+generated a reference row per flagged folder until the schema-driven rewrite
+(`cc04767`) replaced that with per-field `refFolder`. It is still authored in
+the project-type editor and written onto the folder, but nothing consumes it. Reference-nullification on delete (`{id: null, name}`
 retained, including within multi-reference arrays) rather than removal.
 **Requirements covered:** FR-8
 **User stories:** US-3
