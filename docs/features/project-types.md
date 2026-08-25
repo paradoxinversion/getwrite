@@ -14,54 +14,68 @@ This is the developer reference for the project-type JSON format, validation, an
 - `name` (string): human-facing display name.
 - `description` (string, optional): short summary of the type.
 - `folders` (array of objects): ordered list of **top-level** folders. Each has:
-    - `name` (string): display name (e.g. `"Workspace"`, `"Story Elements"`).
-    - `metadataSource` (object, optional): marks the folder as a metadata
-      source — see below.
-    - `defaultResources` (array, optional): resources seeded into this folder.
-    - `special` (boolean, optional): **deprecated and ignored.** See
-      [Deprecated: `special`](#deprecated-special).
+  - `name` (string): display name (e.g. `"Workspace"`, `"Story Elements"`).
+  - `metadataSource` (object, optional): records authoring intent only; it has
+    no runtime effect — see below.
+  - `defaultResources` (array, optional): resources seeded into this folder.
+  - `special` (boolean, optional): **deprecated and ignored.** See
+    [Deprecated: `special`](#deprecated-special).
 - `defaultFolders` (array of objects, optional): **subfolders**, each declared
   flat with a pointer to its parent rather than nested. Each has:
-    - `folder` (string): the name of the parent folder it is created under.
-      The parent may itself be a `defaultFolders` entry, so trees nest to any
-      depth.
-    - `name` (string): display name.
-    - `metadataSource` (object, optional), `special` (boolean, optional): as above.
+  - `folder` (string): the name of the parent folder it is created under.
+    The parent may itself be a `defaultFolders` entry, so trees nest to any
+    depth.
+  - `name` (string): display name.
+  - `metadataSource` (object, optional), `special` (boolean, optional): as above.
 - `defaultResources` (array of objects, optional): resources to create. Each has:
-    - `folder` (string): folder name that owns the resource. If omitted, the
-      first folder is used.
-    - `name` (string): resource title.
-    - `type` (string): resource type (e.g. `text`).
-    - `template` (string, optional): initial plain text for the resource.
+  - `folder` (string): folder name that owns the resource. If omitted, the
+    first folder is used.
+  - `name` (string): resource title.
+  - `type` (string): resource type (e.g. `text`).
+  - `template` (string, optional): initial plain text for the resource.
 - `statuses` (array of strings, optional), `wordCountGoal` (integer, optional),
   `editorConfig` (object, optional).
 
 The schema is `.strict()` — unknown top-level keys are rejected.
 
-### Metadata sources
+### `metadataSource` — authoring intent, not a runtime mechanism
 
-A folder marked as a metadata source has its contents offered as linkable
-references from other resources' metadata. This is the mechanism behind
-Characters, Locations, and Items in the fiction templates — but **it is
-entirely generic**. Nothing keys off a folder's name:
+A folder may carry a `metadataSource` object:
 
 ```json
 {
-    "name": "Characters",
-    "folder": "Story Elements",
-    "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" }
+  "name": "Characters",
+  "folder": "Story Elements",
+  "metadataSource": {
+    "isMetadataSource": true,
+    "metadataInputType": "multiselect"
+  }
 }
 ```
 
 - `isMetadataSource` (boolean, required within the object).
 - `metadataInputType` (optional): `"text" | "multiselect" | "autocomplete"`.
-  Only meaningful when `isMetadataSource` is `true`.
 
-Across the six built-in templates roughly twenty different folders carry this
-flag — `Chapters` and `Parts` in the fiction types, `Research` and
-`Dialogue & Scripts` in game documentation, `Fact Checking` and
-`Interviews & Transcripts` in the article type, as well as the
-`Characters` / `Items` / `Locations` folders. Any folder you declare can be one.
+**Be aware that nothing reads this at runtime.** The flag is validated,
+persisted onto the created folder, and surfaced in the project-type editor's
+own form — but no component consults it when deciding which resources a
+reference field may point at. Treat it as a record of the template author's
+intent, not as a switch that does something.
+
+What actually governs reference candidates is a **per-field** setting on the
+metadata schema, not a property of the folder. A `multi-resource-ref` field
+carries a `refFolder` (a folder **id**) chosen in the Metadata Fields manager,
+which offers every folder in the project plus an "Any folder" option and an
+include-descendants toggle; scoping is resolved by
+`frontend/components/Sidebar/folderScope.ts`. A single `resource-ref` field is
+not scoped at all and draws on every resource in the project.
+
+So a template declaring `isMetadataSource` on `Characters` does not by itself
+make anything reference-able — it documents that the author meant that folder
+to be used that way. Twenty-two such declarations exist across the six shipped
+templates, on folders as varied as `Chapters`, `Parts`, `Research`,
+`Fact Checking` and `Dialogue & Scripts`, which is a fair indication that the
+concept was always meant to be generic rather than tied to particular names.
 
 ### Deprecated: `special`
 
@@ -71,9 +85,12 @@ names carried application behaviour. Today no folder name or flag confers
 ordering, protection, or UI semantics (`schemas.ts`, `types.ts`), and there is
 no protected folder — any folder can be renamed, moved, or deleted.
 
-If you are updating a hand-written project type: drop `special`, and where you
-relied on a folder being a reference source, declare `metadataSource` instead.
-Leaving `special` in place is harmless; it simply does nothing.
+If you are updating a hand-written project type, drop `special` — leaving it
+in place is harmless, it simply does nothing. Note that `metadataSource` is
+not a replacement for it: that flag is also inert at runtime. To make a
+folder's contents referenceable, add a `resource-ref` or `multi-resource-ref`
+field in the project's Metadata Fields manager and scope it to the folder
+there.
 
 ## Example
 
@@ -82,32 +99,50 @@ Excerpted from the real `novel` template
 
 ```json
 {
-    "id": "novel",
-    "name": "Novel",
-    "folders": [
-        { "name": "Workspace" },
-        { "name": "Story Elements" },
-        { "name": "Outline" },
-        { "name": "Notes" }
-    ],
-    "defaultFolders": [
-        { "name": "Front Matter", "folder": "Workspace" },
-        { "name": "Chapters", "folder": "Workspace",
-          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } },
-        { "name": "Chapter 1", "folder": "Chapters" },
-        { "name": "Characters", "folder": "Story Elements",
-          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } },
-        { "name": "Locations", "folder": "Story Elements",
-          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } }
-    ],
-    "defaultResources": [
-        {
-            "folder": "Characters",
-            "name": "Character Profile",
-            "type": "text",
-            "template": "# Character Name\n\n- Description\n- Significance\n"
-        }
-    ]
+  "id": "novel",
+  "name": "Novel",
+  "folders": [
+    { "name": "Workspace" },
+    { "name": "Story Elements" },
+    { "name": "Outline" },
+    { "name": "Notes" }
+  ],
+  "defaultFolders": [
+    { "name": "Front Matter", "folder": "Workspace" },
+    {
+      "name": "Chapters",
+      "folder": "Workspace",
+      "metadataSource": {
+        "isMetadataSource": true,
+        "metadataInputType": "multiselect"
+      }
+    },
+    { "name": "Chapter 1", "folder": "Chapters" },
+    {
+      "name": "Characters",
+      "folder": "Story Elements",
+      "metadataSource": {
+        "isMetadataSource": true,
+        "metadataInputType": "multiselect"
+      }
+    },
+    {
+      "name": "Locations",
+      "folder": "Story Elements",
+      "metadataSource": {
+        "isMetadataSource": true,
+        "metadataInputType": "multiselect"
+      }
+    }
+  ],
+  "defaultResources": [
+    {
+      "folder": "Characters",
+      "name": "Character Profile",
+      "type": "text",
+      "template": "# Character Name\n\n- Description\n- Significance\n"
+    }
+  ]
 }
 ```
 
@@ -135,14 +170,14 @@ behaviour. There is no `Back Matter` folder in any shipped template.
 
 The following project types ship with GetWrite in `getwrite-config/templates/project-types/`:
 
-| File                          | ID                  | Name              | Folders                                       |
-| ----------------------------- | ------------------- | ----------------- | --------------------------------------------- |
-| `blank_project_type.json`     | `blank`             | Blank             | Workspace                                     |
-| `novel_project_type.json`     | `novel`             | Novel             | Workspace, Story Elements, Outline, Notes     |
-| `serial_project_type.json`    | `serial`            | Serial            | Workspace, Story Elements, Outline, Notes     |
-| `article_project_type.json`   | `article`           | Article           | Workspace, References, Sources, Ideas         |
-| `game_documentation.json`     | `game_writing`      | Game Writing      | Workspace, Research, Notes                    |
-| `poetry_and_lyrics_type.json` | `poetry_and_lyrics` | Poetry and Lyrics | Workspace, Inspiration, Experiments           |
+| File                          | ID                  | Name              | Folders                                   |
+| ----------------------------- | ------------------- | ----------------- | ----------------------------------------- |
+| `blank_project_type.json`     | `blank`             | Blank             | Workspace                                 |
+| `novel_project_type.json`     | `novel`             | Novel             | Workspace, Story Elements, Outline, Notes |
+| `serial_project_type.json`    | `serial`            | Serial            | Workspace, Story Elements, Outline, Notes |
+| `article_project_type.json`   | `article`           | Article           | Workspace, References, Sources, Ideas     |
+| `game_documentation.json`     | `game_writing`      | Game Writing      | Workspace, Research, Notes                |
+| `poetry_and_lyrics_type.json` | `poetry_and_lyrics` | Poetry and Lyrics | Workspace, Inspiration, Experiments       |
 
 Note that the file name does not always match the `id` (e.g. `game_documentation.json` has id `game_writing`).
 

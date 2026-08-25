@@ -62,18 +62,21 @@ trust, and lose nothing if GetWrite disappears.
 
 On top of that substrate sit two things the plain-files approach normally gives
 up. The first is *structure*: projects are scaffolded from declarative
-project-type specs that define folder layout and starter resources. Any folder
-may be declared a *metadata source*, making its contents available as typed
-references from other resources. The mechanism is generic: no folder name
-carries application semantics, and the built-in templates flag roughly twenty
-different folders this way — Chapters and Parts in the fiction types, Research
-and Dialogue & Scripts in game documentation, Fact Checking and Interviews in
-the article type, alongside the Characters, Items and Locations folders that
-the novel and serial types happen to provide. The second is *queryability*: every resource
-carries typed metadata — the built-ins (synopsis, notes, status, point of view,
-and story-timeline dates) plus whatever fields the writer defines, including
-references into any metadata-source folder — all of which is indexed and can be
-queried, with saved queries surfacing in the resource
+project-type specs that define folder layout and starter resources. A writer
+can add a reference field to their metadata schema and scope it to any folder,
+making that folder's contents linkable from other resources. The mechanism is
+generic: scoping is by folder id, so no folder name carries application
+semantics. The built-in templates mark roughly twenty folders as intended
+reference sources — Chapters and Parts in the fiction types, Research and
+Dialogue & Scripts in game documentation, Fact Checking and Interviews in the
+article type, alongside the Characters, Items and Locations folders the novel
+and serial types provide — though that marking is a record of intent rather
+than something the app acts on. The second is *queryability*: every resource
+carries typed metadata — an always-on status field, five further built-ins the
+writer switches on per project (synopsis, notes, point of view, and the
+story-timeline dates), and whatever fields they define themselves, including
+reference fields scoped to a folder of their choosing — all of which is indexed
+and can be queried, with saved queries surfacing in the resource
 tree as smart folders. Resource identity is independent of path, so moving a
 scene never breaks an association.
 
@@ -88,9 +91,9 @@ without ambiguity about which text is "the" text.
   real folders and files on disk.
 - Writers can edit in a rich-text surface that autosaves into a single canonical
   revision, with prior revisions retained and diffable.
-- Writers can attach typed metadata to any resource — built-in fields like
-  status, notes and point of view, plus fields they define themselves and
-  references into any folder they have marked a metadata source.
+- Writers can attach typed metadata to any resource — an always-on status
+  field, optional built-ins they switch on per project, and fields they define
+  themselves, including references scoped to a folder of their choosing.
 - Writers can query that metadata and pin saved queries into the tree as smart
   folders.
 - Writers can search full text across resources with filters, and follow
@@ -100,7 +103,8 @@ without ambiguity about which text is "the" text.
 - Writers can compile a selected subtree into a single PDF, DOCX, Markdown, or text
   manuscript.
 - Writers can view the project through several lenses: edit, card organizer,
-  project statistics, revision diff, and chronological timeline.
+  project statistics, revision diff, and — where they enable it per project —
+  a chronological timeline.
 - Writers can install it as an account-free desktop application, and (roadmap)
   reach the same projects from other devices.
 
@@ -130,7 +134,7 @@ release line is already at **2.1.0** (`getwrite-v2.1.0`, released 2026-08-18, pe
 
 **Current — in flight.** Refinements and the parallel platform track.
 - Trash recovery UI — model shipped, UI not started. Lower urgency because deletion already warns and the data is recoverable on disk.
-- Organizer view card filtering (status, word count, reference fields) — *not started*. Verified against code 2026-08-24: no Organizer filtering of any kind ships; its only control is a show/hide-bodies toggle. Earlier documents described status and folder filtering as shipped; that was inaccurate.
+- Organizer view card filtering (status, word count, reference fields) — *not started*. Verified against code: no Organizer card filtering of any kind ships; its only in-view control is a show/hide-bodies toggle, though what a card body renders is already a per-project setting. Earlier documents described status and folder filtering as shipped; that was inaccurate.
 - Hosted access and multi-device sync for a single writer — foundations shipped (per-user tenancy, better-auth identity, object-store backend, route-level enforcement, a live-infra smoke harness). Owner-confirmed as genuine roadmap and **timeboxed to a fixed calendar horizon in parallel with desktop work**, rather than gated on desktop adoption metrics. Note E2EE is *not* among these foundations — it is a shipped desktop/Android feature that hosted deliberately excludes (see below).
 - A conflict model for offline multi-device edits — *not yet designed*. Newly named: sync for one writer across devices still needs merge resolution even though collaboration is out of scope.
 - Durable search backend for large projects — under evaluation. Deferred until the JSON index demonstrably bottlenecks.

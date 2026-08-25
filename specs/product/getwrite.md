@@ -44,9 +44,10 @@ version.
 - A writer can author in a rich-text surface that autosaves into a single,
   always-present canonical revision, with prior revisions retained and
   diffable.
-- A writer can attach typed metadata to any resource — the built-in fields
-  plus any field they define themselves, including references to the contents
-  of any folder marked a metadata source — and query across all of it.
+- A writer can attach typed metadata to any resource — an always-on Status
+  field, five further built-in fields switched on per project, and any field
+  they define themselves, including reference fields scoped to a folder of
+  their choosing — and query across all of it.
 - A writer can search full text across a project, filter by metadata, and
   follow backlinks between resources.
 - A writer can compile a selected subtree into a single manuscript file
@@ -112,10 +113,10 @@ lost work.
   project type so that I get a working folder structure immediately. [Shipped]
 - US-2: As a novelist, I want to compile a selected subtree of my project
   into a single manuscript file so that I can produce a deliverable draft. [Shipped]
-- US-3: As a novelist, I want to mark a folder as a metadata source and
-  link its entries to my scenes, so that I can track who and what appears
-  where — whether that folder holds characters, locations, factions, or
-  anything else my project needs. [Shipped]
+- US-3: As a novelist, I want to link my scenes to the contents of a folder
+  I choose, so that I can track who and what appears where — whether that
+  folder holds characters, locations, factions, or anything else my project
+  needs. [Shipped]
 - US-4: As a novelist migrating from Scrivener or Word, I want to import my
   existing project into GetWrite so that I don't have to manually
   re-create its structure. [Later]
@@ -147,7 +148,7 @@ lost work.
   templates so that I can create new resources with consistent structure
   without rebuilding it each time. [Shipped]
 - US-14: As a writer on deadline, I want to define metadata fields beyond
-  my project type's built-ins so that I can track attributes specific to my
+  the built-in schema so that I can track attributes specific to my
   project. [Shipped]
 - US-15: As a writer on deadline, I want to create, open, rename, delete,
   and package projects from a start page so that I can manage my whole
@@ -175,24 +176,30 @@ lost work.
   pruning configuration. [US-9]
 - FR-7: Users MUST be able to view a word-based diff between the current
   canonical revision and any other retained revision of a text resource. [US-10]
-- FR-8: A folder's contents MUST be offered as typed reference sources for
-  other resources' metadata when the folder carries an author-declared
-  `isMetadataSource` flag; this flag is settable on any folder via the
-  project-type editor, and reference scoping is by folder id, not folder
-  name — no folder name carries application semantics. Deleting a resource
-  that is referenced elsewhere MUST NOT remove the reference entry; it MUST
-  nullify the reference (retaining `{id: null, name}` in place) rather than
-  delete the entry, including within multi-reference arrays. [US-3]
-- FR-9: Text resources MUST support the built-in metadata schema: a Document
-  group of Synopsis, Notes, Status (a locked, project-scoped select whose
-  options are user-defined and reorderable), and Point of View (a single
-  resource reference, which also accepts free text — preserved as a name with
-  a null id when no resource is linked, including when a previously linked
-  resource is deleted); and a Timeline group of Story Date, Duration, and
-  Story End Date (stored with no ordering validation between start and end).
-  Reference fields for entities such as characters, locations, or items are
-  NOT built-ins — they arise from folders marked as metadata sources (FR-8)
-  and from user-defined schema fields (FR-20). [US-3]
+- FR-8: A multi-reference metadata field MUST be scopeable to a folder by
+  folder **id**, never by folder name, chosen per field in the schema manager
+  from every folder in the project plus an "Any folder" option, optionally
+  including descendants. Single-reference fields are unscoped and draw on all
+  resources. No folder name carries application semantics. A project type MAY
+  additionally record an `isMetadataSource` flag against a folder as authoring
+  intent; it is persisted but has no runtime reader and confers no privilege.
+  Deleting a resource that is referenced elsewhere MUST NOT remove the
+  reference entry; it MUST nullify the reference (retaining `{id: null, name}`
+  in place) rather than delete the entry, including within multi-reference
+  arrays. [US-3]
+- FR-9: Text resources MUST support the built-in metadata schema. Exactly one
+  field is unconditional: Status, a locked, project-scoped select whose
+  options come from the project type and are user-editable and reorderable.
+  Five further built-in fields — Synopsis, Notes, Point of View (a single
+  resource reference that also accepts free text, preserved as a name with a
+  null id when no resource is linked or when a linked resource is later
+  deleted), and the Timeline group's Story Date, Duration and Story End Date
+  (stored with no ordering validation between start and end) — are each
+  governed by a per-project feature toggle and are **hidden unless that
+  toggle is on**; an absent flag reads as disabled. Toggling a field off hides
+  its control without discarding stored values. Reference fields for entities
+  such as characters, locations, or items are NOT built-ins — they are
+  user-defined schema fields (FR-20), optionally folder-scoped (FR-8). [US-3]
 - FR-10: Users MUST be able to save a metadata query and have it appear in
   the resource tree as a smart folder. [US-7]
 - FR-11: Users MUST be able to search full text across all resources in a
@@ -237,8 +244,11 @@ lost work.
   rename a field's key with a migration preview; change a field's type with
   migration; reorder fields; and choose between deprecating and clearing a
   field as distinct removal semantics, with a preview of select-option
-  removal before it is applied. The built-in `status` field is locked
-  (`locked: true`) and not user-editable. [US-14]
+  removal before it is applied. Only the built-in `status` field is
+  locked: it cannot be renamed, retyped, reordered, or removed, though its
+  options are project-supplied and user-editable. Every other built-in field
+  is unlocked at load time and is editable exactly like a user-defined field —
+  `locked` protects a field definition, not its option list. [US-14]
 - FR-21: Users MUST be able to reorder resources and folders via
   drag-and-drop, with order persisted to disk, and MUST have context-menu
   actions to create, rename, copy/duplicate (a single behavior offered
@@ -272,8 +282,10 @@ lost work.
 - FR-26: Organizer view MUST support filtering cards by Status, by word
   count, and by the resource-reference fields a project defines (the
   characters and locations folders the fiction templates provide being the
-  common case); none of these filters exist today — Organizer's only control
-  is a "Hide bodies" toggle. [US-7]
+  common case); no card filtering of any kind exists today. Organizer's only
+  in-view control is a show/hide-bodies toggle — though what a card body
+  renders (nothing, a text excerpt of configurable length, or any metadata
+  field) is a separate per-project setting that already ships. [US-7]
 - FR-27: Desktop builds MUST be signed and installable without an OS
   security warning on macOS and Windows. [US-8]
 

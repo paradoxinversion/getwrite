@@ -39,8 +39,8 @@ reintroduce the claims below:
   substantial shipped subsystem the prior version omitted entirely.
 
 There is no Workspace folder invariant and no named special folders (Front
-Matter/Back Matter/Workspace) anywhere in this document; any folder can be
-declared a metadata source via a generic `isMetadataSource` flag.
+Matter/Back Matter/Workspace) anywhere in this document; a reference field is
+scoped to whichever folder its schema definition names, by folder id.
 
 ---
 
@@ -104,14 +104,16 @@ selection for comparison.
 **Branch suggestion:** feat/revision-diff-view
 **Notes:** Shipped.
 
-### Feature 6: Metadata-source folders and reference integrity — Shipped
-**Value:** A novelist can turn any folder into a typed
-reference source by flag rather than by name, and a deleted-but-referenced
-resource never silently vanishes from where it's cited.
-**Vertical slice:** `isMetadataSource` folder flag (settable via the
-project-type editor, scoped by folder id not name), reference-nullification
-on delete (`{id: null, name}` retained, including within multi-reference
-arrays) rather than reference removal.
+### Feature 6: Folder-scoped references and reference integrity — Shipped
+**Value:** A novelist can point a multi-reference field at any folder — by
+folder id, never by name — and a deleted-but-referenced resource never
+silently vanishes from where it's cited.
+**Vertical slice:** Per-field `refFolder` scoping chosen in the schema
+manager, offering every folder plus an "Any folder" option and an
+include-descendants toggle; single-reference fields are unscoped. The
+`isMetadataSource` folder flag is persisted as authoring intent only and has
+no runtime reader. Reference-nullification on delete (`{id: null, name}`
+retained, including within multi-reference arrays) rather than removal.
 **Requirements covered:** FR-8
 **User stories:** US-3
 **Depends on:** Feature 2
@@ -124,14 +126,16 @@ codebase as protected or name-recognized folders today.
 ### Feature 7: Typed resource metadata — Shipped
 **Value:** A novelist can attach structured, queryable facts to any resource
 instead of relying on prose or ad hoc tags.
-**Vertical slice:** The built-in metadata schema — a Document group of
-Synopsis, Notes, Status (locked, project-scoped select with user-defined
-reorderable options), and Point of View (single resource reference accepting
-free text, preserved as a name with a null id); and a Timeline group of Story
-Date, Duration, and Story End Date (unvalidated start/end ordering). Entity
-reference fields such as characters or locations are not built-ins — see
-Feature 6 (metadata-source folders) and Feature 18 (user-defined fields).
-Sidecar persistence; Metadata sidebar UI.
+**Vertical slice:** The built-in metadata schema. Status is the only
+unconditional field — a locked, project-scoped select whose options come from
+the project type and are user-editable and reorderable. Synopsis, Notes,
+Point of View (single resource reference accepting free text, preserved as a
+name with a null id), and the Timeline group's Story Date, Duration and Story
+End Date (unvalidated start/end ordering) are each behind a per-project
+feature toggle and hidden while it is off, with stored values retained.
+Entity reference fields such as characters or locations are not built-ins —
+see Feature 18 (user-defined fields) and Feature 6 (folder scoping). Sidecar
+persistence; Metadata sidebar UI.
 **Requirements covered:** FR-9
 **User stories:** US-3
 **Depends on:** Feature 6
@@ -186,10 +190,12 @@ rendering dispatch (text/image/audio/mixed).
 **Notes:** Shipped as a base slice. Timeline is gated behind a per-project
 `timelineView` feature flag and is disabled unless it is on; turning it on
 force-enables the timeline date fields at the feature-config write seam, so
-the view can never be on without its data. Organizer's only control today is a
-"Hide bodies" toggle — filtering by Status, word count, or reference fields is
-entirely unbuilt and is broken out separately as Feature 24 (Not started),
-not folded into this entry's Shipped status.
+the view can never be on without its data. Organizer's only in-view control
+is a show/hide-bodies toggle — though what a card body renders (nothing, a
+text excerpt, or any metadata field) is a per-project setting that ships.
+Card *filtering* by Status, word count, or reference fields is entirely
+unbuilt and is broken out separately as Feature 24 (Not started), not folded
+into this entry's Shipped status.
 
 ### Feature 12: Compile to a single manuscript — Shipped
 **Value:** A novelist produces one ordered, deliverable manuscript file
@@ -281,9 +287,10 @@ select-option-removal preview.
 **User stories:** US-14
 **Depends on:** Feature 7
 **Branch suggestion:** feat/custom-metadata-schema
-**Notes:** Shipped. The built-in `status` field is locked (`locked: true`)
-and not user-editable — key/label rename, type change, reorder, and removal
-all apply only to user-defined fields.
+**Notes:** Shipped. Only `status` is locked — it cannot be renamed,
+retyped, reordered, or removed, though its options are project-supplied and
+user-editable. Every other built-in is unlocked at load time and is editable
+exactly like a user-defined field.
 
 ### Feature 19: Resource-tree drag-and-drop and context menu — Shipped
 **Value:** A plain-file writer reorders and manages resources/folders
@@ -369,9 +376,10 @@ resource-reference fields.
 **User stories:** US-7
 **Depends on:** Feature 11
 **Branch suggestion:** feat/organizer-filters
-**Notes:** Not started. Organizer ships no filtering of any kind today —
-its only control is a "Hide bodies" toggle. Real candidate for the next
-`/saboteur-ship` selection gate.
+**Notes:** Not started. Organizer ships no card filtering of any kind
+today; its only in-view control is a show/hide-bodies toggle. (Configuring
+what a card body renders is a separate setting that already ships — see
+Feature 11.) Real candidate for the next `/saboteur-ship` selection gate.
 
 ### Feature 25: Signed, warning-free desktop installers — Partial
 **Value:** A plain-file writer installs the desktop build on macOS or
