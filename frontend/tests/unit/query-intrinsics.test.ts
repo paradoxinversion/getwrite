@@ -13,6 +13,8 @@ const RESOURCE_ID = "resource-uuid-1";
 const FOLDER_ID = "folder-uuid-1";
 const TAG_ID_1 = "tag-uuid-1";
 const TAG_ID_2 = "tag-uuid-2";
+const ENTITY_ID_1 = "entity-uuid-1";
+const ENTITY_ID_2 = "entity-uuid-2";
 
 const baseResource: ResourceBase = {
   id: RESOURCE_ID,
@@ -56,6 +58,11 @@ const ctx: QueryContext = {
     "source-uuid-a": [RESOURCE_ID],
     "source-uuid-b": [RESOURCE_ID, "target-uuid-1"],
   },
+  mentions: {
+    // RESOURCE_ID is mentioned by two entities
+    [ENTITY_ID_1]: [RESOURCE_ID, "other-resource-uuid"],
+    [ENTITY_ID_2]: [RESOURCE_ID],
+  },
 };
 
 // ── registry shape ────────────────────────────────────────────────────────
@@ -72,6 +79,7 @@ describe("INTRINSIC_FIELDS registry", () => {
     "tags",
     "linkedFrom",
     "linksTo",
+    "mentions",
   ] as const;
 
   it("exports all expected intrinsic field keys", () => {
@@ -109,6 +117,7 @@ describe("INTRINSIC_FIELDS registry", () => {
       "sidecar",
       "config",
       "backlinks",
+      "mentions",
     ]);
     for (const field of INTRINSIC_FIELDS) {
       expect(validSources.has(field.source)).toBe(true);
@@ -341,6 +350,44 @@ describe("linksTo field", () => {
 
   it("returns an empty array when backlinks index is empty", () => {
     const emptyCtx: QueryContext = { ...ctx, backlinks: {} };
+    expect(field.read(baseResource, emptyCtx)).toEqual([]);
+  });
+});
+
+describe("mentions field", () => {
+  const field = INTRINSIC_FIELDS.find((f) => f.key === "mentions")!;
+
+  it("returns ResourceRef array of entities that mention this resource", () => {
+    const result = field.read(baseResource, ctx) as Array<{
+      id: string;
+      name: string;
+    }>;
+    expect(result).toHaveLength(2);
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain(ENTITY_ID_1);
+    expect(ids).toContain(ENTITY_ID_2);
+  });
+
+  it("each returned ref has an empty name (names not in the mention index)", () => {
+    const result = field.read(baseResource, ctx) as Array<{
+      id: string;
+      name: string;
+    }>;
+    for (const ref of result) {
+      expect(ref.name).toBe("");
+    }
+  });
+
+  it("returns an empty array when no entity mentions this resource", () => {
+    const unmentioned: ResourceBase = {
+      ...baseResource,
+      id: "unmentioned-uuid",
+    };
+    expect(field.read(unmentioned, ctx)).toEqual([]);
+  });
+
+  it("returns an empty array when the mention index is empty", () => {
+    const emptyCtx: QueryContext = { ...ctx, mentions: {} };
     expect(field.read(baseResource, emptyCtx)).toEqual([]);
   });
 });

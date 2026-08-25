@@ -21,6 +21,7 @@ import type { QueryAST } from "./query-ast";
 import { evaluate } from "./query-evaluator";
 import type { EvaluationInput } from "./query-evaluator";
 import { listResourceIds, loadBacklinks } from "./backlinks";
+import { loadMentionIndex, invertMentionIndex } from "./mention-index";
 import { readQuery } from "./saved-queries";
 import { readSidecar } from "./sidecar";
 import { countWords } from "../word-count";
@@ -135,11 +136,22 @@ async function deriveTextCounts(
 async function loadEvaluationInput(
   projectRoot: string,
 ): Promise<EvaluationInput> {
-  const [config, backlinks, resourceIds] = await Promise.all([
+  const [config, backlinks, mentionIndex, resourceIds] = await Promise.all([
     loadProjectConfig(projectRoot),
     loadBacklinks(projectRoot),
+    loadMentionIndex(projectRoot),
     listResourceIds(projectRoot),
   ]);
+
+  // Reduce the entityId → MentionRecord[] shape from invertMentionIndex down
+  // to entityId → resourceIds, which is all QueryContext.mentions needs for
+  // the `mentions` intrinsic field (FR-11).
+  const mentionsByEntity: Record<string, string[]> = {};
+  for (const [entityId, records] of Object.entries(
+    invertMentionIndex(mentionIndex),
+  )) {
+    mentionsByEntity[entityId] = records.map((record) => record.resourceId);
+  }
 
   const resources: ResourceBase[] = [];
   const sidecars: Record<string, Record<string, MetadataValue>> = {};
@@ -162,7 +174,12 @@ async function loadEvaluationInput(
     return saved !== null ? (saved.definition as QueryAST) : null;
   };
 
-  return { resources, sidecars, context: { config, backlinks }, resolveRef };
+  return {
+    resources,
+    sidecars,
+    context: { config, backlinks, mentions: mentionsByEntity },
+    resolveRef,
+  };
 }
 
 // ─── Public operation ──────────────────────────────────────────────────────

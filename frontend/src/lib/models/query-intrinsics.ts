@@ -13,17 +13,22 @@ export type IntrinsicFieldSource =
   | "resource"
   | "sidecar"
   | "config"
-  | "backlinks";
+  | "backlinks"
+  | "mentions";
 
 /**
  * Runtime context passed to every intrinsic field's `read` accessor.
  * Contains everything beyond the resource record itself that an intrinsic
- * might need: the project config (for tags and statuses) and the persisted
- * backlink index (for linkedFrom / linksTo).
+ * might need: the project config (for tags and statuses), the persisted
+ * backlink index (for linkedFrom / linksTo), and the persisted mention index
+ * — inverted to entityId → resourceIds (see `invertMentionIndex` in
+ * `mention-index.ts`), so `mentions` can look up which entities mention a
+ * given resource (FR-11).
  */
 export interface QueryContext {
   config: ProjectConfig;
   backlinks: BacklinkIndex;
+  mentions: Record<string, string[]>;
 }
 
 /** A single synthetic field entry in the intrinsic field registry. */
@@ -153,6 +158,22 @@ export const INTRINSIC_FIELDS: readonly IntrinsicField[] = [
       const targets = context.backlinks[resource.id] ?? [];
       return targets.map((id): ResourceRef => ({ id, name: "" }));
     },
+  },
+  {
+    // Entities that mention this resource in their detected prose mentions
+    // (FR-11). `context.mentions` is keyed by entityId → [resourceIds], so
+    // we invert the lookup: find every entityId whose resource list contains
+    // this resource. This is the shape a smart folder needs for US-3
+    // ("scenes mentioning Aria"): filtering `mentions contains <entityId>`
+    // selects every resource that entity mentions.
+    key: "mentions",
+    label: "Mentions",
+    type: "multi-resource-ref",
+    source: "mentions",
+    read: (resource, context) =>
+      Object.entries(context.mentions)
+        .filter(([, resourceIds]) => resourceIds.includes(resource.id))
+        .map(([entityId]): ResourceRef => ({ id: entityId, name: "" })),
   },
 ];
 

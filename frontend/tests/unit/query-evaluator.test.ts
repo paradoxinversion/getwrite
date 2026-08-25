@@ -17,6 +17,8 @@ const R3 = "aaaaaaaa-0000-4000-a000-000000000003";
 const FOLDER_A = "ffffffff-0000-4000-a000-000000000001";
 const TAG_1 = "tttttttt-0000-4000-a000-000000000001";
 const TAG_2 = "tttttttt-0000-4000-a000-000000000002";
+const ENTITY_A = "eeeeeeee-0000-4000-a000-000000000001";
+const ENTITY_B = "eeeeeeee-0000-4000-a000-000000000002";
 
 const r1: ResourceBase = {
   id: R1,
@@ -95,6 +97,8 @@ const ctx: QueryContext = {
     statuses: ["draft", "revised", "published"],
   },
   backlinks: { [R1]: [R2, R3], [R2]: [R1], [R3]: [] },
+  // ENTITY_A mentions R1 and R3; ENTITY_B mentions only R2.
+  mentions: { [ENTITY_A]: [R1, R3], [ENTITY_B]: [R2] },
 };
 
 const resources = [r1, r2, r3];
@@ -723,6 +727,35 @@ describe("intrinsic fields — evaluator integration", () => {
   it("linkedFrom intrinsic via linkedFrom predicate node", async () => {
     const result = await ids({ op: "linkedFrom", id: R2 });
     expect(result).toEqual([R1]);
+  });
+
+  it("mentions intrinsic with `in` predicate returns exactly the resources mentioning the entity", async () => {
+    const result = await ids({
+      op: "in",
+      field: "mentions",
+      value: [ENTITY_A],
+    });
+    expect(result).toEqual(expect.arrayContaining([R1, R3]));
+    expect(result).toHaveLength(2);
+    expect(result).not.toContain(R2);
+  });
+
+  it("mentions intrinsic with `in` predicate for a different entity", async () => {
+    const result = await ids({
+      op: "in",
+      field: "mentions",
+      value: [ENTITY_B],
+    });
+    expect(result).toEqual([R2]);
+  });
+
+  it("mentions intrinsic returns no resources for an entity with no mentions", async () => {
+    const result = await ids({
+      op: "in",
+      field: "mentions",
+      value: ["unmentioned-entity-uuid"],
+    });
+    expect(result).toEqual([]);
   });
 });
 
