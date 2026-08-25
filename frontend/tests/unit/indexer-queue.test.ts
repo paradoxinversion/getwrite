@@ -93,6 +93,101 @@ describe("indexer queue integration", () => {
   });
 });
 
+describe("indexer queue entity mention detection", () => {
+  const realFsAdapter = {
+    mkdir: async (p: string, o?: any) => {
+      await fs.mkdir(p, o);
+    },
+    writeFile: (p: string, d: any, o?: any) => fs.writeFile(p, d, o),
+    readFile: (p: string, e?: any) =>
+      fs.readFile(p, e ?? "utf8") as unknown as Promise<string>,
+    readdir: (p: string, o?: any) => fs.readdir(p, o) as any,
+    stat: (p: string) => fs.stat(p) as any,
+    rm: (p: string, o?: any) => fs.rm(p, o),
+    rename: (a: string, b: string) => fs.rename(a, b),
+  };
+
+  beforeEach(() => {
+    setStorageAdapter(realFsAdapter as any);
+  });
+
+  it("persists a mention index entry for a resource whose content names a declared entity", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gw-ment-"));
+
+    const { writeResourceToFile } =
+      await import("../../src/lib/models/resource");
+    const { writeSidecar } = await import("../../src/lib/models/sidecar");
+    const { loadMentionIndex } =
+      await import("../../src/lib/models/mention-index");
+
+    const entity = createTextResource({ name: "Aria", plainText: "" });
+    await writeResourceToFile(projectRoot, entity);
+    await writeSidecar(projectRoot, entity.id, {
+      name: "Aria",
+      entityKind: "character",
+      aliases: ["The Wanderer"],
+    });
+
+    const mentioning = createTextResource({
+      name: "Chapter One",
+      plainText: "Aria walked into the room. The Wanderer smiled.",
+    });
+    await writeResourceToFile(projectRoot, mentioning);
+
+    await enqueueIndex(projectRoot, mentioning.id);
+    await waitForDrain(2000);
+
+    const mentionIndex = await loadMentionIndex(projectRoot);
+    expect(mentionIndex[mentioning.id]).toBeDefined();
+    const record = mentionIndex[mentioning.id]!.find(
+      (r) => r.entityId === entity.id,
+    );
+    expect(record).toBeDefined();
+    expect(record!.count).toBe(2);
+    expect(record!.offsets).toHaveLength(2);
+  });
+
+  it("produces no entry for a resource with no entity mentions, clearing a prior stale entry on re-save", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gw-ment2-"));
+
+    const { writeResourceToFile } =
+      await import("../../src/lib/models/resource");
+    const { writeSidecar } = await import("../../src/lib/models/sidecar");
+    const { loadMentionIndex } =
+      await import("../../src/lib/models/mention-index");
+
+    const entity = createTextResource({ name: "Aria", plainText: "" });
+    await writeResourceToFile(projectRoot, entity);
+    await writeSidecar(projectRoot, entity.id, {
+      name: "Aria",
+      entityKind: "character",
+      aliases: [],
+    });
+
+    const resource = createTextResource({
+      name: "Chapter Two",
+      plainText: "Aria appears here.",
+    });
+    await writeResourceToFile(projectRoot, resource);
+
+    await enqueueIndex(projectRoot, resource.id);
+    await waitForDrain(2000);
+
+    let mentionIndex = await loadMentionIndex(projectRoot);
+    expect(mentionIndex[resource.id]).toBeDefined();
+
+    // Re-save with content that no longer mentions the entity.
+    const revised = { ...resource, plainText: "Nothing to see here." };
+    await writeResourceToFile(projectRoot, revised);
+
+    await enqueueIndex(projectRoot, resource.id);
+    await waitForDrain(2000);
+
+    mentionIndex = await loadMentionIndex(projectRoot);
+    expect(mentionIndex[resource.id]).toBeUndefined();
+  });
+});
+
 describe("waitForDrain export (T-INDEXER-DRAIN)", () => {
   beforeEach(() => {
     setStorageAdapter(createMemoryAdapter());

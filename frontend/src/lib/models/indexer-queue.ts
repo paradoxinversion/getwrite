@@ -10,6 +10,13 @@ import {
 import { loadResourceContent, tiptapToPlainText } from "../tiptap-utils";
 import { startBacklinkWatcher } from "./backlinks-watcher";
 import { computeBacklinks, persistBacklinks } from "./backlinks";
+import { buildEntityAliasTable } from "./entity-alias-table";
+import { findMentionOffsets } from "./entity-detection";
+import {
+  loadMentionIndex,
+  persistMentionIndex,
+  type MentionRecord,
+} from "./mention-index";
 import type { TextResource } from "./types";
 
 type Task = {
@@ -130,6 +137,46 @@ async function runTask(task: Task) {
           await persistBacklinks(task.projectRoot, backlinks);
         } catch (err) {
           console.error("[indexer-queue] backlinks update failed:", err);
+        }
+
+        try {
+          const aliasTable = await buildEntityAliasTable(task.projectRoot);
+          const records: MentionRecord[] = [];
+
+          for (const entity of Object.values(aliasTable.entities)) {
+            // Aggregate offsets across every term (name + aliases) belonging
+            // to this entity into a single record for this resource. Two
+            // terms of the same entity matching at the exact same offset is
+            // a rare edge case (e.g. an alias that is a substring-equal
+            // variant of the name); we intentionally do not dedup by offset
+            // here — `count` reflects the number of term-matches, not the
+            // number of distinct text spans, mirroring `findMentionOffsets`
+            // returning one offset per match regardless of overlap with
+            // matches from a different term.
+            const offsets: number[] = [];
+            for (const term of entity.terms) {
+              offsets.push(...findMentionOffsets(plain ?? "", term));
+            }
+            if (offsets.length > 0) {
+              offsets.sort((a, b) => a - b);
+              records.push({
+                entityId: entity.entityId,
+                resourceId: task.resourceId,
+                count: offsets.length,
+                offsets,
+              });
+            }
+          }
+
+          const mentionIndex = await loadMentionIndex(task.projectRoot);
+          if (records.length > 0) {
+            mentionIndex[task.resourceId] = records;
+          } else {
+            delete mentionIndex[task.resourceId];
+          }
+          await persistMentionIndex(task.projectRoot, mentionIndex);
+        } catch (err) {
+          console.error("[indexer-queue] mention detection failed:", err);
         }
       },
       task.adapter,
