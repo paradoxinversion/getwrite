@@ -47,3 +47,14 @@ export { loadResourceContent } from "./tiptap-utils";
 
 // Storage context (imperative helper for non-route entry points, e.g. the CLI)
 export { runForTenant } from "./models/io";
+
+// Entity mentions (alias table, offset detection, mention index persistence —
+// needed by the CLI's `reindex` command to rebuild meta/index/mentions.json)
+export { buildEntityAliasTable } from "./models/entity-alias-table";
+export { findMentionOffsets } from "./models/entity-detection";
+export {
+  loadMentionIndex,
+  persistMentionIndex,
+  type MentionRecord,
+  type MentionIndex,
+} from "./models/mention-index";
