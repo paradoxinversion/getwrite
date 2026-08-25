@@ -105,96 +105,103 @@ const nextConfig = {
           fs: "./src/native-shims/fs.mjs",
         }
       : {
-      "./native-search-backend": "./src/store/transport/native-search-backend.web-stub",
-      // revision-transport-service.ts lives in src/store/ (not
-      // src/store/transport/, unlike search-transport.ts), so its dynamic
-      // import's literal specifier is "./transport/native-revision-backend"
-      // — the alias key below must match that exact request string.
-      "./transport/native-revision-backend":
-        "./src/store/transport/native-revision-backend.web-stub",
-      // query-transport-service.ts lives in src/store/ as well, so its
-      // dynamic import's literal specifier is
-      // "./transport/native-query-backend" — same rule as above.
-      "./transport/native-query-backend":
-        "./src/store/transport/native-query-backend.web-stub",
-      // metadata-schema-transport-service.ts lives in src/store/ as well, so
-      // its dynamic import's literal specifier is
-      // "./transport/native-metadata-schema-backend" — same rule as above.
-      "./transport/native-metadata-schema-backend":
-        "./src/store/transport/native-metadata-schema-backend.web-stub",
-      // feature-config-transport-service.ts lives in src/store/ as well, so
-      // its dynamic import's literal specifier is
-      // "./transport/native-feature-config-backend" — same rule as above.
-      "./transport/native-feature-config-backend":
-        "./src/store/transport/native-feature-config-backend.web-stub",
-      // ADR-021 Phase 2: components/native/NativeBootstrap.tsx dynamically
-      // imports native-bootstrap.ts (root-layout call site for
-      // bootstrapNativeStorageContext(), FR6) only when
-      // NEXT_PUBLIC_GETWRITE_RUNTIME === "native" — same rule as above, keyed
-      // on that call site's exact literal specifier.
-      "../../src/lib/models/native-bootstrap":
-        "./src/lib/models/native-bootstrap.web-stub",
-      // ADR-021 Phase 2 (Task 2): project-actions-controller.ts lives in
-      // src/store/ (like revision-transport-service.ts), so its dynamic
-      // import's literal specifier is
-      // "./transport/native-project-actions-backend" — same rule as above.
-      "./transport/native-project-actions-backend":
-        "./src/store/transport/native-project-actions-backend.web-stub",
-      // ADR-021 Phase 2 (Task 2): lib/api/projects.ts lives in src/lib/api/
-      // (not src/store/, unlike every other transport service so far), so
-      // its dynamic import's literal specifier is
-      // "../../store/transport/native-project-backend" — the alias key
-      // below must match that exact relative request string, not the
-      // "./transport/..." shape the src/store/-rooted services use.
-      "../../store/transport/native-project-backend":
-        "./src/store/transport/native-project-backend.web-stub",
-      // ADR-021 Phase 2 (Task 3): lib/api/resources.ts lives in
-      // src/lib/api/ (like lib/api/projects.ts), so its dynamic import's
-      // literal specifier is "../../store/transport/native-resource-backend"
-      // — same rule as the projects backend above.
-      "../../store/transport/native-resource-backend":
-        "./src/store/transport/native-resource-backend.web-stub",
-      // ADR-021 Phase 2 (Task 3): lib/api/resource-excerpts.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-resource-excerpts-backend" — same
-      // rule as above.
-      "../../store/transport/native-resource-excerpts-backend":
-        "./src/store/transport/native-resource-excerpts-backend.web-stub",
-      // ADR-021 Phase 2 (Task 4): lib/api/tags.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-tags-backend" — same rule as above.
-      "../../store/transport/native-tags-backend":
-        "./src/store/transport/native-tags-backend.web-stub",
-      // ADR-021 Phase 2 (Task 4): lib/api/preferences.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-preferences-backend" — same rule as
-      // above.
-      "../../store/transport/native-preferences-backend":
-        "./src/store/transport/native-preferences-backend.web-stub",
-      // ADR-021 Phase 2 (Task 4): lib/api/editor-config.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-editor-config-backend" — same rule as
-      // above.
-      "../../store/transport/native-editor-config-backend":
-        "./src/store/transport/native-editor-config-backend.web-stub",
-      // ADR-021 Phase 2 (Task 5): lib/api/project-types.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-project-types-backend" — same rule as
-      // above.
-      "../../store/transport/native-project-types-backend":
-        "./src/store/transport/native-project-types-backend.web-stub",
-      // ADR-021 Phase 2 (Task 5): lib/api/compile.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-compile-backend" — same rule as
-      // above.
-      "../../store/transport/native-compile-backend":
-        "./src/store/transport/native-compile-backend.web-stub",
-      // ADR-021 Phase 2 (Task 5): lib/api/export.ts also lives in
-      // src/lib/api/, so its dynamic import's literal specifier is
-      // "../../store/transport/native-export-backend" — same rule as above.
-      "../../store/transport/native-export-backend":
-        "./src/store/transport/native-export-backend.web-stub",
-    },
+          "./native-search-backend":
+            "./src/store/transport/native-search-backend.web-stub",
+          // revision-transport-service.ts lives in src/store/ (not
+          // src/store/transport/, unlike search-transport.ts), so its dynamic
+          // import's literal specifier is "./transport/native-revision-backend"
+          // — the alias key below must match that exact request string.
+          "./transport/native-revision-backend":
+            "./src/store/transport/native-revision-backend.web-stub",
+          // query-transport-service.ts lives in src/store/ as well, so its
+          // dynamic import's literal specifier is
+          // "./transport/native-query-backend" — same rule as above.
+          "./transport/native-query-backend":
+            "./src/store/transport/native-query-backend.web-stub",
+          // metadata-schema-transport-service.ts lives in src/store/ as well, so
+          // its dynamic import's literal specifier is
+          // "./transport/native-metadata-schema-backend" — same rule as above.
+          "./transport/native-metadata-schema-backend":
+            "./src/store/transport/native-metadata-schema-backend.web-stub",
+          // feature-config-transport-service.ts lives in src/store/ as well, so
+          // its dynamic import's literal specifier is
+          // "./transport/native-feature-config-backend" — same rule as above.
+          "./transport/native-feature-config-backend":
+            "./src/store/transport/native-feature-config-backend.web-stub",
+          // ADR-021 Phase 2: components/native/NativeBootstrap.tsx dynamically
+          // imports native-bootstrap.ts (root-layout call site for
+          // bootstrapNativeStorageContext(), FR6) only when
+          // NEXT_PUBLIC_GETWRITE_RUNTIME === "native" — same rule as above, keyed
+          // on that call site's exact literal specifier.
+          "../../src/lib/models/native-bootstrap":
+            "./src/lib/models/native-bootstrap.web-stub",
+          // ADR-021 Phase 2 (Task 2): project-actions-controller.ts lives in
+          // src/store/ (like revision-transport-service.ts), so its dynamic
+          // import's literal specifier is
+          // "./transport/native-project-actions-backend" — same rule as above.
+          "./transport/native-project-actions-backend":
+            "./src/store/transport/native-project-actions-backend.web-stub",
+          // ADR-021 Phase 2 (Task 2): lib/api/projects.ts lives in src/lib/api/
+          // (not src/store/, unlike every other transport service so far), so
+          // its dynamic import's literal specifier is
+          // "../../store/transport/native-project-backend" — the alias key
+          // below must match that exact relative request string, not the
+          // "./transport/..." shape the src/store/-rooted services use.
+          "../../store/transport/native-project-backend":
+            "./src/store/transport/native-project-backend.web-stub",
+          // ADR-021 Phase 2 (Task 3): lib/api/resources.ts lives in
+          // src/lib/api/ (like lib/api/projects.ts), so its dynamic import's
+          // literal specifier is "../../store/transport/native-resource-backend"
+          // — same rule as the projects backend above.
+          "../../store/transport/native-resource-backend":
+            "./src/store/transport/native-resource-backend.web-stub",
+          // ADR-021 Phase 2 (Task 3): lib/api/resource-excerpts.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-resource-excerpts-backend" — same
+          // rule as above.
+          "../../store/transport/native-resource-excerpts-backend":
+            "./src/store/transport/native-resource-excerpts-backend.web-stub",
+          // ADR-021 Phase 2 (Task 4): lib/api/tags.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-tags-backend" — same rule as above.
+          "../../store/transport/native-tags-backend":
+            "./src/store/transport/native-tags-backend.web-stub",
+          // ADR-021 Phase 2 (Task 4): lib/api/preferences.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-preferences-backend" — same rule as
+          // above.
+          "../../store/transport/native-preferences-backend":
+            "./src/store/transport/native-preferences-backend.web-stub",
+          // ADR-021 Phase 2 (Task 4): lib/api/editor-config.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-editor-config-backend" — same rule as
+          // above.
+          "../../store/transport/native-editor-config-backend":
+            "./src/store/transport/native-editor-config-backend.web-stub",
+          // ADR-021 Phase 2 (Task 5): lib/api/project-types.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-project-types-backend" — same rule as
+          // above.
+          "../../store/transport/native-project-types-backend":
+            "./src/store/transport/native-project-types-backend.web-stub",
+          // ADR-021 Phase 2 (Task 5): lib/api/compile.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-compile-backend" — same rule as
+          // above.
+          "../../store/transport/native-compile-backend":
+            "./src/store/transport/native-compile-backend.web-stub",
+          // ADR-021 Phase 2 (Task 5): lib/api/export.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-export-backend" — same rule as above.
+          "../../store/transport/native-export-backend":
+            "./src/store/transport/native-export-backend.web-stub",
+          // ADR-021 Phase 2 (Task 11): lib/api/mentions.ts also lives in
+          // src/lib/api/, so its dynamic import's literal specifier is
+          // "../../store/transport/native-mentions-backend" — same rule as
+          // above.
+          "../../store/transport/native-mentions-backend":
+            "./src/store/transport/native-mentions-backend.web-stub",
+        },
   },
 };
 
