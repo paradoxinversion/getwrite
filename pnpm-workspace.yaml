@@ -1,5 +1,5 @@
 packages:
-    - frontend
-    - electron
-    - cli
-    - android
+  - frontend
+  - electron
+  - cli
+  - android

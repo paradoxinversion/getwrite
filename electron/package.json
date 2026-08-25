@@ -1,26 +1,26 @@
 {
-    "name": "getwrite-electron",
-    "version": "2.1.0",
-    "private": true,
-    "main": "dist/main.js",
-    "description": "A local-first writing application",
-    "author": {
-        "name": "Saboteur LLC - Saboteur Works",
-        "url": "https://github.com/saboteur-works"
-    },
-    "scripts": {
-        "build": "tsc",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "dev": "tsc && electron dist/main.js",
-        "package": "electron-builder --config electron-builder.yml"
-    },
-    "devDependencies": {
-        "@types/node": "^22.19.19",
-        "electron": "^34.5.8",
-        "electron-builder": "^25.1.8",
-        "typescript": "^5.9.3",
-        "vitest": "4.1.6"
-    }
+  "name": "getwrite-electron",
+  "version": "2.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "description": "A local-first writing application",
+  "author": {
+    "name": "Saboteur LLC - Saboteur Works",
+    "url": "https://github.com/saboteur-works"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsc && electron dist/main.js",
+    "package": "electron-builder --config electron-builder.yml"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "electron": "^34.5.8",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.9.3",
+    "vitest": "4.1.6"
+  }
 }
