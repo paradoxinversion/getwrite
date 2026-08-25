@@ -314,22 +314,42 @@ export const TipTapDocumentSchema: z.ZodTypeAny = z.object({
 });
 
 /**
+ * Entity-layer sidecar fields (`entityKind` / `aliases`).
+ *
+ * - `entityKind` marks a resource as an entity. It is intentionally an open,
+ *   user-definable string rather than an enum — this is a closed design
+ *   decision from the entity-layer spec gate (FR-1/FR-2). Values like
+ *   `"faction"` or `"mechanic"` must validate identically to `"character"` /
+ *   `"place"` / `"object"`. Absent means the resource is not an entity.
+ * - `aliases`, when present, is an ordered (insertion order preserved) array
+ *   of non-empty strings. Length or common-word screening is intentionally
+ *   out of scope here — that belongs to a later, non-blocking warning
+ *   system.
+ */
+export const EntitySidecarFieldsSchema = z.object({
+  entityKind: z.string().min(1).optional(),
+  aliases: z.array(z.string().min(1)).optional(),
+});
+
+/**
  * Shared base schema for resource records regardless of subtype.
  */
-export const ResourceBaseSchema = z.object({
-  id: UUID,
-  slug: z.string(),
-  name: z.string(),
-  type: ResourceTypeSchema,
-  folderId: UUID.nullable().optional(),
-  sizeBytes: z.number().int().nonnegative().optional(),
-  notes: z.string().optional(),
-  orderIndex: z.number().default(0),
-  statuses: z.array(z.string()).optional(),
-  userMetadata: z.record(z.string(), MetadataValue).optional(),
-  createdAt: IsoDateString,
-  updatedAt: IsoDateString.optional(),
-});
+export const ResourceBaseSchema = z
+  .object({
+    id: UUID,
+    slug: z.string(),
+    name: z.string(),
+    type: ResourceTypeSchema,
+    folderId: UUID.nullable().optional(),
+    sizeBytes: z.number().int().nonnegative().optional(),
+    notes: z.string().optional(),
+    orderIndex: z.number().default(0),
+    statuses: z.array(z.string()).optional(),
+    userMetadata: z.record(z.string(), MetadataValue).optional(),
+    createdAt: IsoDateString,
+    updatedAt: IsoDateString.optional(),
+  })
+  .extend(EntitySidecarFieldsSchema.shape);
 
 /**
  * Text resource schema extending base fields with editor/text metrics.
@@ -416,6 +436,7 @@ export const Schemas = {
   ProjectSchema,
   FolderSchema,
   ResourceBaseSchema,
+  EntitySidecarFieldsSchema,
   TextResourceSchema,
   ImageResourceSchema,
   AudioResourceSchema,

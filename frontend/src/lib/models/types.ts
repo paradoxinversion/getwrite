@@ -243,6 +243,19 @@ export interface ResourceBase {
   orderIndex: number;
   /** Status tags (project-scoped values). */
   statuses?: string[];
+  /**
+   * Marks this resource as an entity of the given kind (e.g. "character",
+   * "place", "faction"). Open, user-definable value — not an enum. Absent
+   * means the resource is not an entity.
+   */
+  entityKind?: string;
+  /**
+   * Ordered list of alternate names for this entity. Order is
+   * insertion-preserved and significant (e.g. a later "primary alias"
+   * feature may read the first entry). Each entry must be a non-empty
+   * string.
+   */
+  aliases?: string[];
   /** User-set key/value metadata stored in sidecar (distinct from system fields like sizeBytes, createdAt, orderIndex). */
   userMetadata?: Record<string, MetadataValue>;
   /** Creation timestamp (ISO 8601). */
