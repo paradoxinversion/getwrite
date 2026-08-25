@@ -65,6 +65,65 @@ export async function readSidecar(
   }
 }
 
+function isEntitySidecar(
+  sidecar: Record<string, MetadataValue> | null,
+): boolean {
+  const kind = sidecar?.["entityKind"];
+  return typeof kind === "string" && kind.length > 0;
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
+}
+
+function aliasesEqual(a: unknown, b: unknown): boolean {
+  const arrA = toStringArray(a);
+  const arrB = toStringArray(b);
+  if (arrA.length !== arrB.length) return false;
+  return arrA.every((v, i) => v === arrB[i]);
+}
+
+/**
+ * Decides whether a sidecar write could change what the project's mention
+ * index (`meta/index/mentions.json`) reflects for this resource's entity
+ * identity — i.e. whether {@link enqueueEntityRescan} (Task 6 / FR-8) should
+ * run in addition to the normal per-resource {@link enqueueIndex}.
+ *
+ * A rescan is needed whenever:
+ *  - the resource is becoming an entity for the first time (`entityKind`
+ *    absent/empty before, set now) — its terms are new to the alias table
+ *    and every resource needs scanning against them;
+ *  - the resource was an entity and is losing `entityKind` on this write —
+ *    its stale mention records must be removed from the index; or
+ *  - the resource was and remains an entity, but its `name` or `aliases`
+ *    changed — the set of terms other resources should be matched against
+ *    has changed.
+ *
+ * A resource that neither was nor is an entity, or that stays an entity
+ * with unchanged name/aliases, does not need a rescan: the normal
+ * `enqueueIndex` pass already re-scans this resource's own content against
+ * the (in that case, unchanged) alias table.
+ */
+function needsEntityRescan(
+  previous: Record<string, MetadataValue> | null,
+  next: Record<string, MetadataValue>,
+): boolean {
+  const isPreviouslyEntity = isEntitySidecar(previous);
+  const isNowEntity = isEntitySidecar(next);
+
+  if (!isPreviouslyEntity && !isNowEntity) return false;
+  if (isPreviouslyEntity !== isNowEntity) return true;
+
+  const isNameChanged = (previous?.["name"] ?? "") !== (next["name"] ?? "");
+  const isAliasesChanged = !aliasesEqual(
+    previous?.["aliases"],
+    next["aliases"],
+  );
+  return isNameChanged || isAliasesChanged;
+}
+
 /**
  * Write sidecar metadata for a resource into the project's `meta/` folder.
  * Creates directories as needed. Overwrites existing sidecars.
@@ -76,17 +135,42 @@ export async function writeSidecar(
 ): Promise<void> {
   const dir = path.join(projectRoot, "meta");
   const filePath = sidecarPathForProject(projectRoot, resourceId);
+
+  // Read the pre-write sidecar (if any) so we can detect an entity's
+  // name/aliases/entityKind changing across this write, below. A failure
+  // reading it (as opposed to it simply not existing, which readSidecar
+  // already reports as `null`) must not block the write itself.
+  let previous: Record<string, MetadataValue> | null = null;
+  try {
+    previous = await readSidecar(projectRoot, resourceId);
+  } catch {
+    previous = null;
+  }
+
   const json = JSON.stringify(metadata, null, 2);
   await withMetaLock(projectRoot, async () => {
     await mkdir(dir, { recursive: true });
     await writeFile(filePath, json, "utf8");
     await bumpMetadataRevision(projectRoot);
   });
+
+  const shouldRescanEntity = needsEntityRescan(previous, metadata);
+
   // Enqueue background indexing after sidecar update. Use dynamic import
   // to avoid circular static imports between sidecar and the indexer queue.
   setImmediate(() => {
     import("./indexer-queue")
-      .then((m) => m.enqueueIndex(projectRoot, resourceId))
+      .then((m) => {
+        const tasks: Promise<void>[] = [
+          m.enqueueIndex(projectRoot, resourceId),
+        ];
+        if (shouldRescanEntity) {
+          // `resourceId` doubles as the entity id — an entity IS a resource
+          // with `entityKind` set (see `entity-alias-table.ts`).
+          tasks.push(m.enqueueEntityRescan(projectRoot, resourceId));
+        }
+        return Promise.all(tasks);
+      })
       .catch(() => {
         /* ignore enqueue errors */
       });
