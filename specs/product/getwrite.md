@@ -346,6 +346,18 @@ lost work.
   Android work is not gated on desktop adoption metrics: both are timeboxed
   to a fixed calendar horizon and pursued as parallel-track investment
   alongside desktop work.
+- Observability: the product collects no telemetry and must continue to collect
+  none — there is no analytics or crash-reporting dependency in the tree, and the
+  only outbound call on the desktop path is the opt-in GitHub release check.
+  Diagnostics are a local log file (`app.getPath("logs")/getwrite.log`). A hosted
+  deployment may add server-side health checks and structured logs, but nothing
+  that reports a local user's activity off their machine.
+- Performance: no performance budget is currently measured anywhere — there are
+  no latency targets, benchmarks, or performance gates in CI. The one identified
+  scaling limit is the whole-file JSON inverted index, which is expected to
+  bottleneck on large projects (FR-31). This constraint records the absence
+  deliberately: a target nobody measures is not a commitment, and any future
+  budget should arrive with the measurement that enforces it.
 - Hosted GetWrite's data model must support multi-device sync for a single
   writer without supporting multi-user collaboration on a shared project;
   see FR-32.
