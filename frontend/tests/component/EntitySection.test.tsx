@@ -109,6 +109,47 @@ describe("EntitySection", () => {
     });
   });
 
+  it("shows no warning while the alias draft field is empty", async () => {
+    const store = setupStore("res-2b", { entityKind: "character" });
+
+    render(
+      <Provider store={store}>
+        <EntitySection />
+      </Provider>,
+    );
+
+    const aliasInput = screen.getByLabelText(
+      "new-alias-input",
+    ) as HTMLInputElement;
+    expect(aliasInput.value).toBe("");
+
+    // An untouched draft field is not an alias, so it must not be flagged as
+    // "very short" — otherwise every entity opens showing a spurious warning.
+    expect(
+      screen.queryByText(/very short and will match frequently/i),
+    ).not.toBeInTheDocument();
+
+    // Whitespace alone is still an empty draft.
+    fireEvent.change(aliasInput, { target: { value: "   " } });
+    expect(
+      screen.queryByText(/very short and will match frequently/i),
+    ).not.toBeInTheDocument();
+
+    // A genuinely short alias still warns, so the guard has not disabled FR-15.
+    fireEvent.change(aliasInput, { target: { value: "Jo" } });
+    expect(
+      await screen.findByText(/very short and will match frequently/i),
+    ).toBeInTheDocument();
+
+    // Clearing the field retracts the warning.
+    fireEvent.change(aliasInput, { target: { value: "" } });
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/very short and will match frequently/i),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("reordering aliases preserves order in the persisted value", async () => {
     const fetchStub = makeFetchStub();
     const store = setupStore("res-3", {

@@ -107,7 +107,11 @@ export default function EntitySection(): JSX.Element | null {
     commitAliases(next);
   };
 
-  const newAliasWarning = getAliasWarning(newAlias);
+  // An empty draft field is not yet an alias, so it gets no warning: without
+  // this guard `getAliasWarning("")` correctly reports a zero-length string as
+  // too short, and every entity opens showing a "very short" warning before
+  // the writer has typed anything.
+  const newAliasWarning = newAlias.trim() ? getAliasWarning(newAlias) : null;
 
   return (
     <div className="mt-0">
