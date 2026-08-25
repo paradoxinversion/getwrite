@@ -2,7 +2,7 @@
 
 Forward-looking product direction, organized by horizon (**Now → Next → Later → Exploring**) and grouped by capability theme within each horizon. Each entry notes its current build state and links to relevant docs.
 
-Horizons reflect priority and readiness, not committed dates. This document covers **features** only — engineering/tech-debt work lives in [tech-debt.md](tech-debt.md), and a full classified inventory of the feature surface is in [feature-catalog.md](features/feature-catalog.md).
+Horizons reflect priority and readiness, not committed dates. This document covers **features** only — engineering/tech-debt work lives in [tech-debt.md](tech-debt.md), and a full classified inventory of the feature surface is in [getwrite.features.md](../specs/product/getwrite.features.md).
 
 ---
 
@@ -10,13 +10,11 @@ Horizons reflect priority and readiness, not committed dates. This document cove
 
 ### Authoring & Editor
 
-- **Organizer view filters** — Filtering of Organizer cards by character, location, and word count. _Status: base card view and status/folder filtering shipped; remaining filters pending._ → [user/features.md](user/features.md)
+- **Organizer view filters** — Filtering of Organizer cards by status, character, location, and word count. _Status: not started. Verified against code 2026-08-24 — `OrganizerView.tsx` has no filter state or filter UI; its only control is a show/hide-bodies toggle. This entry previously claimed status and folder filtering shipped; that was inaccurate._ → [user/features.md](user/features.md)
 
 ---
 
 ## Next — Committed
-
-- **Image and Audio Resources** - Enable users to add Image and Audio resources.
 
 ### Versioning & History
 
@@ -29,6 +27,10 @@ Horizons reflect priority and readiness, not committed dates. This document cove
 ### Templates & Scaffolding
 
 - **Template CLI expansion** — Additional template commands: `save-from-resource`, `parametrize`, `create --vars` (with `--dry-run`), `inspect`, `export`, `import`, and `validate`. _Status: partial — `save`, `create`, `duplicate`, and `list` shipped._ → [cli.md](features/cli.md)
+
+### Platform
+
+- **Android packaging and distribution** — Wire a real Gradle build and produce a distributable Android artifact. _Status: not started. The app itself runs in-process; `pnpm --filter getwrite-android build` is still a `console.log` placeholder and CI runs only that._
 
 ### Search & Discovery
 
@@ -44,7 +46,9 @@ Horizons reflect priority and readiness, not committed dates. This document cove
 
 ### Collaboration
 
-- **Multi-user editing** — Multiple concurrent users on the same project. _Status: concept; currently single-user only._
+- **Multi-device sync for a single writer** — The same writer reaching the same projects from more than one device. _Status: hosted foundations shipped (tenancy, auth, object store, E2EE); the offline conflict/merge model is undesigned._ → [../specs/product/getwrite.md](../specs/product/getwrite.md)
+
+  _Multi-user collaboration (two people editing one project) was a former entry here. As of 2026-08-24 it is a **permanent non-goal**, not a future maybe — see the product spec's Non-goals._
 
 ---
 
@@ -52,6 +56,9 @@ Horizons reflect priority and readiness, not committed dates. This document cove
 
 A curated snapshot of recent highlights — not an exhaustive changelog.
 
+- **End-to-end encryption** — Per-project opt-in encryption on desktop and native Android: a workspace keyring with a lock/unlock session, sealed file bodies, crash-safe resumable conversion in both directions, and a plaintext export escape hatch. Deliberately excluded from the hosted deployment by a fail-closed server-side gate. → [ADRs/adr-022-end-to-end-encryption-via-storage-adapter-decorator.md](architecture/ADRs/adr-022-end-to-end-encryption-via-storage-adapter-decorator.md)
+- **Native Android app (in-process)** — The whole data layer collapses in-process on native with no HTTP round-trip, over a real Capacitor filesystem bridge. Shipped as code; packaging and distribution are not done (see Later). → [ADRs/adr-021-native-android-via-capacitor-in-process.md](architecture/ADRs/adr-021-native-android-via-capacitor-in-process.md)
+- **Image and audio resources** — Add image and audio resources through the UI, with drag-and-drop into the editor, a media viewer, and ingest-time metadata.
 - **Full-text search** — Cross-resource search with folder/status/tag filtering, backed by the inverted index. → [indexing.md](features/indexing.md)
 - **Tags** — Project-scoped tag management plus per-resource assignment from the Metadata sidebar. → [tags.md](features/tags.md)
 - **Metadata queries & smart folders** — Saved queries rendered as folder-like rows in the resource tree. → [user/metadata-queries.md](user/metadata-queries.md)
@@ -68,4 +75,4 @@ A curated snapshot of recent highlights — not an exhaustive changelog.
 ## Related Docs
 
 - **Tech debt & infrastructure** — [tech-debt.md](tech-debt.md)
-- **Feature catalog (classified inventory)** — [feature-catalog.md](features/feature-catalog.md)
+- **Feature catalog (classified inventory)** — [getwrite.features.md](../specs/product/getwrite.features.md)

@@ -159,7 +159,7 @@ Folder metadata is persisted as a `folder.json` file inside the folder's own dir
 
 🤖 **createdAt** \[ISO Date]: Creation timestamp.
 
-🤖 **special** \[Boolean]: When `true`, marks the folder as a system-designated special folder (e.g. Workspace). Special folders may be treated differently in ordering and UI. Should not be set by the user.
+🤖 **special** \[Boolean]: **Deprecated and ignored.** Formerly marked a system-designated special folder (e.g. Workspace). The Workspace requirement was removed and no folder name or flag now carries application semantics — the value is still accepted and propagated for backward compatibility, but nothing reads it for ordering or UI. Should not be set by the user.
 
 ---
 

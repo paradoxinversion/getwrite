@@ -15,7 +15,12 @@ This is the developer reference for the project-type JSON format, validation, an
 - `description` (string, optional): short summary of the type.
 - `folders` (array of objects): ordered list of folders. Each folder object has:
     - `name` (string): display name for the folder (e.g., "Workspace", "Front Matter").
-    - `special` (boolean, optional): indicates a special folder (UI affordance).
+    - `special` (boolean, optional): **deprecated and ignored.** Still accepted for
+      backward compatibility with project types written before the Workspace
+      requirement was removed, but it assigns no semantics — no folder name or
+      flag carries application behaviour (`schemas.ts`, `types.ts`). To make a
+      folder's contents referenceable as typed metadata, use the folder's
+      `metadataSource` flag instead.
 - `defaultResources` (array of objects, optional): resources to create by default. Each entry has:
     - `folder` (string): folder name that owns the resource. If omitted, the first folder is used.
     - `name` (string): resource title.

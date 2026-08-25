@@ -19,7 +19,7 @@ Additional repo-root directories that are **not** workspace packages but are ref
 
 - `projects/` — On-disk project store (one folder per project; UUID-named).
 - `getwrite-config/templates/project-types/` — JSON specs for the built-in project types (`article`, `blank`, `game_documentation`, `novel`, `poetry_and_lyrics`, `serial`) plus `project-type.schema.json`.
-- `specs/` — Numbered feature specs (`001-…` through `005-…`) that drive larger work; per the authority hierarchy, specs win conflicts.
+- `specs/` — Specification artifacts; per the authority hierarchy, specs win conflicts. `specs/product/` holds the product-level ladder — `getwrite.md` (product spec) and `getwrite.features.md` (feature list), both relocated from `docs/` on 2026-08-24 and **not yet conformant** to their pipeline schemas. `specs/features/` holds per-feature specs. `001-…` through `005-…` are the earlier numbered specs that drove larger work.
 - `docs/standards/` — Coding/testing standards (see below).
 - `scripts/` — Repo-level scripts (currently `showcase`).
 - `electron/electron-builder.yml` — Packaging config for the desktop build.
