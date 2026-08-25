@@ -38,7 +38,7 @@ describe("HelpPage", () => {
           return (
             (element?.tagName === "P" &&
               element?.textContent?.includes(
-                "No folder is protected, and none is pinned to a fixed position in the tree.",
+                "no folder is protected, none is pinned to a fixed position",
               )) ??
             false
           );

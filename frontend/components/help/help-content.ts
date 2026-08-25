@@ -91,7 +91,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
           strong("Work Area"),
           ", and a collapsible ",
           strong("Metadata Panel"),
-          " on the right. Drag the dividers to resize panes, or click the arrow buttons to collapse them.",
+          " on the right. Drag the dividers to resize panes, or click the panel buttons to collapse them.",
         ],
       },
       { type: "heading", content: ["Keyboard shortcuts"] },
@@ -99,6 +99,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         type: "tip-card",
         items: [
           [kbd("Esc"), " - close open menus and modals."],
+          [kbd("Cmd/Ctrl + K"), " - open the resource command palette."],
           [
             "Standard text-editor shortcuts (",
             kbd("Cmd/Ctrl + Z"),
@@ -127,7 +128,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         type: "paragraph",
         content: [
           "From the Start Page, click ",
-          strong("Create New Project"),
+          strong("Start a New Project"),
           ". You will be asked to choose a ",
           strong("project type"),
           " (which determines the initial folder structure) and give the project a name.",
@@ -139,7 +140,6 @@ export const HELP_TABS: HelpTabDefinition[] = [
         title: "Start page actions",
         items: [
           [strong("Open"), " - opens an existing project from disk."],
-          [strong("Copy"), " - duplicates the project folder."],
           [strong("Rename"), " - renames the project display name."],
           [
             strong("Delete"),
@@ -169,7 +169,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
           strong("Research"),
           " or ",
           strong("Fact Checking"),
-          " in others. Nothing depends on the folder's name: you can mark a folder you created yourself, rename one, or remove the flag. No folder is protected, and none is pinned to a fixed position in the tree.",
+          " in others. The flag lives in the project type's template, so which folders are metadata sources is fixed when the project is created — it cannot be turned on or off per folder afterwards. Nothing depends on the folder's name, though: no folder is protected, none is pinned to a fixed position, and renaming one does not break its links.",
         ],
       },
     ],
@@ -209,7 +209,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
       {
         type: "paragraph",
         content: [
-          "Every resource maintains a linear revision history. The most recent revision is the canonical (active) one. You can view previous revisions from the Metadata Panel. Editing a previous revision will prompt a warning; saving it promotes it to the newest revision. The canonical revision cannot be deleted.",
+          "Every resource maintains a linear revision history. One revision is canonical (active) at a time — saving creates a new canonical revision, but you can promote or roll back to any earlier one from the Revision Control panel above the editor, which is also where you view, restore, and delete revisions. Auto-save applies to the canonical revision only: while you are viewing an earlier revision nothing is saved automatically, and the footer warns you while edits are unsaved. The canonical revision cannot be deleted, and a resource keeps up to 50 revisions — beyond that the oldest non-canonical ones are removed automatically.",
         ],
       },
       { type: "heading", content: ["Drag and drop reordering"] },
@@ -335,7 +335,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "The optional built-in fields are controlled from the ",
           strong("Built-in features"),
-          " section at the top of the Metadata Fields manager (settings menu → ",
+          " section at the top of the Metadata Fields manager (settings menu → Project Settings → ",
           strong("Metadata"),
           "). Tick ",
           strong("Timeline"),
@@ -376,7 +376,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         items: [
           [strong("Text"), " - a line of free text."],
           [strong("Number"), " - a numeric value."],
-          [strong("Date"), " - a calendar date and time."],
+          [strong("Date"), " - a calendar date, with an optional time."],
           [strong("Boolean"), " - a simple on / off toggle."],
           [strong("Select"), " - pick one value from a list you define."],
           [strong("Multi"), " - pick several values from a list you define."],
@@ -410,7 +410,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "Fields are organised into ",
           strong("groups"),
-          " — the collapsible sections in the panel. Every project starts with the Document and Story Timeline groups. When you create a field you choose which group it belongs to, and you can add more groups from the Metadata Fields manager to keep related fields together.",
+          " — the collapsible sections in the panel. Every project starts with the Document and Timeline groups. When you create a field you choose which group it belongs to, and you can add more groups from the Metadata Fields manager to keep related fields together.",
         ],
       },
       { type: "heading", content: ["The Metadata Fields manager"] },
@@ -500,7 +500,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
           ],
           [
             strong("Organizer View"),
-            " - filters cards by Status, Character, Location, and Word Count, and can show any metadata field as each card's body.",
+            " - can show any metadata field as each card's body. (Filtering Organizer cards is planned but not yet available.)",
           ],
         ],
       },
@@ -510,7 +510,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "At the bottom of the panel is a ",
           strong("Tags"),
-          " section — a lightweight way to label a resource with keywords when a full field would be overkill. Tags are shared across the project and can be managed from the settings menu under ",
+          " section — a lightweight way to label a resource with keywords when a full field would be overkill. Tags are shared across the project and can be managed from the settings menu, under Project Settings → ",
           strong("Manage Tags"),
           ".",
         ],
@@ -521,7 +521,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "Image and audio resources carry the same editable fields and tags as text documents, so you can describe them however your project needs. Above those fields they also show a ",
           strong("read-only"),
-          " technical section — image dimensions and EXIF data, or audio format and duration — extracted automatically when the file is added.",
+          " technical section — image dimensions and EXIF data, or audio format and duration — extracted automatically when the file is added. Media files are limited to 100 MB each. Supported formats are PNG, JPG, GIF, WebP, SVG, AVIF and HEIC for images, and MP3, WAV, M4A, OGG, FLAC and AAC for audio.",
         ],
       },
     ],
@@ -547,10 +547,10 @@ export const HELP_TABS: HelpTabDefinition[] = [
           ],
           ["Full undo/redo history is kept per-session (cleared on reload)."],
           [
-            "Word count, character count, and paragraph count are shown in the footer.",
+            "The footer shows the document's word count and the style of the block your cursor is in.",
           ],
           [
-            "Switching away without saving a manually edited earlier revision prompts a discard/save dialog.",
+            "Edits made while viewing an earlier revision are never auto-saved. The footer warns you while they are unsaved, and they are lost if you select another resource — use Save in Revision Control to keep them as a new revision. Closing the project with unsaved work does ask for confirmation first.",
           ],
         ],
       },
@@ -560,14 +560,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "Switch to ",
           strong("Diff View"),
-          " from the view switcher to compare two revisions of a resource side-by-side.",
-        ],
-      },
-      { type: "heading", content: ["Folder text view"] },
-      {
-        type: "paragraph",
-        content: [
-          "Selecting a folder containing only text resources renders all documents sequentially with dividers. Each document saves independently.",
+          " from the view switcher to compare an earlier revision of a text document against the current canonical one, side-by-side. The left pane is always the canonical revision; you choose the historical revision on the right.",
         ],
       },
       { type: "heading", content: ["Data view"] },
@@ -601,16 +594,19 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "The ",
           strong("Organizer View"),
-          " presents the contents of a selected folder as cards arranged left-to-right, top-to-bottom, matching the Resource Tree order.",
+          " presents the contents of a selected folder as cards arranged left-to-right, top-to-bottom, following the order you set in the Resource Tree, with subfolders listed before files.",
         ],
       },
       {
         type: "tip-card",
         title: "Card content",
         items: [
-          ["Text files show a trimmed preview of their content."],
-          ["Image files show a thumbnail."],
-          ["Audio files show an inline player."],
+          [
+            "Beneath the title each card can show a single line of text: nothing, an excerpt of the document, or the value of any metadata field. Choose which in User Preferences under Organizer Card Body; with no choice made, cards show the Notes field.",
+          ],
+          [
+            "Cards do not show image thumbnails or audio players — open the resource to see those.",
+          ],
           [
             "Choose what each card shows beneath its title — nothing, a text excerpt, or the value of any metadata field — from ",
             strong("User Preferences"),
@@ -638,7 +634,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
       {
         type: "paragraph",
         content: [
-          "Mixed-content folders (for example, text and images together) switch to Organizer View automatically when selected.",
+          "Selecting any folder switches to Organizer View — it is the only view available for folders, whatever they contain.",
         ],
       },
     ],
@@ -660,7 +656,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
         content: [
           "Open ",
           strong("Project Type Manager"),
-          " from the settings menu (gear icon). From there you can create new types, edit existing ones, configure default folders and resources, and delete types you no longer need.",
+          " from the settings menu (gear icon) to browse the bundled project types and inspect their folders, resources, statuses, and editor settings. Edits made here are held in the session only and are not written back — project types are files under getwrite-config/templates/project-types/, so adding, changing, or removing one means editing those files directly.",
         ],
       },
       {
@@ -721,7 +717,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
       {
         type: "paragraph",
         content: [
-          "Preferences are stored locally on your device and, when a project is open, also saved to the project's own configuration file so the same settings apply on every device you use to open that project.",
+          "Preferences are stored locally on your device. When a project is open, your colour mode is additionally saved into the project, so that one setting follows the project between devices. Density and reduced motion stay on the device where you set them.",
         ],
       },
     ],
