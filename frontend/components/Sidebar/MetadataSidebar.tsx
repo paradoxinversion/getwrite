@@ -21,6 +21,7 @@ import { filterResourceOptionsByScope } from "./folderScope";
 import LabeledField from "./controls/LabeledField";
 import useSyncedControlledValue from "./controls/useSyncedControlledValue";
 import TagsSection from "./TagsSection";
+import EntitySection from "./EntitySection";
 import CollapsibleSection from "../common/UI/CollapsibleSection/CollapsibleSection";
 import useAppSelector from "../../src/store/hooks";
 import { shallowEqual } from "react-redux";
@@ -522,6 +523,9 @@ export default function MetadataSidebar({
             })}
             <CollapsibleSection title="Tags" variant="sidebar">
               <TagsSection />
+            </CollapsibleSection>
+            <CollapsibleSection title="Entity" variant="sidebar">
+              <EntitySection />
             </CollapsibleSection>
           </div>
           <div className="shrink-0 mt-2">
