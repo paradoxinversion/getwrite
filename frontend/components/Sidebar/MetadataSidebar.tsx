@@ -22,6 +22,7 @@ import LabeledField from "./controls/LabeledField";
 import useSyncedControlledValue from "./controls/useSyncedControlledValue";
 import TagsSection from "./TagsSection";
 import EntitySection from "./EntitySection";
+import EntitiesMentionedSection from "./EntitiesMentionedSection";
 import CollapsibleSection from "../common/UI/CollapsibleSection/CollapsibleSection";
 import useAppSelector from "../../src/store/hooks";
 import { shallowEqual } from "react-redux";
@@ -526,6 +527,9 @@ export default function MetadataSidebar({
             </CollapsibleSection>
             <CollapsibleSection title="Entity" variant="sidebar">
               <EntitySection />
+            </CollapsibleSection>
+            <CollapsibleSection title="Entities Mentioned" variant="sidebar">
+              <EntitiesMentionedSection />
             </CollapsibleSection>
           </div>
           <div className="shrink-0 mt-2">
