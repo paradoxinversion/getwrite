@@ -183,6 +183,9 @@ const FEATURE_FIELD_KEYS: Record<keyof ProjectFeatureFlags, readonly string[]> =
     pov: ["pov"],
     synopsis: ["synopsis"],
     notes: ["notes"],
+    // Entities are not sidecar schema fields, so there is no stored-field
+    // presence to seed the flag from; it stays off until explicitly toggled.
+    entities: [],
   };
 
 /**

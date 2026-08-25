@@ -21,6 +21,7 @@ import projectsReducer, {
   selectPovEnabled,
   selectSynopsisEnabled,
   selectNotesEnabled,
+  selectEntitiesEnabled,
   buildStoredProject,
 } from "../../src/store/projectsSlice";
 import type { Project } from "../../src/lib/models/types";
@@ -87,7 +88,7 @@ describe("projectsSlice — feature config hydration (Task 4)", () => {
 });
 
 describe("projectsSlice — feature selectors (absent = disabled)", () => {
-  it("reports all four features disabled for a project with no features", () => {
+  it("reports all five features disabled for a project with no features", () => {
     const store = makeStore();
     seedProject(store);
     const state = store.getState();
@@ -95,6 +96,7 @@ describe("projectsSlice — feature selectors (absent = disabled)", () => {
     expect(selectPovEnabled(state)).toBe(false);
     expect(selectSynopsisEnabled(state)).toBe(false);
     expect(selectNotesEnabled(state)).toBe(false);
+    expect(selectEntitiesEnabled(state)).toBe(false);
     expect(selectActiveProjectFeatures(state)).toEqual({});
     expect(selectActiveProjectOrganizerCardBody(state)).toBeNull();
   });
@@ -120,10 +122,18 @@ describe("projectsSlice — feature selectors (absent = disabled)", () => {
     expect(selectSynopsisEnabled(state)).toBe(true);
     expect(selectPovEnabled(state)).toBe(false);
     expect(selectNotesEnabled(state)).toBe(false);
+    expect(selectEntitiesEnabled(state)).toBe(false);
     expect(selectActiveProjectOrganizerCardBody(state)).toEqual({
       source: "field",
       fieldKey: "synopsis",
     });
+  });
+
+  it("reflects the entities feature when enabled", () => {
+    const store = makeStore();
+    seedProject(store, { editorConfig: {}, features: { entities: true } });
+    const state = store.getState();
+    expect(selectEntitiesEnabled(state)).toBe(true);
   });
 
   it("returns disabled/empty when no project is selected", () => {

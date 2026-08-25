@@ -65,6 +65,8 @@ export interface ProjectFeatureFlags {
   synopsis?: boolean;
   /** Activates the Notes (`notes`) metadata field. */
   notes?: boolean;
+  /** Activates the entity metadata UI (Entity, Entities Mentioned, Entity Mentions sections). */
+  entities?: boolean;
 }
 
 /** Source that drives the body text shown on Organizer cards. */

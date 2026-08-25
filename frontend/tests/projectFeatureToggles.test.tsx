@@ -63,7 +63,7 @@ describe("ProjectFeatureToggles", () => {
     vi.clearAllMocks();
   });
 
-  it("renders a checkbox for each of the four features", () => {
+  it("renders a checkbox for each of the five features", () => {
     setup();
     expect(
       screen.getByRole("checkbox", { name: /timeline/i }),
@@ -77,11 +77,20 @@ describe("ProjectFeatureToggles", () => {
     expect(
       screen.getByRole("checkbox", { name: /notes/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /entities/i }),
+    ).toBeInTheDocument();
   });
 
   it("treats an absent features block as all-off", () => {
     setup();
-    for (const name of [/timeline/i, /point of view/i, /synopsis/i, /notes/i]) {
+    for (const name of [
+      /timeline/i,
+      /point of view/i,
+      /synopsis/i,
+      /notes/i,
+      /entities/i,
+    ]) {
       expect(screen.getByRole("checkbox", { name })).not.toBeChecked();
     }
   });
@@ -233,6 +242,28 @@ describe("ProjectFeatureToggles", () => {
 
     await waitFor(() => expect(toastService.error).toHaveBeenCalled());
     expect(toastService.success).not.toHaveBeenCalled();
+  });
+
+  it("persists the entities flag when toggled on", async () => {
+    const { store } = setup();
+    const fetchSpy = mockFeatureRoute({ entities: true });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /entities/i }));
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/project/features");
+    expect(JSON.parse(init.body as string)).toEqual({
+      projectId: "test",
+      features: { entities: true },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("checkbox", { name: /entities/i })).toBeChecked(),
+    );
+    expect(
+      store.getState().projects.projects["test-project-id"].features,
+    ).toEqual({ entities: true });
   });
 
   it("renders nothing when no project is selected", () => {

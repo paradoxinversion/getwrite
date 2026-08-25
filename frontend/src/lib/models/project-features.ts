@@ -3,8 +3,8 @@
  *
  * Persistence helper for the per-project feature configuration stored in
  * `project.json` — the `config.features` opt-in flags (Timeline, POV, Synopsis,
- * Notes) and `config.organizerCardBody` (what Organizer cards render as their
- * body).
+ * Notes, Entities) and `config.organizerCardBody` (what Organizer cards render
+ * as their body).
  *
  * Unlike the lock-free `editor-config` / `preferences` read-modify-writes, this
  * helper acquires the per-project lock so toggle writes cannot race the

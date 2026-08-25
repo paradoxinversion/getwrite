@@ -202,6 +202,8 @@ export const ProjectFeatureFlagsSchema = z.object({
   synopsis: z.boolean().optional(),
   /** Activates the Notes metadata field. */
   notes: z.boolean().optional(),
+  /** Activates the entity metadata UI (Entity, Entities Mentioned, Entity Mentions sections). */
+  entities: z.boolean().optional(),
 });
 
 /**

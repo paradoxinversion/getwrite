@@ -1049,4 +1049,30 @@ describe("MetadataSidebar — feature gating (Task 7)", () => {
     expect(synopsis).toBeInTheDocument();
     expect(synopsis.value).toBe("Stored synopsis.");
   });
+
+  it("hides the Entity, Entities Mentioned, and Entity Mentions sections by default", () => {
+    renderSidebar({ features: {} });
+    expect(
+      screen.queryByRole("button", { name: /^entity$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /entities mentioned/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /entity mentions/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the Entity, Entities Mentioned, and Entity Mentions sections when the entities feature is enabled", () => {
+    renderSidebar({ features: { entities: true } });
+    expect(
+      screen.getByRole("button", { name: /^entity$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /entities mentioned/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /entity mentions/i }),
+    ).toBeInTheDocument();
+  });
 });

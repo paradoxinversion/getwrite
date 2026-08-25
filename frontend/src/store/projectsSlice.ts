@@ -857,6 +857,10 @@ export const selectSynopsisEnabled = (state: any): boolean =>
 export const selectNotesEnabled = (state: any): boolean =>
   selectIsFeatureEnabled(state, "notes");
 
+/** Whether the entity metadata UI is enabled for the active project. */
+export const selectEntitiesEnabled = (state: any): boolean =>
+  selectIsFeatureEnabled(state, "entities");
+
 /**
  * Selects the Organizer card-body configuration for the active project, or
  * `null` when none is configured.

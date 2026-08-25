@@ -78,7 +78,10 @@ maintained.
    key; this requirement makes it a declared, validated part of the schema.
    Validation MUST be structural only — non-empty strings, ordered array — and
    MUST NOT reject an alias at write time for being short or for matching a
-   common word, consistent with FR-14's edit-time guarantee. [US-4]
+   common word, consistent with FR-14's edit-time guarantee. The alias-editing
+   UI lives in the entity panel and is reachable only when the project's
+   `entities` feature flag (FR-16) is enabled; the schema-level support and
+   validation are unaffected by the flag. [US-4]
 3. **FR-3:** Detection MUST match an entity's `name` and each alias
    case-insensitively at word boundaries, and MUST additionally match the
    possessive (`Aria's`, `Jones'`) and simple plural (`Aria`/`Arias`) forms. A
@@ -110,10 +113,12 @@ maintained.
    FR-7, no corpus size or wall-clock ceiling is stated; this requirement is
    not performance-testable as written absent a real-corpus measurement. [US-4]
 9. **FR-9:** A resource's view MUST list the entities detected in it, each
-   navigable to the entity resource. [US-1]
+   navigable to the entity resource. This surface appears only when the
+   project's `entities` feature flag (FR-16) is enabled. [US-1]
 10. **FR-10:** An entity's view MUST list every resource mentioning it, with
     one snippet per occurrence rendered through the existing `extractSnippet`.
-    [US-2]
+    This surface appears only when the project's `entities` feature flag
+    (FR-16) is enabled. [US-2]
 11. **FR-11:** A `mentions` intrinsic field MUST be added to
     `INTRINSIC_FIELDS` so that `query-evaluator` and smart folders can filter
     resources by whether they mention a given entity. [US-3]
@@ -139,7 +144,24 @@ maintained.
     noise. This list is fixed and not user-extendable in this feature (see Out
     of scope). FR-9 and FR-10's visible mention counts are the intended
     feedback loop beyond the warning — the writer sees the noise and
-    self-corrects. [US-4]
+    self-corrects. This warning lives inside the entity panel and is
+    reachable only when the project's `entities` feature flag (FR-16) is
+    enabled. [US-4]
+16. **FR-16:** The entity metadata UI — the entity sidebar sections
+    (`EntitySection`, `EntitiesMentionedSection`, `EntityMentionsSection`) and
+    the resource/entity views listing detected entities and mentions (FR-9,
+    FR-10) — MUST be gated behind a per-project `entities` feature flag on
+    `ProjectFeatureFlagsSchema`, joining `timeline`, `timelineView`, `pov`,
+    `synopsis`, and `notes`. The flag MUST default to disabled — an absent
+    flag MUST evaluate to disabled, per `selectIsFeatureEnabled`'s existing
+    semantics — and enabling it MUST be a per-project preference set through
+    `ProjectFeatureToggles.tsx`, not a global or user-level setting. This flag
+    gates the UI only: detection, the mention index, the `indexer-queue`
+    wiring, the `mentions` query intrinsic, and `reindex` (FR-3 through FR-8,
+    FR-11, FR-13, FR-14) MUST continue to run regardless of the flag's state.
+    A project with the flag off still retains any mention index already
+    built, and turning the flag on MUST NOT require a reindex or rebuild to
+    surface previously computed mentions. [US-1]
 
 ## Open questions
 
@@ -157,7 +179,10 @@ non-blocking UI warning, with the word list fixed and not user-extendable;
 and no numeric performance target is stated for FR-7, FR-8, or FR-13, which
 inherit rather than introduce the `meta/index/` whole-file JSON persistence
 scheme's known scaling risk and are settled, if ever, by measurement against
-a real corpus rather than an invented ceiling.
+a real corpus rather than an invented ceiling. An eighth question — whether
+the entity metadata UI should be always-on or opt-in — was settled after the
+feature was exercised in the running app: it joins the existing per-project
+feature-flag family, default off (FR-16).
 
 Remaining:
 

@@ -36,6 +36,7 @@ import {
   selectSynopsisEnabled,
   selectNotesEnabled,
   selectPovEnabled,
+  selectEntitiesEnabled,
   selectTimelineEnabled,
 } from "../../src/store/projectsSlice";
 import type { RootState } from "../../src/store/store";
@@ -222,6 +223,7 @@ export default function MetadataSidebar({
   const isSynopsisEnabled = useAppSelector(selectSynopsisEnabled);
   const isNotesEnabled = useAppSelector(selectNotesEnabled);
   const isPovEnabled = useAppSelector(selectPovEnabled);
+  const isEntitiesEnabled = useAppSelector(selectEntitiesEnabled);
   const isTimelineEnabled = useAppSelector(selectTimelineEnabled);
 
   const selectedResource = useAppSelector((state) =>
@@ -526,15 +528,22 @@ export default function MetadataSidebar({
             <CollapsibleSection title="Tags" variant="sidebar">
               <TagsSection />
             </CollapsibleSection>
-            <CollapsibleSection title="Entity" variant="sidebar">
-              <EntitySection />
-            </CollapsibleSection>
-            <CollapsibleSection title="Entities Mentioned" variant="sidebar">
-              <EntitiesMentionedSection />
-            </CollapsibleSection>
-            <CollapsibleSection title="Entity Mentions" variant="sidebar">
-              <EntityMentionsSection />
-            </CollapsibleSection>
+            {isEntitiesEnabled && (
+              <>
+                <CollapsibleSection title="Entity" variant="sidebar">
+                  <EntitySection />
+                </CollapsibleSection>
+                <CollapsibleSection
+                  title="Entities Mentioned"
+                  variant="sidebar"
+                >
+                  <EntitiesMentionedSection />
+                </CollapsibleSection>
+                <CollapsibleSection title="Entity Mentions" variant="sidebar">
+                  <EntityMentionsSection />
+                </CollapsibleSection>
+              </>
+            )}
           </div>
           <div className="shrink-0 mt-2">
             {isAddFormVisible && selectedProjectId ? (

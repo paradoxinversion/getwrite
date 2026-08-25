@@ -5,8 +5,8 @@
  *
  * Section shown at the top of the Metadata Fields menu that turns the
  * previously-locked built-in metadata features (Timeline, Point of View,
- * Synopsis, Notes) on or off, co-located with the field definitions they
- * govern. Each toggle reflects the active project's `config.features` state and
+ * Synopsis, Notes, Entities) on or off, co-located with the field definitions
+ * they govern. Each toggle reflects the active project's `config.features` state and
  * persists changes via the {@link updateProjectFeatures} thunk. Toggling is
  * available at any time after project creation (FR10); turning a feature off
  * only hides its field — stored values are preserved.
@@ -57,6 +57,12 @@ const FEATURE_TOGGLES: readonly FeatureToggleDef[] = [
     key: "notes",
     label: "Notes",
     description: "The notes metadata field in the sidebar.",
+  },
+  {
+    key: "entities",
+    label: "Entities",
+    description:
+      "The Entity, Entities Mentioned, and Entity Mentions sections in the sidebar.",
   },
 ];
 
