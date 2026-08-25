@@ -147,7 +147,10 @@ export const HELP_TABS: HelpTabDefinition[] = [
             em("cannot be undone"),
             ").",
           ],
-          [strong("Package"), " - exports the project as a portable zip file."],
+          [
+            strong("Package"),
+            " - compile your project into a single document (PDF, DOCX, Markdown, or plain text).",
+          ],
         ],
       },
       { type: "heading", content: ["Metadata source folders"] },
@@ -584,7 +587,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
           strong("Timeline View"),
           " to see a visual timeline of resources that have a ",
           strong("Story Date"),
-          " set in the Metadata Panel. Resources are colour-coded by POV. Clicking a timeline item selects that resource.",
+          " set in the Metadata Panel. Resources are colour-coded by POV. Clicking a timeline item selects that resource. Timeline View is off by default — turn it on under Preferences, in the Timeline view section. Enabling it also turns on the timeline date fields it reads.",
         ],
       },
     ],
@@ -621,7 +624,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
       {
         type: "paragraph",
         content: [
-          "Filter cards by ",
+          "Filtering Organizer cards by ",
           strong("Status"),
           ", ",
           strong("Character"),
@@ -629,7 +632,7 @@ export const HELP_TABS: HelpTabDefinition[] = [
           strong("Location"),
           ", or ",
           strong("Word Count"),
-          " using the filter controls at the top of the Organizer View.",
+          " is planned but not available yet. To narrow a project by metadata today, save a query and use it as a smart folder.",
         ],
       },
       {
