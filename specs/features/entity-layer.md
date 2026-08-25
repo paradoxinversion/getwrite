@@ -1,6 +1,6 @@
 # Feature Spec: Entity Layer
 
-> **Scope note:** this document exceeds the 500-word guideline (~800 words). The
+> **Scope note:** this document substantially exceeds the 500-word guideline. The
 > feature spans a sidecar schema addition, a new persisted index, an indexer
 > path, a query intrinsic, and two UI surfaces. These are not independently
 > shippable — the UI surfaces and the query intrinsic have nothing to read until
@@ -54,14 +54,14 @@ maintained.
 
 ## User stories
 
-- **US-1:** As a novelist, I want every scene that names a character to be
+- **US-1:** As a novelist, I want to have every scene that names a character
   attributed to that character automatically, so that my appearance list is
   never stale.
-- **US-2:** As a novelist, I want an entity page listing every mention with its
-  surrounding text, so that I can re-read a character's whole thread without
-  running a search.
-- **US-3:** As a novelist, I want a smart folder for "scenes mentioning Aria",
-  so that I can work a POV thread as a unit.
+- **US-2:** As a novelist, I want to open an entity page listing every mention
+  with its surrounding text, so that I can re-read a character's whole thread
+  without running a search.
+- **US-3:** As a novelist, I want to build a smart folder for "scenes
+  mentioning Aria", so that I can work a POV thread as a unit.
 - **US-4:** As a novelist, I want to declare alternate names ("the Duchess",
   "Ari"), so that every form a character is called by resolves to one entity.
 - **US-5:** As a novelist, I want to tell a link I deliberately authored apart
@@ -76,11 +76,14 @@ maintained.
 2. **FR-2:** An entity's sidecar MUST support an ordered `aliases` array of
    non-empty strings, editable from the UI. `backlinks.ts` already reads this
    key; this requirement makes it a declared, validated part of the schema.
-   [US-4]
+   Validation MUST be structural only — non-empty strings, ordered array — and
+   MUST NOT reject an alias at write time for being short or for matching a
+   common word, consistent with FR-14's edit-time guarantee. [US-4]
 3. **FR-3:** Detection MUST match an entity's `name` and each alias
    case-insensitively at word boundaries, and MUST additionally match the
-   possessive (`Aria's`, `Jones'`) and simple plural (`Aria`/`Arias`) forms.
-   [US-1]
+   possessive (`Aria's`, `Jones'`) and simple plural (`Aria`/`Arias`) forms. A
+   short or common-word alias MUST still be matched under this rule; FR-15
+   covers warning the writer rather than restricting matching. [US-1]
 4. **FR-4:** Detection MUST NOT match an alias occurring inside a larger word:
    the alias `Ari` MUST NOT match `Aristocrat` or `Arias-Vela`. [US-1]
 5. **FR-5:** Detected mentions MUST persist to a mention index under
@@ -92,11 +95,20 @@ maintained.
    rendered without re-tokenizing the resource. `InvertedIndex` MUST remain
    `Record<term, Record<resourceId, count>>` — positions are NOT added to it.
    [US-2]
-7. **FR-7:** Saving a resource MUST re-scan only that resource against the
-   current alias table, dispatched through the existing `indexer-queue`
-   alongside the inverted-index and backlink updates. [US-1]
+7. **FR-7:** Saving a resource MUST re-scan only that resource's persisted
+   content — read via `loadResourceContent` from the canonical revision, the
+   same source `indexer-queue`'s `runTask` and `computeBacklinks` already read
+   from — against the current alias table, dispatched through the existing
+   `indexer-queue` alongside the inverted-index and backlink updates. Detection
+   MUST NOT read unsaved editor state: a mention typed into an unsaved buffer
+   is not attributed until the resource is saved. This requirement states no
+   corpus size or wall-clock ceiling and is therefore not performance-testable
+   as written; a real-corpus measurement would settle what, if any, budget is
+   warranted. [US-1]
 8. **FR-8:** Editing an entity's `name` or `aliases` MUST re-scan the project
-   for that entity alone, and MUST NOT rebuild the whole mention index. [US-4]
+   for that entity alone, and MUST NOT rebuild the whole mention index. As with
+   FR-7, no corpus size or wall-clock ceiling is stated; this requirement is
+   not performance-testable as written absent a real-corpus measurement. [US-4]
 9. **FR-9:** A resource's view MUST list the entities detected in it, each
    navigable to the entity resource. [US-1]
 10. **FR-10:** An entity's view MUST list every resource mentioning it, with
@@ -109,35 +121,47 @@ maintained.
     list, the UI MUST distinguish them visually and label which is which.
     [US-5]
 13. **FR-13:** `getwrite-cli reindex` MUST rebuild the mention index from
-    scratch alongside the inverted index and backlinks. [US-1]
+    scratch alongside the inverted index and backlinks. No corpus size or
+    wall-clock ceiling is stated for this rebuild, so it is not
+    performance-testable as written; it inherits, rather than introduces, the
+    whole-file JSON `meta/index/` persistence scheme's known scaling risk,
+    already named in the product spec for the adjacent inverted index. A
+    real-corpus measurement would settle whether a budget is warranted. [US-1]
 14. **FR-14:** When two or more entities claim the same alias, the mention MUST
     be recorded against every claimant and the collision MUST be surfaced to
     the writer as an ambiguity naming each claiming entity. The system MUST NOT
     silently attribute the mention to one of them, and MUST NOT reject the
     alias at edit time. [US-4]
+15. **FR-15:** The alias-editing UI MUST surface a non-blocking warning when an
+    alias is fewer than three characters or matches a small built-in
+    list of common English words and given names that double as ordinary words
+    ("May", "Will", "Art"), naming why: the alias will match frequently and add
+    noise. This list is fixed and not user-extendable in this feature (see Out
+    of scope). FR-9 and FR-10's visible mention counts are the intended
+    feedback loop beyond the warning — the writer sees the noise and
+    self-corrects. [US-4]
 
 ## Open questions
 
-Four design questions were resolved before this spec was saved; the resolutions
-are folded into FR-1, FR-3, FR-4, FR-6, and FR-14 rather than left open. For the
-record: entity declaration is a sidecar marker field (not a new `ResourceType`);
-matching is exact-plus-possessive-plus-plural (not fuzzy); snippet offsets live
-in the mention index (the inverted index is not extended with positions); and an
-ambiguous alias is attributed to all claimants and flagged.
+Seven design questions were resolved before this spec was saved; the
+resolutions are folded into FR-1 through FR-3, FR-4, FR-6 through FR-8, and
+FR-13 through FR-15 rather than left open. For the record: entity declaration
+is a sidecar marker field (not a new `ResourceType`); matching is
+exact-plus-possessive-plus-plural (not fuzzy); snippet offsets live in the
+mention index (the inverted index is not extended with positions); an
+ambiguous alias is attributed to all claimants and flagged; detection reads
+only persisted, saved content — never unsaved editor state — via the same
+`loadResourceContent` path `indexer-queue` already uses; a short or
+common-word alias is matched (not rejected at write time) but flagged by a
+non-blocking UI warning, with the word list fixed and not user-extendable;
+and no numeric performance target is stated for FR-7, FR-8, or FR-13, which
+inherit rather than introduce the `meta/index/` whole-file JSON persistence
+scheme's known scaling risk and are settled, if ever, by measurement against
+a real corpus rather than an invented ceiling.
 
 Remaining:
 
-- **OQ-1:** Does detection run over the canonical revision's persisted content
-  only, or also over unsaved editor state? — Impact: FR-7 (what triggers a
-  re-scan and what text it reads).
-- **OQ-2:** Is there a minimum alias length or a stop-word guard? A one- or
-  two-character alias, or a common word used as a name ("May", "Will", "Art"),
-  will match constantly and drown the index. — Impact: FR-3, FR-14, and whether
-  FR-2 needs validation on write.
-- **OQ-3:** What corpus size must FR-7's incremental scan and FR-13's full
-  rebuild hold under, and what is the acceptable wall-clock ceiling for each?
-  No target is currently stated, so neither requirement is performance-testable
-  as written. — Impact: FR-7, FR-8, FR-13.
+None.
 
 ## Out of scope (deferred)
 
@@ -151,3 +175,5 @@ Remaining:
   only (would let a writer find an entity in cut drafts).
 - Entity-aware search ranking, where a query for an entity name boosts
   resources that mention it as an entity over incidental term matches.
+- A user-extensible or localized common-word list for FR-15's alias warning
+  (this feature ships one small, fixed, built-in English list only).

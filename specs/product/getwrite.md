@@ -305,6 +305,18 @@ lost work.
   canonical revision is indexed and searched — see Constraints); when a
   user opens the diff view from such a result, the diff MUST consistently
   select the most recent matching revision. [US-7]
+- FR-35: Users MUST be able to declare a resource as an entity and give it
+  one or more alternate names, after which every prose mention of that
+  entity's name or alternate names anywhere else in the project MUST be
+  attributed to it automatically, without a manual link. Detection MUST be
+  deterministic and MUST run fully offline, consistent with the
+  local-first architecture and the native Android build. The product MUST
+  let a writer see, per resource, which entities it mentions, and, per
+  entity, every resource that mentions it, so that appearance lists and
+  per-entity mention indexes are computed rather than hand-maintained; it
+  MUST also let a saved query or smart folder filter resources by entity
+  mention. The product MUST NOT infer an entity the writer never declared,
+  and MUST NOT perform pronoun or coreference resolution. [US-3]
 
 ### Later Requirements
 

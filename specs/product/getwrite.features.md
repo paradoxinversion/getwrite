@@ -505,6 +505,32 @@ full-text search; Feature 8's saved-query builder) but have never been
 joined — full-text search has no predicate over the query builder's fields,
 and the saved-query builder has no full-text-over-content predicate.
 
+### Feature 33: Entity layer — automatic prose-mention detection — Not started
+**Value:** A novelist who declares a resource as a character, place, or
+object gets every prose mention of it across the whole project — by name or
+alias — attributed automatically, instead of losing the connection the
+moment they forget to bracket a manual link.
+**Vertical slice:** A sidecar `entityKind` + ordered `aliases` schema
+addition; case-insensitive, word-boundary-safe alias matching (with
+possessive/plural forms) dispatched through the existing `indexer-queue` on
+save; a new mention index persisted under `meta/index/`, separate from
+`backlinks.json`; a `mentions` intrinsic field so saved queries and smart
+folders can filter by entity mention; and two UI surfaces — a resource view
+listing the entities detected in it, and an entity view listing every
+mentioning resource with a snippet per occurrence, visually distinguished
+from explicit links.
+**Requirements covered:** FR-35
+**User stories:** US-3
+**Depends on:** Feature 7, Feature 9, Feature 10
+**Branch suggestion:** feat/entity-layer
+**Notes:** Not started. This entry closes a ladder gap: a complete rung-4
+feature spec (`specs/features/entity-layer.md`) already exists for this
+capability but had no rung-3 parent entry until now; the parent product
+spec has since been amended with FR-35 to cover it. Detection runs fully
+offline and reuses existing machinery (`indexer-queue`, `backlinks.ts`'s
+resolver maps, `extractSnippet`) rather than introducing a new pipeline; it
+does not change how explicit backlinks are computed or persisted.
+
 ---
 
 ## Coverage check
@@ -544,11 +570,12 @@ and the saved-query builder has no full-text-over-content predicate.
   - FR-32: Feature 30
   - FR-33: Feature 31
   - FR-34: Feature 32
+  - FR-35: Feature 33
 - Unassigned requirements: none
 
 ## Summary
 
-- Total features: 32
+- Total features: 33
 - Suggested build order: Features 1 through 23 are already shipped
   (foundational chain: 1 → 2 → 6 → 7 → {8, 9, 18} → {9 → 11, 10} → 11 → {4 →
   5 → 11, 20}; 3, 13, 14, 15, 16, 17, 19, 21, 22, 23 hang off earlier shipped
@@ -559,10 +586,12 @@ and the saved-query builder has no full-text-over-content predicate.
   (durable search backend) is contingent on demonstrated need rather than
   sequenced by dependency. 31 (Scrivener/Word importer) only depends on the
   already-shipped Feature 2. 32 (joining search and query predicates)
-  depends on the already-shipped Features 8 and 9.
+  depends on the already-shipped Features 8 and 9. 33 (entity layer) depends
+  only on already-shipped Features 7, 9, and 10, so it is independently
+  startable now too.
 - Independently shippable: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32 (30 is the
-  sole feature with a hard dependency, on 28)
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33 (30 is
+  the sole feature with a hard dependency, on 28)
 - Risks: Feature 30 is undesigned — its Vertical slice describes a
   resolution policy still to be chosen, so its task breakdown will need a
   design decision before implementation tasks can be written. Feature 28 is
@@ -575,9 +604,15 @@ and the saved-query builder has no full-text-over-content predicate.
   previously separate concerns (revision-aware indexing and diff-open
   revision selection) per the parent spec's FR-29 correction; its task
   breakdown should confirm the merge doesn't hide two different sizes of
-  work.
+  work. Feature 33's own feature spec carries three unresolved open
+  questions (alias-length/stop-word guarding, whether detection reads
+  unsaved editor state, and performance targets) that should be settled
+  before its task breakdown is written.
 
 ## Open Questions
 
 None. (OQ-1, on licensing/distribution posture, is tracked in the parent
-product spec and does not affect this feature partition.)
+product spec and does not affect this feature partition. A previously
+logged question here — Feature 33 having no rung-2 functional requirement —
+was resolved when the parent product spec was amended with FR-35; see
+Feature 33's Requirements covered field.)
