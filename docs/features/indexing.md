@@ -7,23 +7,23 @@ The project includes a simple per-project full-text indexing system to enable fa
 Key components
 
 - `frontend/src/lib/models/inverted-index.ts`
-    - Implements the inverted index data structure persisted as `meta/index/inverted.json`.
-    - API:
-        - `indexResource(projectRoot, resource)` — index a single resource (adds/updates postings).
-        - `removeResourceFromIndex(projectRoot, resourceId)` — remove a resource from the index.
-        - `search(projectRoot, query)` — simple term-frequency based search returning ranked resource ids.
-    - Tokenization: lowercased, split on non-alphanumeric characters; only `[a-z0-9]` tokens are kept.
-    - Ranking: sum of term frequencies across query terms, ties broken by higher freq for the first query term then lexicographic id.
+  - Implements the inverted index data structure persisted as `meta/index/inverted.json`.
+  - API:
+    - `indexResource(projectRoot, resource)` — index a single resource (adds/updates postings).
+    - `removeResourceFromIndex(projectRoot, resourceId)` — remove a resource from the index.
+    - `search(projectRoot, query)` — simple term-frequency based search returning ranked resource ids.
+  - Tokenization: lowercased, split on non-alphanumeric characters; only `[a-z0-9]` tokens are kept.
+  - Ranking: sum of term frequencies across query terms, ties broken by higher freq for the first query term then lexicographic id.
 
 - `frontend/src/lib/models/indexer-queue.ts`
-    - Background FIFO queue that processes indexing tasks sequentially to avoid concurrent FS stress.
-    - API:
-        - `enqueueIndex(projectRoot, resourceId)` — enqueue a resource for indexing (non-blocking).
-        - `flushIndexer(timeout?)` — wait for the queue to drain (useful in tests to avoid teardown races).
-    - When processing tasks, the queue attempts to obtain canonical plain text from (in order): resource persisted content, tiptap content (converted to plain text), last revision content fallback.
+  - Background FIFO queue that processes indexing tasks sequentially to avoid concurrent FS stress.
+  - API:
+    - `enqueueIndex(projectRoot, resourceId)` — enqueue a resource for indexing (non-blocking).
+    - `flushIndexer(timeout?)` — wait for the queue to drain (useful in tests to avoid teardown races).
+  - When processing tasks, the queue attempts to obtain canonical plain text from (in order): resource persisted content, tiptap content (converted to plain text), last revision content fallback.
 
 - `frontend/src/lib/models/meta-locks.ts`
-    - A lightweight per-project promise-chain lock to serialize writes to the `meta/` directory. Used to avoid races where multiple writers create/remove files concurrently.
+  - A lightweight per-project promise-chain lock to serialize writes to the `meta/` directory. Used to avoid races where multiple writers create/remove files concurrently.
 
 Triggers / wiring
 
@@ -57,7 +57,7 @@ type BacklinkIndex = Record<string, string[]>;
 // { resourceId: [referencedResourceId, ...] }
 ```
 
-Each key is a resource UUID; its value is the list of resource UUIDs that the key resource links to (outgoing links). To find all resources that link *to* a given resource, scan all values for that ID.
+Each key is a resource UUID; its value is the list of resource UUIDs that the key resource links to (outgoing links). To find all resources that link _to_ a given resource, scan all values for that ID.
 
 **Resolution order** (for `[[...]]` targets)
 
@@ -70,12 +70,12 @@ Each key is a resource UUID; its value is the list of resource UUIDs that the ke
 
 **API** (`frontend/src/lib/models/backlinks.ts`)
 
-| Function | Description |
-| --- | --- |
-| `listResourceIds(projectRoot)` | Lists resource UUIDs from `resources/` directory |
-| `computeBacklinks(projectRoot)` | Scans all resource content and builds the full `BacklinkIndex` |
-| `persistBacklinks(projectRoot, index)` | Writes `meta/backlinks.json` under meta lock |
-| `loadBacklinks(projectRoot)` | Reads `meta/backlinks.json`, returns `{}` if absent |
+| Function                               | Description                                                    |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `listResourceIds(projectRoot)`         | Lists resource UUIDs from `resources/` directory               |
+| `computeBacklinks(projectRoot)`        | Scans all resource content and builds the full `BacklinkIndex` |
+| `persistBacklinks(projectRoot, index)` | Writes `meta/backlinks.json` under meta lock                   |
+| `loadBacklinks(projectRoot)`           | Reads `meta/backlinks.json`, returns `{}` if absent            |
 
 **Live updates** (`frontend/src/lib/models/backlinks-watcher.ts`)
 
@@ -123,32 +123,32 @@ Contact
 
 - Replace `flushIndexer()` polling with a promise-based signaling mechanism.
 
-    What: implement a completion signal in `frontend/src/lib/models/indexer-queue.ts` (for example an internal promise or EventEmitter-based API) that resolves when the queue has finished processing the currently enqueued tasks. Export a `waitForDrain()` or similar API consumers (tests and tooling) can call instead of polling.
+  What: implement a completion signal in `frontend/src/lib/models/indexer-queue.ts` (for example an internal promise or EventEmitter-based API) that resolves when the queue has finished processing the currently enqueued tasks. Export a `waitForDrain()` or similar API consumers (tests and tooling) can call instead of polling.
 
-    Why: polling adds latency and relies on timeouts which can mask races or cause flaky tests on slow CI. A promise-based signal is deterministic, faster, and eliminates the need for arbitrary timeouts, improving test stability and making shutdown semantics clearer.
+  Why: polling adds latency and relies on timeouts which can mask races or cause flaky tests on slow CI. A promise-based signal is deterministic, faster, and eliminates the need for arbitrary timeouts, improving test stability and making shutdown semantics clearer.
 
 ## Proposals
 
 - Promise-based drain signal
 
-    What: replace `flushIndexer()` polling with a deterministic `waitForDrain()` API (e.g. an internal promise or EventEmitter) that resolves when the queue has finished processing currently enqueued tasks. Export this API for tests and tooling.
+  What: replace `flushIndexer()` polling with a deterministic `waitForDrain()` API (e.g. an internal promise or EventEmitter) that resolves when the queue has finished processing currently enqueued tasks. Export this API for tests and tooling.
 
-    Why: eliminates polling/timeouts, yields deterministic synchronization for tests and shutdown flows, reduces CI flakiness and wasted wait time.
+  Why: eliminates polling/timeouts, yields deterministic synchronization for tests and shutdown flows, reduces CI flakiness and wasted wait time.
 
 - Durable meta writes (fsync)
 
-    What: after writing key meta files (index, backlinks, templates), optionally perform an `fsync`/`fdatasync` on the file descriptor before closing to ensure data is flushed to disk.
+  What: after writing key meta files (index, backlinks, templates), optionally perform an `fsync`/`fdatasync` on the file descriptor before closing to ensure data is flushed to disk.
 
-    Why: reduces risk of data loss on sudden crashes and makes integration tests behave more deterministically across platforms. Note: this increases latency and should be configurable.
+  Why: reduces risk of data loss on sudden crashes and makes integration tests behave more deterministically across platforms. Note: this increases latency and should be configurable.
 
 - Graceful indexer shutdown
 
-    What: add an explicit shutdown/flush method for the indexer queue that stops accepting new tasks, finishes in-flight tasks, and signals completion. Integrate this with application lifecycle hooks (e.g. before-exit).
+  What: add an explicit shutdown/flush method for the indexer queue that stops accepting new tasks, finishes in-flight tasks, and signals completion. Integrate this with application lifecycle hooks (e.g. before-exit).
 
-    Why: avoids data races and incomplete writes when the app is stopped or during test teardown; it's more explicit and safer than relying on ad-hoc waits.
+  Why: avoids data races and incomplete writes when the app is stopped or during test teardown; it's more explicit and safer than relying on ad-hoc waits.
 
 - Optional backend/search engine migration
 
-    What: evaluate replacing the JSON index with a more scalable store (SQLite FTS, Tantivy, or an external search service) for larger datasets.
+  What: evaluate replacing the JSON index with a more scalable store (SQLite FTS, Tantivy, or an external search service) for larger datasets.
 
-    Why: a JSON file works for small projects but will become slow and memory-heavy at scale. A proper search engine will provide better performance, advanced queries, and durability guarantees.
+  Why: a JSON file works for small projects but will become slow and memory-heavy at scale. A proper search engine will provide better performance, advanced queries, and durability guarantees.

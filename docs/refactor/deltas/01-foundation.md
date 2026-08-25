@@ -21,6 +21,7 @@ New symbols added: `makeRelease` (private helper), `lockApi` (named default expo
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Extracted `makeRelease(key: string): () => void` helper. The release closure — idempotency
   guard (`if (isReleased) return; isReleased = true`), drain-or-delete — was byte-identical in
   both branches of `acquireLock`. Each branch now resolves to a single `resolve(makeRelease(key))`
@@ -46,16 +47,18 @@ intermediate).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Added a module-level JSDoc block explaining that this module is a promise-chain serializer,
   distinguishing it from `locks.ts` (queue-based mutex). Addresses conceptual confusion risk
   when readers encounter two concurrency primitives in the same directory.
 - Replaced the terse `// Ensure we remove the lock entry when done` comment on `locks.set`
-  with a two-sentence explanation of *why* the stored promise is void-settled via
+  with a two-sentence explanation of _why_ the stored promise is void-settled via
   `.then(() => undefined).catch(() => undefined)`: a rejected stored entry would surface as an
   unhandled rejection if callers ignore the returned promise. The original comment said what;
   the new one says why.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Added `const metaLocks = { withMetaLock }; export default metaLocks;` to fix the pre-existing
   `import/no-anonymous-default-export` warning. Pattern consistent with `locks.ts`.
 
@@ -71,12 +74,14 @@ intermediate).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Hoisted `GlobalCrypto` type alias from inside `generateUUID`'s body to module level. The type
   existed solely to satisfy the no-`any` constraint; keeping it inside the function body mixed
   type-definition concern with algorithm logic. At module level, `generateUUID`'s body now opens
   directly with the cast that uses the type.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Added `const uuidUtils = { generateUUID, isValidUUID }; export default uuidUtils;` to fix the
   pre-existing `import/no-anonymous-default-export` warning.
 
@@ -126,6 +131,7 @@ variable rename).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Renamed `maybe` → `typed` in `normalizeAtomicWriteOptions`. `maybe` conveyed uncertainty about
   the type; `typed` accurately describes what it is — the same value narrowed to `AtomicWriteOptions`
   for structural inspection.
@@ -145,6 +151,7 @@ variable rename).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - `resolveParent` return type tightened from `{ parent: DirNode; name?: string } | null` to
   `{ parent: DirNode; name: string } | null` by adding `if (!name) return null` before the
   traversal loop. The type now carries the guarantee that callers previously enforced with
@@ -169,6 +176,7 @@ only. No symbols renamed.
 **Symbols renamed:** 0. **Files touched:** 1.
 
 **Changes (Antonini):**
+
 - Added JSDoc to three undocumented public types: `EditorHeadings`, `EditorHeading`,
   `EditorBodyConfig`. Each now has a single-line JSDoc describing its role.
 - Added `@deprecated` inline doc to `Folder.special`: the field is ignored in the project-type
@@ -191,19 +199,21 @@ orchestrator cross-file unification → final 571 lines. Net: 563 → 571 (+1.4%
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - `validateProjectTypeFile`: eliminated the mutable `let parsed: unknown` pre-declaration by
   folding `JSON.parse` directly into the `try` block and returning its result immediately. The
   `let` + assign + post-try-return pattern was unnecessarily verbose. Behavior is identical.
 
 **Changes (orchestrator — cross-file unification goal):**
+
 - Extracted the duplicated `metadataSource` Zod inline shape into a private `MetadataSourceSchema`
   constant (unexported). The identical shape appeared verbatim in three places:
   - `FolderSchema` (line 278 pre-change)
   - `ProjectTypeFolderSchema` (line 443 pre-change)
   - `ProjectTypeDefaultFolderSchema` (line 462 pre-change)
-  All three now reference `MetadataSourceSchema.optional()`. The shape is unchanged: `{ isMetadataSource: z.boolean(), metadataInputType: z.enum(["text", "multiselect", "autocomplete"]).optional() }`.
-  Added a JSDoc on `MetadataSourceSchema` explaining it is not exported — the three schemas that
-  use it are the public API.
+    All three now reference `MetadataSourceSchema.optional()`. The shape is unchanged: `{ isMetadataSource: z.boolean(), metadataInputType: z.enum(["text", "multiselect", "autocomplete"]).optional() }`.
+    Added a JSDoc on `MetadataSourceSchema` explaining it is not exported — the three schemas that
+    use it are the public API.
 
 ---
 
@@ -258,13 +268,13 @@ were added, removed, or retyped:
 
 From `frontend/`:
 
-| Check | Result |
-|---|---|
-| `pnpm typecheck` | PASS — clean |
-| `pnpm lint` (slice files only) | PASS — all errors cleared (2 pre-existing in `locks.ts`, now resolved) |
-| `pnpm exec vitest run uuid semver-compare unit/index` | PASS — 23/23 |
-| `pnpm exec vitest run` (full suite) | PASS — 2056/2056 (1 skipped, pre-existing) |
-| `pnpm knip` (repo root) | Pre-existing failures only; no new issues introduced by this slice |
+| Check                                                 | Result                                                                 |
+| ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm typecheck`                                      | PASS — clean                                                           |
+| `pnpm lint` (slice files only)                        | PASS — all errors cleared (2 pre-existing in `locks.ts`, now resolved) |
+| `pnpm exec vitest run uuid semver-compare unit/index` | PASS — 23/23                                                           |
+| `pnpm exec vitest run` (full suite)                   | PASS — 2056/2056 (1 skipped, pre-existing)                             |
+| `pnpm knip` (repo root)                               | Pre-existing failures only; no new issues introduced by this slice     |
 
 Knip notes: `default` exports on `locks.ts`, `meta-locks.ts`, `memoryAdapter.ts` are flagged
 as unused (callers import named exports, not the default). This is a pre-existing pattern

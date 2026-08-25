@@ -14,11 +14,11 @@ Selector logic is centralized, memoized, and composed, including selectors that 
 ## Options Considered
 
 1. Combine and transform data in each consuming component
-    - Keeps logic close to usage.
-    - Increases duplication and maintenance burden, and can lead to inconsistent behavior.
+   - Keeps logic close to usage.
+   - Increases duplication and maintenance burden, and can lead to inconsistent behavior.
 2. Centralized memoized/composed selectors (chosen)
-    - Reduces duplication and supports consistent derivation patterns.
-    - Improves performance by limiting recomputation and rerenders.
+   - Reduces duplication and supports consistent derivation patterns.
+   - Improves performance by limiting recomputation and rerenders.
 
 ## Trade-offs
 

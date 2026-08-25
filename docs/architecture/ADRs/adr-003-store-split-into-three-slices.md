@@ -20,11 +20,11 @@ This separation aligns with user interaction patterns and keeps logic for each d
 ## Options Considered
 
 1. **Single slice for all state (e.g., `projectsSlice`)**
-    - Would complicate logic for rendering and manipulating multiple projects and their resources/revisions.
-    - Increases coupling and reduces clarity.
+   - Would complicate logic for rendering and manipulating multiple projects and their resources/revisions.
+   - Increases coupling and reduces clarity.
 2. **Three-slice structure (chosen)**
-    - Simple, clear, and matches how users interact with the app.
-    - Each slice is responsible for a single domain, improving maintainability and testability.
+   - Simple, clear, and matches how users interact with the app.
+   - Each slice is responsible for a single domain, improving maintainability and testability.
 
 ## Trade-offs
 

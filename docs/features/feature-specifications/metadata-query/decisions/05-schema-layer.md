@@ -102,18 +102,18 @@ project-config sidecars, and the engine treats them as if they were
 declared fields. They are not added to `metadataSchema` — they're
 synthetic, computed during query evaluation.
 
-| Intrinsic field | Type | Source |
-|-----------------|------|--------|
-| `type`        | `select` (text/image/audio/folder) | `ResourceBase.type` |
-| `folderId`    | `resource-ref` (target=folder)     | `ResourceBase.folderId` |
-| `wordCount`   | `number`                           | `TextResource.wordCount` |
-| `charCount`   | `number`                           | `TextResource.charCount` |
-| `createdAt`   | `date`                             | `ResourceBase.createdAt` |
-| `updatedAt`   | `date`                             | `ResourceBase.updatedAt` |
-| `statuses`    | `multiselect` (opts=config.statuses)| `ResourceBase.statuses` |
-| `tags`        | `multi-resource-ref`               | `config.tagAssignments[resourceId]` |
-| `linkedFrom`  | `multi-resource-ref`               | `BacklinkIndex[resourceId]` (sources) |
-| `linksTo`     | `multi-resource-ref`               | `BacklinkIndex` inverted lookup |
+| Intrinsic field | Type                                 | Source                                |
+| --------------- | ------------------------------------ | ------------------------------------- |
+| `type`          | `select` (text/image/audio/folder)   | `ResourceBase.type`                   |
+| `folderId`      | `resource-ref` (target=folder)       | `ResourceBase.folderId`               |
+| `wordCount`     | `number`                             | `TextResource.wordCount`              |
+| `charCount`     | `number`                             | `TextResource.charCount`              |
+| `createdAt`     | `date`                               | `ResourceBase.createdAt`              |
+| `updatedAt`     | `date`                               | `ResourceBase.updatedAt`              |
+| `statuses`      | `multiselect` (opts=config.statuses) | `ResourceBase.statuses`               |
+| `tags`          | `multi-resource-ref`                 | `config.tagAssignments[resourceId]`   |
+| `linkedFrom`    | `multi-resource-ref`                 | `BacklinkIndex[resourceId]` (sources) |
+| `linksTo`       | `multi-resource-ref`                 | `BacklinkIndex` inverted lookup       |
 
 The chip UI and AST treat these like any other field. The query
 evaluator knows where to fetch each one.
@@ -139,14 +139,14 @@ Two options for `linkedFrom` / `linksTo` to be useful as query
 predicates:
 
 a) **Extend `backlinks.ts`** to scan sidecars for `resource-ref` and
-   `multi-resource-ref` values and contribute them to the index. This
-   makes "scenes whose POV is Mara" queryable as
-   `linkedFrom includes mara-id` from Mara's perspective.
+`multi-resource-ref` values and contribute them to the index. This
+makes "scenes whose POV is Mara" queryable as
+`linkedFrom includes mara-id` from Mara's perspective.
 
 b) **Don't extend; query directly on `resource-ref` field values.**
-   `pov is mara` already works as a direct field predicate. The
-   `linkedFrom`/`linksTo` intrinsics would only surface prose-derived
-   links.
+`pov is mara` already works as a direct field predicate. The
+`linkedFrom`/`linksTo` intrinsics would only surface prose-derived
+links.
 
 Recommendation: **option (a)**. Without it, the user has to know
 whether a link was made in prose vs. metadata to ask the right
@@ -156,7 +156,7 @@ backlinks extractor.
 ### Observed fields — open question, default NO
 
 Today, every sidebar-renderable field must be declared in
-`metadataSchema`. The system *will* accept arbitrary keys in a sidecar
+`metadataSchema`. The system _will_ accept arbitrary keys in a sidecar
 JSON (`Record<string, MetadataValue>`), but they're invisible in the
 UI — never rendered, never queried.
 
@@ -165,6 +165,7 @@ in sidecars auto-promote to a queryable but-not-yet-declared field.
 This is a new concept. Weigh:
 
 **Arguments for adding observed:**
+
 - Lets writers jot ad-hoc metadata in flow without context-switching
   to SchemaManager.
 - Provides a discovery path ("you've been writing `tone` on a lot of
@@ -172,6 +173,7 @@ This is a new concept. Weigh:
 - Lowers the floor for query feature uptake.
 
 **Arguments against:**
+
 - The sidebar's existing `+ Add field` already creates a declared
   field in one click. The friction it eliminates may be small.
 - Introduces a new layer (with inference, promotion UX, type-conflict

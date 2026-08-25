@@ -24,6 +24,7 @@ Tags are stored in `project.json`:
 ```
 
 **`config.tags`** — Array of tag objects:
+
 - `id` (UUID): stable identifier for the tag
 - `name` (string): display label
 - `color` (string, optional): hex color for the tag chip
@@ -36,14 +37,14 @@ Tags are stored in `project.json`:
 
 `frontend/src/lib/models/tags.ts` provides CRUD operations for tags and assignments:
 
-| Function | Description |
-| --- | --- |
-| Create tag | Generates a UUID, appends to `config.tags`, writes `project.json` |
-| Rename tag | Finds tag by ID, updates `name`, writes `project.json` |
-| Delete tag | Removes from `config.tags` and all entries in `config.tagAssignments` |
-| Assign tag to resource | Adds tag UUID to `config.tagAssignments[resourceId]` |
-| Remove tag from resource | Removes tag UUID from `config.tagAssignments[resourceId]` |
-| List tags for resource | Reads `config.tagAssignments[resourceId]` and resolves tag objects |
+| Function                 | Description                                                           |
+| ------------------------ | --------------------------------------------------------------------- |
+| Create tag               | Generates a UUID, appends to `config.tags`, writes `project.json`     |
+| Rename tag               | Finds tag by ID, updates `name`, writes `project.json`                |
+| Delete tag               | Removes from `config.tags` and all entries in `config.tagAssignments` |
+| Assign tag to resource   | Adds tag UUID to `config.tagAssignments[resourceId]`                  |
+| Remove tag from resource | Removes tag UUID from `config.tagAssignments[resourceId]`             |
+| List tags for resource   | Reads `config.tagAssignments[resourceId]` and resolves tag objects    |
 
 All operations read the current `project.json`, apply the change, and write back atomically.
 

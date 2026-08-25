@@ -1,8 +1,9 @@
 # Slice 06 — Projects & Types
 
-**Risk:** 🟡  **~6k lines.** Layer: core + store + api + UI. Contains a >1000-line file.
+**Risk:** 🟡 **~6k lines.** Layer: core + store + api + UI. Contains a >1000-line file.
 
 ## Scope
+
 - **Core:** `project-creator.ts` (346), `project-loader.ts` (100), `project-config.ts` (95),
   `projects-dir.ts` (15), `project.ts` (64), `project-view.ts` (22),
   `project-view-adapter.ts` (111), `project-features.ts` (110),
@@ -18,20 +19,24 @@
   `components/preferences/` (1570).
 
 ## Goal
+
 `projectsSlice.ts` (1058) is the brevity target — decompose by concern
 (selection, metadata, reorder, lifecycle). `Start/` and `preferences/` share form
 patterns worth unifying.
 
 ## Watch out for
+
 - Project creation scaffolds the on-disk folder tree from a project-type spec —
   folder layout and default metadata must be unchanged.
 - `projects-dir.ts` honors `GETWRITE_PROJECTS_DIR` (Electron) — keep that behavior.
 
 ## Gate (from `frontend/`)
+
 ```bash
 pnpm typecheck && pnpm lint && pnpm exec vitest run \
   unit/project-loader unit/project-config unit/project-type unit/project-types \
   unit/user-preferences unit/version-check-route projectFeatureToggles start \
   create-project-modal createProjectModal.error update-notice shellSettingsMenuVersion
 ```
+
 Then `pnpm knip` at repo root.

@@ -31,7 +31,7 @@ both the Node and native/static-export build paths.
 Argon2id via `@noble/hashes` at m=19 MiB, t=2, p=1; AES-256-GCM via
 `globalThis.crypto.subtle`, which exists in both Node 24 and the Android WebView
 (Capacitor defaults Android to `https://localhost`, a secure context). No dual
-implementation needed, so the estimate drops from 5 to 3. Store salt *and*
+implementation needed, so the estimate drops from 5 to 3. Store salt _and_
 Argon2id parameters in plaintext so they can be raised later without invalidating
 projects.
 **Done:** [x] — `@noble/hashes@2.2.0` added (zero runtime deps). 24 tests
@@ -53,7 +53,7 @@ distinguishable from an envelope.
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** The version byte makes future cipher/framing rotation possible without
-a migration. **Correction to an earlier note here:** it should *not* carry the
+a migration. **Correction to an earlier note here:** it should _not_ carry the
 KDF parameters. Files are sealed under a per-project data key, never under the
 passphrase-derived key, so raising Argon2id cost rewraps the keyring (Task 3) and
 leaves every file byte-identical — putting KDF params in each file would be both
@@ -82,10 +82,10 @@ unwrapped key; per-project data keys are independently random (FR5, FR6).
 **Notes:** Store salt + KDF params in plaintext (FR5). The keyring file lives at
 the workspace (projects-dir) root, not inside any project.
 **Done:** [x] — 34 tests. Keyring at `<projectsDir>/.getwrite-keyring.json`,
-read/written through the plain adapter (it must be readable *before* any project
+read/written through the plain adapter (it must be readable _before_ any project
 can be decrypted, so it can never sit behind the encrypting adapter).
 Wrong-passphrase detection uses a sealed known-plaintext verifier.
-`changePassphrase` re-seals from the *wrapped* material rather than the in-memory
+`changePassphrase` re-seals from the _wrapped_ material rather than the in-memory
 handles, since `CryptoKey`s are non-extractable by design — that is what makes a
 passphrase change a rewrap and not a data migration.
 **Side effect on `listProjectsCore`:** it treated every entry under the projects
@@ -105,7 +105,7 @@ text and binary through `readFile`/`readFileBuffer`/`writeFile`/`copyFile`/`cp`/
 `rename`, and on-disk bytes are verified to contain no plaintext (FR10, FR14).
 **Depends on:** 3
 **Estimate:** 5
-**Notes:** `readFile` must decrypt *then* decode to the requested encoding.
+**Notes:** `readFile` must decrypt _then_ decode to the requested encoding.
 `stat().size` will report ciphertext length — ADR-019's reconnaissance confirmed
 the model layer never reads `size`, so this is safe, but assert it stays true.
 `copyFile`/`rename` within one project can move ciphertext without re-sealing.
@@ -114,7 +114,7 @@ whole keyring. The decorator is scoped to one project and knows nothing about
 path→project mapping; keeping that in Task 8 is what lets an unencrypted project
 run through a chain containing no crypto code (FR3, FR12).
 `readFile` must call the inner adapter's `readFileBuffer`, never its `readFile` —
-the latter would UTF-8-decode *ciphertext*. Unsupported encodings throw rather
+the latter would UTF-8-decode _ciphertext_. Unsupported encodings throw rather
 than return mangled text; a survey found the model layer only ever passes
 `utf8`/`utf-8`. Reads are strict: plaintext where ciphertext is expected is
 rejected as a downgrade (tolerant mode is Task 15, gated on a conversion marker).
@@ -151,9 +151,9 @@ template edit, so it stays kilobytes for any realistic project. A per-line
 sealed-record format would add a second on-disk format to maintain and test for
 no measurable gain; revisit only if a project turns up with a large log.
 
-*(Record repaired 2026-08-05: this was completed and committed alongside T19/T20,
+_(Record repaired 2026-08-05: this was completed and committed alongside T19/T20,
 but the edit that marked it done silently failed to match, so the file showed it
-as outstanding.)*
+as outstanding.)_
 
 ### Task 6: Conformance suite coverage
 
@@ -204,7 +204,7 @@ holds only `version`/`encrypted`/`encryptedAt` — no name, no id. Index
 `<workspaceRoot>/.getwrite-names`, sealed under the workspace key.
 
 Both take an **explicit adapter** rather than the ambient storage context: each
-must be legible *before* a project can be decrypted, and during Task 8's adapter
+must be legible _before_ a project can be decrypted, and during Task 8's adapter
 resolution the ambient adapter is not yet the one the project will use. Writes
 reuse `runForTenant`/`runInStorageContext` so the tested atomic+durable path is
 shared rather than reimplemented.
@@ -238,7 +238,7 @@ encrypted project decrypt transparently (FR3, FR12).
 **Depends on:** 4, 7
 **Estimate:** 5
 **Notes:** Real design tension: `StorageContext` binds one adapter per
-`tenantRoot`, but encryption is per *project*. Project-scoped entry points can
+`tenantRoot`, but encryption is per _project_. Project-scoped entry points can
 resolve per project; `listProjectsCore` spans all projects and needs the marker
 (Task 7) rather than a per-project adapter.
 **Done:** [x] — 15 tests, in `crypto/adapter-selection.ts`.
@@ -249,7 +249,7 @@ one-adapter-per-`tenantRoot` seam to be project-aware would have changed a
 contract every existing caller depends on; `resolveProjectAdapter` +
 `runInProjectContext` compose over it instead, and nothing pre-existing changed.
 
-FR12 is satisfied *by identity* — an unencrypted project gets `baseAdapter`
+FR12 is satisfied _by identity_ — an unencrypted project gets `baseAdapter`
 itself, not a pass-through wrapper. Mutation-verified: returning `{...base}`
 (behaviourally identical) fails three tests.
 
@@ -278,7 +278,7 @@ unlocked, all projects list normally with names resolved via the sealed index
 (FR20, FR21).
 **Depends on:** 8
 **Estimate:** 5
-**Notes:** `listProjectsCore` reads `project.json`, `folders/`, *and* every
+**Notes:** `listProjectsCore` reads `project.json`, `folders/`, _and_ every
 resource per project — all encrypted — so a locked project cannot produce a
 normal `ProjectListEntry`. This needs a discriminated locked/unlocked entry
 shape flowing through `buildProjectView` and `StartPage`, which is why the
@@ -394,7 +394,7 @@ component test can: nothing enables encryption on mount, on opening the modal,
 on cancelling, or without every gate met — and an encrypted project offers no
 enable action (nor a disable one, since v1 has no in-place decryption). The
 remaining exclusions — upgrade, project type, template, import, config, env — are
-assertions about code paths that *do not exist*, so there is nothing to render
+assertions about code paths that _do not exist_, so there is nothing to render
 and nothing to test here. They are properly enforced by review and by Task 20's
 server-side fail-closed check, not by this component.
 
@@ -440,7 +440,7 @@ until a locked card offers an open action, which it deliberately does not yet.
 
 ### Task 13: Exclusive project write barrier
 
-**What:** A project-level exclusive lock that blocks *all* writes to a project
+**What:** A project-level exclusive lock that blocks _all_ writes to a project
 for the duration of a conversion, not just metadata operations.
 **Files:** `frontend/src/lib/models/crypto/write-barrier.ts` (new),
 `frontend/src/lib/models/resource-persistence.ts`,
@@ -453,7 +453,7 @@ converted project.
 **Depends on:** 8
 **Estimate:** 3
 **Notes:** **Found by spike** (`conversion-spike.md`, Hazard 1) — this is where
-the real difficulty in the old Task 13 actually lived. `withMetaLock` is *not*
+the real difficulty in the old Task 13 actually lived. `withMetaLock` is _not_
 sufficient: `resource-persistence.ts`, the content save path, does not use it,
 so editor autosaves bypass it entirely. Prefer failing fast with a clear "project
 is being converted" error over silent blocking.
@@ -461,15 +461,15 @@ is being converted" error over silent blocking.
 
 **Two deviations, both deliberate:**
 
-1. *Module location* — `models/write-barrier.ts`, not `crypto/`. It is a
+1. _Module location_ — `models/write-barrier.ts`, not `crypto/`. It is a
    concurrency primitive (sibling to `locks.ts`/`meta-locks.ts`), and having
    `io.ts` import from `crypto/` would invert the layering.
-2. *Enforcement point* — the check lives in `io.ts`'s mutating wrappers, keyed
+2. _Enforcement point_ — the check lives in `io.ts`'s mutating wrappers, keyed
    off a new optional `StorageContext.projectRoot`, rather than in
    `resource-persistence.ts` and friends. Enumerating write paths is exactly
    what these notes warned is easy to leave 90% done; every write already
    funnels through these wrappers, so this catches all of them by construction.
-   It also has to be checked at *write* time — a barrier acquired after a
+   It also has to be checked at _write_ time — a barrier acquired after a
    request resolved its adapter would otherwise miss that request's writes.
 
 FR12's identity guarantee survives: the adapter chain is untouched, so an
@@ -491,7 +491,7 @@ which the sweep depends on. Full suite green (2823) after the `io.ts` change; th
 (`convertProject(direction)`) driven by an idempotent sweep.
 **Files:** `frontend/src/lib/models/crypto/convert-project.ts` (new),
 `frontend/tests/unit/convert-project.test.ts` (new)
-**Done when:** Both directions complete correctly; a crash injected at *every*
+**Done when:** Both directions complete correctly; a crash injected at _every_
 I/O operation index leaves the project openable and resumable; re-running the
 conversion is a no-op; no orphan `.tmp` or marker survives (FR22, FR25).
 **Depends on:** 6, 13
@@ -514,8 +514,8 @@ ever stopped finding files.
 
 **Mutation testing found a real hole in my own invariants.** Reordering step 3
 and step 4 (deleting the conversion marker before flipping the project marker)
-passed all 11 tests, because the mid-crash check read files in *either* form and
-so never verified that a reader *following the markers* could open them. Added
+passed all 11 tests, because the mid-crash check read files in _either_ form and
+so never verified that a reader _following the markers_ could open them. Added
 the missing invariant: with no conversion marker present, the project's declared
 state must agree with the actual form of every file. That now catches the
 reordering at crash point 41. Removing the already-in-target-form skip fails 3
@@ -527,7 +527,7 @@ files from an interrupted atomic write are deleted and the file redone; the
 original is always intact, because the rename never ran.
 
 The sweep works on raw bytes through the plain adapter, never the encrypting
-decorator: it is the thing that *produces* ciphertext, so it cannot also read
+decorator: it is the thing that _produces_ ciphertext, so it cannot also read
 through something that assumes ciphertext exists.
 
 ### Task 15: Tolerant-read mode
@@ -542,7 +542,7 @@ rejected as a downgrade (FR22).
 **Depends on:** 14
 **Estimate:** 2
 **Notes:** **Found by spike** (Hazard 3). Tolerance is what keeps an interrupted
-conversion openable, but a tolerant *default* would be a permanent downgrade
+conversion openable, but a tolerant _default_ would be a permanent downgrade
 vector. Gate it on marker presence only; the exposure window is then bounded by
 conversion duration (seconds, for a ~75-file project).
 **Done:** [x] — 16 tests (7 adapter, 3 resolution, plus existing strict-mode
@@ -553,7 +553,7 @@ encrypted") is passed through. `EnvelopeIntegrityError` ("encrypted and
 untrustworthy") still throws, tolerant or not — the first is an expected
 mid-conversion state, the second never is.
 
-**The conversion marker, not the project marker, decides.** Mid-*encrypt* the
+**The conversion marker, not the project marker, decides.** Mid-_encrypt_ the
 project marker does not exist yet, so consulting it alone would hand a
 half-sealed project to the base adapter and read ciphertext as content.
 `resolveProjectAdapter` now reads both, and an in-flight conversion is decisive
@@ -586,7 +586,7 @@ blocked project.
 keyring → persist the project's data key → record its name in the sealed index →
 sweep.
 
-**Order is load-bearing:** the key is persisted *before* any file is sealed. The
+**Order is load-bearing:** the key is persisted _before_ any file is sealed. The
 reverse would leave a crash window producing ciphertext no key can open — the one
 genuinely unrecoverable failure this feature could cause.
 
@@ -626,14 +626,14 @@ convert. Any future feature split this way needs an explicit integration task.
 
 The keyring is **server-side** on web and desktop: the model layer needs
 `node:fs`, so the browser cannot call `keyring-session.ts` directly. `cryptoSlice`
-now goes through `/api/encryption`, which returns lock *state* and never key
+now goes through `/api/encryption`, which returns lock _state_ and never key
 material. One route with an action discriminator, since every operation shares
 the same guard, failure mapping, and lifecycle.
 
 **Native is not wired here.** Android runs these modules in-process and needs the
 `createTransport` HTTP/native pair — that belongs with Task 21.
 
-Two bugs found while wiring: Redux Toolkit hands reducers a *serialised* error,
+Two bugs found while wiring: Redux Toolkit hands reducers a _serialised_ error,
 so the `instanceof Error` check in `getErrorMessage` discarded every server
 message; and a `checkWorkspaceLock` dispatch inside the settings panel added a
 `fetch` to every screen hosting it, breaking 8 existing tests. Lock state is now
@@ -696,8 +696,8 @@ suffixed "(unencrypted copy)", so it simply appears on the Start screen. An
 escape hatch is only an escape hatch if the user can open what comes out of it;
 two projects sharing an internal id would also collide in the store.
 
-**Limit of the sweep, worth recording:** it finds *unreachable* code, not
-*under-adopted* seams. Before Task 8b, `runInProjectContext` had one production
+**Limit of the sweep, worth recording:** it finds _unreachable_ code, not
+_under-adopted_ seams. Before Task 8b, `runInProjectContext` had one production
 caller and would have passed this sweep clean — the bug was "one caller where
 fifty were needed", which counting cannot see. Three integration gaps (16b, 8b,
 the post-unlock refresh) were all found by running the app, not by any automated
@@ -727,7 +727,7 @@ FR15 asks for; a second module would have duplicated the hierarchy.
 Most of this task had already landed piecemeal — the distinct types in Task 2,
 tampered-file coverage in Task 4, untouched-on-unresolvable-key in Task 8, and
 list-rather-than-drop in Task 9. What was missing was proof that the distinction
-survives the *real* request path, and an audit of FR26's actual risk.
+survives the _real_ request path, and an audit of FR26's actual risk.
 
 **Audit result: nothing repairs a file that fails integrity.** A scan of every
 `catch` block in `src/lib/models/` that writes or deletes found exactly one —
@@ -764,7 +764,7 @@ The spike verified an encrypt→decrypt round trip is byte-identical to the
 original.
 **Done:** [x] — 9 integration tests, in `crypto/export-plaintext.ts`.
 
-**File deviation:** not `export-core.ts`, which exports a *resource* to
+**File deviation:** not `export-core.ts`, which exports a _resource_ to
 text/markdown — an unrelated concept. Putting a project-tree export there would
 have conflated the two.
 
@@ -809,7 +809,7 @@ stays a position/canonical marker, never an alert.
 server-side attempt to enable encryption is rejected (FR23).
 **Depends on:** 11
 **Estimate:** 2
-**Notes:** Fail-closed on the *server* signal, not a client check — a client-only
+**Notes:** Fail-closed on the _server_ signal, not a client check — a client-only
 gate would leave the API reachable.
 **Done:** [x] — 4 tests, in `crypto/encryption-availability.ts`.
 `assertEncryptionAvailable()` runs at the top of `enableProjectEncryption`,
@@ -840,14 +840,14 @@ measured on-device) and **`crypto.subtle` availability** under Capacitor's
 with byte-identical output and no migration.
 **Done:** [ ] — **partly explored; nothing landed.** Split into two pieces in
 `follow-up-work.md`: the `createTransport` native pair (~3 pts, code only —
-encryption does *not* function on native until it exists) and on-device
+encryption does _not_ function on native until it exists) and on-device
 measurement (~2 pts). The device pipeline is proven end to end on a Pixel 7 Pro
 and the exact working command sequence is recorded there, including that
 Android Studio's bundled JDK 21 is what builds and that a warm resume will not
 re-run the harness. The harness crypto checks were written and lost before
 reaching the bundle; they need re-adding.
 
-Real measurements taken from the device *did* confirm the ~10 MB/s Capacitor
+Real measurements taken from the device _did_ confirm the ~10 MB/s Capacitor
 bridge figure that FR28's argument rests on — since AES-GCM measured
 2,500–4,500 MB/s on desktop, the throughput half of FR28 is safe by inference.
 What remains unmeasured is `crypto.subtle` availability and unlock latency.
@@ -886,7 +886,7 @@ The keyring names the project's UUID, which is already the directory name — no
 new disclosure.
 
 **Unrelated finding, raised separately:** the packaged build stores projects
-*inside the application bundle* (`process.resourcesPath`). See
+_inside the application bundle_ (`process.resourcesPath`). See
 `follow-up-work.md` — it is a data-loss risk on upgrade and is not caused by
 this feature.
 

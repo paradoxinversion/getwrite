@@ -9,9 +9,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "baseUrl": ".",
-    "paths": {
-      "@gw/core": ["../frontend/src/lib/core.ts"]
-    },
+    "paths": { "@gw/core": ["../frontend/src/lib/core.ts"] },
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]

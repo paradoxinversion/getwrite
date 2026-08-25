@@ -37,6 +37,7 @@ and renders controls dynamically. Existing hardcoded fields migrate into the sch
 built-in entries.
 
 **Pros:**
+
 - Single source of truth; schema travels with the project file
 - No new file to read; schema is already present when the project loads
 - Enables cross-resource queries: all resources share the same field key namespace
@@ -45,6 +46,7 @@ built-in entries.
 - Folder-scoped groups naturally replace and generalise the existing `metadataSource` pattern
 
 **Cons:**
+
 - `project.json` grows in complexity; large schemas with many fields will inflate it
 - Schema and resource data are coupled to the project load path (a slow schema parse affects
   project open time)
@@ -58,10 +60,12 @@ The schema lives in a dedicated file inside the project's `meta/` directory rath
 `project.json`.
 
 **Pros:**
+
 - `project.json` stays lean
 - Schema and project identity are independently versioned in git
 
 **Cons:**
+
 - A new read/write path must be added to the API surface
 - The project hydration flow must perform an additional async read before the sidebar can render
 - Deployment complexity: two files must remain in sync to represent one project configuration
@@ -75,10 +79,12 @@ concept is introduced. Folder resources show folder-declared fields; non-folder 
 nothing custom.
 
 **Pros:**
+
 - Smallest surface area change
 - Does not touch project.json
 
 **Cons:**
+
 - Cannot express global fields (fields visible for every resource regardless of folder)
 - The schema is distributed across N folder files; cross-resource queries must aggregate N reads
 - Built-in fields (synopsis, notes, etc.) would remain hardcoded and not migrate
@@ -92,10 +98,12 @@ Users add arbitrary key-value fields to individual resources directly in the sid
 has a name, a value, and an inferred or user-selected type. No project-level definition.
 
 **Pros:**
+
 - Maximum flexibility per resource
 - No schema management UI required
 
 **Cons:**
+
 - Fields cannot be queried uniformly across resources (no shared key namespace)
 - Users must re-invent the same field on every resource independently
 - No resource-reference semantics possible without a project-level registry
@@ -113,42 +121,47 @@ Option 1 was chosen because it is the only approach that simultaneously satisfie
 (b) a natural home in the already-loaded project document,
 (c) a credible migration path for existing fields,
 (d) the ability to express the `resource-ref` type which is central to the long-term data
-    connection vision.
+connection vision.
 
 ### Schema structure
 
 ```typescript
 interface ResourceRef {
-    id: string | null;  // UUID when resolved; null when the referenced resource is deleted
-    name: string;       // display name — always preserved even when id is null
+  id: string | null; // UUID when resolved; null when the referenced resource is deleted
+  name: string; // display name — always preserved even when id is null
 }
 
 type MetadataFieldType =
-    | 'text' | 'number' | 'date' | 'boolean'
-    | 'select' | 'multiselect' | 'resource-ref';
+  | "text"
+  | "number"
+  | "date"
+  | "boolean"
+  | "select"
+  | "multiselect"
+  | "resource-ref";
 
 interface MetadataFieldDef {
-    id: string;                 // UUID — stable across renames
-    key: string;                // slug used as userMetadata key
-    name: string;               // display label
-    type: MetadataFieldType;
-    options?: string[];         // select / multiselect only
-    targetFolders?: string[];   // resource-ref only — folder IDs to source from
-    multiple?: boolean;         // resource-ref only — allow multiple selections
-    locked?: boolean;           // built-in migrated fields cannot be deleted from UI
-    orderIndex: number;
+  id: string; // UUID — stable across renames
+  key: string; // slug used as userMetadata key
+  name: string; // display label
+  type: MetadataFieldType;
+  options?: string[]; // select / multiselect only
+  targetFolders?: string[]; // resource-ref only — folder IDs to source from
+  multiple?: boolean; // resource-ref only — allow multiple selections
+  locked?: boolean; // built-in migrated fields cannot be deleted from UI
+  orderIndex: number;
 }
 
 interface MetadataGroup {
-    id: string;
-    name: string;
-    fields: MetadataFieldDef[];
-    orderIndex: number;
+  id: string;
+  name: string;
+  fields: MetadataFieldDef[];
+  orderIndex: number;
 }
 
 interface MetadataSchema {
-    globalGroups: MetadataGroup[];
-    folderSchemas?: Array<{ folderId: string; groups: MetadataGroup[] }>;
+  globalGroups: MetadataGroup[];
+  folderSchemas?: Array<{ folderId: string; groups: MetadataGroup[] }>;
 }
 ```
 
@@ -170,15 +183,15 @@ disappearing.
 
 The existing hardcoded fields map to locked schema entries as follows:
 
-| Old field      | Schema key     | Type           | Group           |
-|----------------|----------------|----------------|-----------------|
-| synopsis       | synopsis       | text           | Document        |
-| notes          | notes          | text           | Document        |
-| status         | status         | select         | Document        |
-| pov            | pov            | resource-ref   | Document        |
-| storyDate      | storyDate      | date           | Story Timeline  |
-| storyDuration  | storyDuration  | number         | Story Timeline  |
-| storyEndDate   | storyEndDate   | date           | Story Timeline  |
+| Old field     | Schema key    | Type         | Group          |
+| ------------- | ------------- | ------------ | -------------- |
+| synopsis      | synopsis      | text         | Document       |
+| notes         | notes         | text         | Document       |
+| status        | status        | select       | Document       |
+| pov           | pov           | resource-ref | Document       |
+| storyDate     | storyDate     | date         | Story Timeline |
+| storyDuration | storyDuration | number       | Story Timeline |
+| storyEndDate  | storyEndDate  | date         | Story Timeline |
 
 Migration is lazy: if a project has no `metadataSchema` in its config, the default schema is
 injected in Redux on first sidebar load. The existing `userMetadata` values for these keys are

@@ -1,7 +1,7 @@
 # Spike: crash-safe resumable bidirectional conversion
 
-Resolves the Task 13 risk in `tasks.md`: *"crash-safe AND resumable AND
-bidirectional is three hard properties at once."*
+Resolves the Task 13 risk in `tasks.md`: _"crash-safe AND resumable AND
+bidirectional is three hard properties at once."_
 
 **Outcome: two of the three properties are free; the third is a different problem
 than the estimate assumed.** Scripts: `convert-spike.mjs`, `convert-hazards.mjs`
@@ -42,20 +42,20 @@ half-converted project openable per FR22.
 
 ## 2. Verification: exhaustive crash injection
 
-Not sampled — a crash was injected at *every* I/O operation index, then the
+Not sampled — a crash was injected at _every_ I/O operation index, then the
 conversion resumed and the invariants checked.
 
-| Pass | Scenarios | Result |
-| --- | --- | --- |
-| Single crash + resume (encrypt) | 29 | 29 pass, 0 fail |
-| Double crash + resume | 174 | 174 pass, 0 fail |
-| encrypt → decrypt round trip | 1 | byte-identical to original |
-| Crash at each op, decrypt direction | 29 | 29 pass, 0 fail |
-| Strict read rejects swapped-in plaintext | 1 | rejected |
+| Pass                                     | Scenarios | Result                     |
+| ---------------------------------------- | --------- | -------------------------- |
+| Single crash + resume (encrypt)          | 29        | 29 pass, 0 fail            |
+| Double crash + resume                    | 174       | 174 pass, 0 fail           |
+| encrypt → decrypt round trip             | 1         | byte-identical to original |
+| Crash at each op, decrypt direction      | 29        | 29 pass, 0 fail            |
+| Strict read rejects swapped-in plaintext | 1         | rejected                   |
 
 Invariants asserted after every scenario: no file lost, no file corrupt, no
 orphaned `.tmp`, no marker left behind, declared state matches actual file state.
-Additionally, at *each mid-crash state*, every file was asserted readable in
+Additionally, at _each mid-crash state_, every file was asserted readable in
 tolerant mode — FR22's "openable, never half-readable" claim.
 
 **232 scenarios, no failures.**

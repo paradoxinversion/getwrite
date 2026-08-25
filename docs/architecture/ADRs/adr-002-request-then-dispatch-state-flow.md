@@ -24,12 +24,12 @@ State changes in GetWrite follow a request-then-dispatch flow:
 ## Trade-offs
 
 - **Pros:**
-    - Simpler implementation for local-first, single-user use case
-    - No risk of sync conflicts or race conditions
-    - Predictable, explicit state transitions
+  - Simpler implementation for local-first, single-user use case
+  - No risk of sync conflicts or race conditions
+  - Predictable, explicit state transitions
 - **Cons:**
-    - Collaborative editing is not feasible in v1
-    - No support for multi-device or real-time updates
+  - Collaborative editing is not feasible in v1
+  - No support for multi-device or real-time updates
 
 ## Consequences
 

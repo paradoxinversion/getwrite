@@ -251,7 +251,17 @@ components:
           type: string
         type:
           type: string
-          enum: [text, number, date, boolean, select, multiselect, resource-ref, multi-resource-ref]
+          enum:
+            [
+              text,
+              number,
+              date,
+              boolean,
+              select,
+              multiselect,
+              resource-ref,
+              multi-resource-ref,
+            ]
         locked:
           type: boolean
         deprecated:
@@ -385,7 +395,6 @@ components:
           type: string
 
 paths:
-
   # ── Projects ──────────────────────────────────────────────────────────────
 
   /api/projects:

@@ -42,10 +42,10 @@ The shell does not contain routing logic — it is always rendered once a projec
 
 There are two directories related to the resource tree:
 
-| Directory | Contents | Role |
-| --- | --- | --- |
-| `Tree/` | `ResourceTree.tsx`, `ResourceContextMenu.tsx`, `CreateResourceModal.tsx` | **Current implementation** — the full hierarchical resource navigator with context menus and resource creation |
-| `ResourceTree/` | `ResourceTree.tsx` (icons only), `ResourceTreeIcons.tsx` | **Legacy residue** — contains only icon mappings used by the old tree. `ResourceTree.tsx` here is the older implementation; the active one is in `Tree/`. |
+| Directory       | Contents                                                                 | Role                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tree/`         | `ResourceTree.tsx`, `ResourceContextMenu.tsx`, `CreateResourceModal.tsx` | **Current implementation** — the full hierarchical resource navigator with context menus and resource creation                                            |
+| `ResourceTree/` | `ResourceTree.tsx` (icons only), `ResourceTreeIcons.tsx`                 | **Legacy residue** — contains only icon mappings used by the old tree. `ResourceTree.tsx` here is the older implementation; the active one is in `Tree/`. |
 
 Use `Tree/ResourceTree.tsx` for all current development. The `ResourceTree/` directory exists for reference only.
 
@@ -55,13 +55,13 @@ Use `Tree/ResourceTree.tsx` for all current development. The `ResourceTree/` dir
 
 The WorkArea renders one active view at a time, switched via `ViewSwitcher.tsx`. Available views:
 
-| Component | Description |
-| --- | --- |
-| `EditView.tsx` | TipTap rich text editor — the primary writing surface |
+| Component                         | Description                                               |
+| --------------------------------- | --------------------------------------------------------- |
+| `EditView.tsx`                    | TipTap rich text editor — the primary writing surface     |
 | `OrganizerView/OrganizerView.tsx` | Card/grid view for reordering resources via drag-and-drop |
-| `DataView.tsx` | Tabular metadata view across resources |
-| `DiffView.tsx` | Side-by-side diff of two revision versions |
-| `TimelineView.tsx` | Timeline visualization using `timeframe` userMetadata |
+| `DataView.tsx`                    | Tabular metadata view across resources                    |
+| `DiffView.tsx`                    | Side-by-side diff of two revision versions                |
+| `TimelineView.tsx`                | Timeline visualization using `timeframe` userMetadata     |
 
 `ViewSwitcher.tsx` renders the tab bar and manages which view is active. It dispatches Redux actions to set the selected view and guards unavailable views (e.g., Diff requires a revision to be selected).
 
@@ -72,6 +72,7 @@ The WorkArea renders one active view at a time, switched via `ViewSwitcher.tsx`.
 `TipTapEditor.tsx` is the main editor component. It initializes the TipTap instance, applies the GetWrite extension set, and connects to Redux for autosave and revision control.
 
 Supporting components:
+
 - `MenuBar/MenuBar.tsx` — Floating/attached formatting toolbar
 - `MenuBar/EditorMenuIconGroup.tsx`, `EditorMenuIcon.tsx`, `EditorMenuInput.tsx`, `EditorMenuColorSubmenu.tsx` — Toolbar UI primitives
 - `RevisionControl/RevisionControl.tsx` — Sidebar panel for viewing, saving, and restoring revisions
@@ -106,13 +107,13 @@ Shown before a project is loaded:
 
 Reusable overlays and dialogs used across multiple features:
 
-| Component | Description |
-| --- | --- |
-| `CompilePreviewModal.tsx` | Preview compiled/exported manuscript output |
-| `ExportPreviewModal.tsx` | Preview export options before exporting |
-| `ConfirmDialog.tsx` | Generic confirmation prompt (used for delete flows) |
+| Component                    | Description                                           |
+| ---------------------------- | ----------------------------------------------------- |
+| `CompilePreviewModal.tsx`    | Preview compiled/exported manuscript output           |
+| `ExportPreviewModal.tsx`     | Preview export options before exporting               |
+| `ConfirmDialog.tsx`          | Generic confirmation prompt (used for delete flows)   |
 | `ResourceCommandPalette.tsx` | Keyboard-driven resource quick-open / command palette |
-| `ToastProvider.tsx` | React context provider for toast notifications |
+| `ToastProvider.tsx`          | React context provider for toast notifications        |
 
 ---
 
@@ -146,18 +147,18 @@ Reusable overlays and dialogs used across multiple features:
 
 ## Source Files Quick Reference
 
-| Path | Role |
-| --- | --- |
-| `components/Layout/AppShell.tsx` | Root workspace shell |
-| `components/Layout/ShellLayoutController.tsx` | Panel layout and collapse logic |
-| `components/Layout/ShellModalCoordinator.tsx` | Project-level overlay mounting point |
-| `components/Tree/ResourceTree.tsx` | Current resource tree (use this) |
-| `components/WorkArea/ViewSwitcher.tsx` | View tab bar and active view management |
-| `components/WorkArea/EditView.tsx` | Writing surface |
-| `components/WorkArea/OrganizerView/OrganizerView.tsx` | Drag-and-drop organizer |
-| `components/WorkArea/DiffView.tsx` | Revision diff view |
-| `components/WorkArea/TimelineView.tsx` | Timeframe timeline |
-| `components/Sidebar/MetadataSidebar.tsx` | Metadata editing panel |
-| `components/Editor/RevisionControl/RevisionControl.tsx` | Revision history panel |
-| `components/common/ConfirmDialog.tsx` | Generic confirm prompt |
-| `components/common/ResourceCommandPalette.tsx` | Command palette |
+| Path                                                    | Role                                    |
+| ------------------------------------------------------- | --------------------------------------- |
+| `components/Layout/AppShell.tsx`                        | Root workspace shell                    |
+| `components/Layout/ShellLayoutController.tsx`           | Panel layout and collapse logic         |
+| `components/Layout/ShellModalCoordinator.tsx`           | Project-level overlay mounting point    |
+| `components/Tree/ResourceTree.tsx`                      | Current resource tree (use this)        |
+| `components/WorkArea/ViewSwitcher.tsx`                  | View tab bar and active view management |
+| `components/WorkArea/EditView.tsx`                      | Writing surface                         |
+| `components/WorkArea/OrganizerView/OrganizerView.tsx`   | Drag-and-drop organizer                 |
+| `components/WorkArea/DiffView.tsx`                      | Revision diff view                      |
+| `components/WorkArea/TimelineView.tsx`                  | Timeframe timeline                      |
+| `components/Sidebar/MetadataSidebar.tsx`                | Metadata editing panel                  |
+| `components/Editor/RevisionControl/RevisionControl.tsx` | Revision history panel                  |
+| `components/common/ConfirmDialog.tsx`                   | Generic confirm prompt                  |
+| `components/common/ResourceCommandPalette.tsx`          | Command palette                         |

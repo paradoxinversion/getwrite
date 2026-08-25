@@ -26,11 +26,11 @@ mapper in `projectsSlice.ts` (carries `features`/`organizerCardBody`/`statuses`/
 
 ---
 
-## 2026-06-14 — DECISION: split the Timeline *fields* toggle from the Timeline *view* toggle + disabled-tab tooltip
+## 2026-06-14 — DECISION: split the Timeline _fields_ toggle from the Timeline _view_ toggle + disabled-tab tooltip
 
 **Context:** The single `features.timeline` flag did double duty — it gated both
 the story-timeline metadata fields (`storyDate`/`storyDuration`/`storyEndDate`)
-*and* the Timeline view/tab. A user who wanted the date metadata but not the
+_and_ the Timeline view/tab. A user who wanted the date metadata but not the
 chronology view had no clean way to express that. Separately, when the Timeline
 tab is disabled there was no explanation of why or how to enable it.
 
@@ -41,7 +41,7 @@ tab is disabled there was no explanation of why or how to enable it.
    `features.timelineView` flag gates **the Timeline view/tab**, toggled from a
    new "Timeline view" section in **User Preferences**. Fields-on/view-off is the
    primary use case (date metadata without the chronology view). The view
-   *depends on* the fields, so the two toggles are kept consistent in both
+   _depends on_ the fields, so the two toggles are kept consistent in both
    directions: enabling the view (`TimelineViewToggle`) **also enables
    `timeline`** (no-op if already on), and disabling the fields
    (`ProjectFeatureToggles`) **also disables `timelineView`** — so there is never
@@ -51,7 +51,7 @@ tab is disabled there was no explanation of why or how to enable it.
    `selectTimelineViewEnabled`; the sidebar fields stay on
    `selectTimelineEnabled`.
 
-   *Migration:* `timelineView` is seeded from story-data presence (same as the
+   _Migration:_ `timelineView` is seeded from story-data presence (same as the
    fields) for fresh projects, **and backfilled to `true` for existing projects
    that already had `timeline: true`** (so current users keep their view) —
    idempotent, never overrides an explicit value. Both toggle UIs now merge onto
@@ -75,7 +75,7 @@ gating/migration plumbing otherwise unchanged.
 settings"; Task 5 implemented them as a "Project Features" section in the User
 Preferences page. In practice this split one concept across two menus — the
 **Metadata Fields** menu (SchemaManager) shows the now-unlocked built-in fields,
-while the on/off toggles lived in a *separate* Preferences page. Result:
+while the on/off toggles lived in a _separate_ Preferences page. Result:
 opening the metadata menu and seeing notes/synopsis unlocked with no toggle in
 sight was confusing (reported in real use).
 
@@ -90,7 +90,7 @@ migration) is unchanged; only the toggle UI moved. `OrganizerCardBodySettings`
 stays in Preferences (it is a display preference, not a field).
 
 **Possible next step (not done):** the toggle-vs-remove duality still exists — a
-built-in field can be toggled off (hidden, values kept) *or* removed from the
+built-in field can be toggled off (hidden, values kept) _or_ removed from the
 schema (deleted). The fully-elegant model collapses these into one action
 (field presence), deriving Timeline/POV from whether their fields exist; that is
 a larger rework (default schema, project-type seeding, migration, view-gating)
@@ -115,6 +115,7 @@ config passed through it loses them.
 
 **Why it was deferred (not blocking):** Neither store-feeding load path runs
 config through `normalizeProjectConfig`:
+
 - `GET /api/projects` (mount/list) parses `project.json` raw and returns
   `config` verbatim → `setProjects` hydrates `features`/`organizerCardBody`.
 - `POST /api/project` (single load) → `migrateProjectOnLoad` → raw read, also
@@ -157,7 +158,7 @@ this regex no longer matches the rendered header and the click would miss.
 `pnpm test:ci` (it requires `pnpm storybook` on :6006 + `pnpm test:e2e`), so it
 did not surface in any task's verification. The defect predates Task 7 — it is a
 leftover from the Task 2 rename, not caused by the gating change. Task 7 only
-touched the same file's *fixtures indirectly* by enabling `features` in the
+touched the same file's _fixtures indirectly_ by enabling `features` in the
 `MetadataSidebar` stories so the controls keep rendering for the e2e.
 
 **Risk if left:** That one e2e test fails (or times out on the click) the next
@@ -185,9 +186,9 @@ computed value is finally displayed. Covered by `tests/timelineTooltip.test.tsx`
 **What:** `TimelineView.tsx` computes `metadata.notes` for each item (gated on
 `selectNotesEnabled`), but `TimelineTooltip.tsx` renders **no** notes row — so
 `metadata.notes` is currently dead data (the field's JSDoc even says "Structured
-metadata for tooltip display"). *(Resolved sub-issue: the value was previously
+metadata for tooltip display"). _(Resolved sub-issue: the value was previously
 read from resource-level `r.notes` rather than the gated `userMetadata.notes`;
-those are different fields and the source is now corrected.)*
+those are different fields and the source is now corrected.)_
 
 **Why it was deferred (not blocking):** Task 9's "done when" only requires the
 tooltip to omit the notes line without error, which holds trivially because no
@@ -221,8 +222,6 @@ them to the resolver via a new `textExcerpt` option (preferred over the store
 resource's absent `plainText`). Covered by model, resolver, and OrganizerView
 (fetch-path) tests. Note: `previews.ts` remains unused — a future caching
 optimization, not required now.
-
-
 
 **Discovered during:** Task 10 (Organizer card-body consumption).
 
@@ -319,7 +318,7 @@ reconciled across the whole subsystem at once.
 
 **Why it was deferred (not blocking for this feature):** The spec lists
 "Reinterpreting user data beyond preserving existing values" as a non-goal, and
-the bug is *preservation-safe* (it over-preserves — values are never silently
+the bug is _preservation-safe_ (it over-preserves — values are never silently
 deleted), so it does **not** violate FR6. FR6 is covered: `removeField` (the
 non-destructive remove) leaves sidecars byte-for-byte untouched (test in
 `metadata-schema.test.ts`).

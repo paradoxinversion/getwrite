@@ -121,7 +121,7 @@ The first two are existing scenarios (the existing controls handle
 them silently today). Surfacing them with warning state is the
 augmentation.
 
-The third only happens if the user does a type change *without*
+The third only happens if the user does a type change _without_
 running the migration preview from `06-fields-panel.md`. If migration
 preview becomes mandatory for type changes, this state should be
 rare.

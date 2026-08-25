@@ -30,6 +30,29 @@ jobs:
               working-directory: frontend
               run: pnpm run check:no-hex
 
+    format-check:
+        name: Formatting (markdown, JSON, YAML)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v2
+
+            - name: Use Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            # Runs at the repository root, not in frontend/: prettier's scope is
+            # the whole repo and .prettierignore lives at the root.
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Check formatting
+              run: pnpm run format:check
+
     quality-gate:
         name: Typecheck, lint & tests
         runs-on: ubuntu-latest

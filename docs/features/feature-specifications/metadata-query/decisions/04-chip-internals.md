@@ -81,19 +81,19 @@ Two consistent rules:
 These aren't in `metadataSchema` but they are queryable. Map each to
 the existing type's operator vocabulary:
 
-| Intrinsic | Type | Notes |
-|-----------|------|-------|
-| `type`      | `select` (closed: text/image/audio/folder) | The actual resource type |
-| `folderId`  | `resource-ref` (target = folder)  | Path/parent predicate |
-| `wordCount` | `number` | TextResource only |
-| `createdAt` | `date`   | ISO string |
-| `updatedAt` | `date`   | ISO string |
-| `statuses`  | `multiselect` (options = `config.statuses`) | Resource-level status array |
-| `tags`      | `multi-resource-ref` (target = tag, synthetic) | Backed by `config.tagAssignments` |
-| `linkedFrom`| `multi-resource-ref` (target = resource) | From the backlink index |
-| `linksTo`   | `multi-resource-ref` (target = resource) | From the backlink index |
+| Intrinsic    | Type                                           | Notes                             |
+| ------------ | ---------------------------------------------- | --------------------------------- |
+| `type`       | `select` (closed: text/image/audio/folder)     | The actual resource type          |
+| `folderId`   | `resource-ref` (target = folder)               | Path/parent predicate             |
+| `wordCount`  | `number`                                       | TextResource only                 |
+| `createdAt`  | `date`                                         | ISO string                        |
+| `updatedAt`  | `date`                                         | ISO string                        |
+| `statuses`   | `multiselect` (options = `config.statuses`)    | Resource-level status array       |
+| `tags`       | `multi-resource-ref` (target = tag, synthetic) | Backed by `config.tagAssignments` |
+| `linkedFrom` | `multi-resource-ref` (target = resource)       | From the backlink index           |
+| `linksTo`    | `multi-resource-ref` (target = resource)       | From the backlink index           |
 
-`tags`, `linkedFrom`, and `linksTo` are *synthetic* — their data lives
+`tags`, `linkedFrom`, and `linksTo` are _synthetic_ — their data lives
 outside `metadataSchema` but they present as field types the chip UI
 already knows how to render.
 

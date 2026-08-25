@@ -13,8 +13,8 @@ Supported previews
 APIs
 
 - `generatePreview(projectRoot, resource, generators?)`
-    - Generates preview metadata for `resource` and persists it under `meta/previews/<id>.json`.
-    - `generators` is an optional object with keys `image`, `audio`, and `text` allowing callers to provide platform-specific generation logic (e.g., native image scaling, ffmpeg waveform extraction).
+  - Generates preview metadata for `resource` and persists it under `meta/previews/<id>.json`.
+  - `generators` is an optional object with keys `image`, `audio`, and `text` allowing callers to provide platform-specific generation logic (e.g., native image scaling, ffmpeg waveform extraction).
 
 - `savePreview(projectRoot, resourceId, preview)` — persists a `Preview` object to `meta/previews/<resourceId>.json`.
 - `loadPreview(projectRoot, resourceId)` — reads and parses a preview JSON if present.
@@ -35,9 +35,9 @@ Examples
 ```ts
 import previews from "../lib/models/previews";
 await previews.generatePreview(projectRoot, {
-    id: "txt-1",
-    type: "text",
-    plainText: "Hello world",
+  id: "txt-1",
+  type: "text",
+  plainText: "Hello world",
 });
 ```
 
@@ -46,10 +46,10 @@ await previews.generatePreview(projectRoot, {
 ```ts
 import previews from "../lib/models/previews";
 await previews.generatePreview(projectRoot, imgResource, {
-    image: async (r) => {
-        const thumbnail = await nativeThumb(r.filePath, { width: 160 });
-        return { type: "image", width: 160, height: 90, thumbnail };
-    },
+  image: async (r) => {
+    const thumbnail = await nativeThumb(r.filePath, { width: 160 });
+    return { type: "image", width: 160, height: 90, thumbnail };
+  },
 });
 ```
 

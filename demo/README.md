@@ -6,11 +6,11 @@ it. No manual screen recording or video editing.
 
 ## Outputs (`out/`)
 
-| File | What it is |
-|------|------------|
+| File                          | What it is                                                                                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `getwrite-demo-landscape.mp4` | **Primary.** ~48s scripted walkthrough of the live app with baked-in captions + end card. 1440×900, H.264, silent audio track, faststart. |
-| `getwrite-demo-montage.mp4` | **Fallback.** ~24s Ken Burns crossfade slideshow of clean full-app screenshots. |
-| `getwrite-demo-poster.png` | Poster/thumbnail frame from the walkthrough. |
+| `getwrite-demo-montage.mp4`   | **Fallback.** ~24s Ken Burns crossfade slideshow of clean full-app screenshots.                                                           |
+| `getwrite-demo-poster.png`    | Poster/thumbnail frame from the walkthrough.                                                                                              |
 
 ## Prerequisites
 
@@ -70,7 +70,7 @@ short bash loop; see the project chat history for the exact script.
   multi-condition). It also enables the built-in **POV & Synopsis** feature
   toggles (`POST /api/project/features`) — since #128 those fields are opt-in
   per project (absent flag = disabled), so without this the metadata sidebar
-  would hide them. Creates a *new* project each run — delete the old one first.
+  would hide them. Creates a _new_ project each run — delete the old one first.
 - `screens.spec.ts` — captures caption-free stills for the montage.
 - `demo.spec.ts` — the paced walkthrough; injects an on-screen caption banner.
 - `playwright.demo.config.ts` — drives :3000 (not Storybook), video on, 1440×900.

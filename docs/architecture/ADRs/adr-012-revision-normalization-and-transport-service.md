@@ -14,11 +14,11 @@ Revision records are normalized into a UI-facing `RevisionEntry` model, and revi
 ## Options Considered
 
 1. Per-component processing of raw revision data
-    - Keeps transformation close to usage sites.
-    - Risks repeated or divergent logic, higher mental load, and inconsistent behavior.
+   - Keeps transformation close to usage sites.
+   - Risks repeated or divergent logic, higher mental load, and inconsistent behavior.
 2. Central normalization plus transport-service separation (chosen)
-    - Provides a consistent data contract for UI features.
-    - Centralizes request context resolution and API handling.
+   - Provides a consistent data contract for UI features.
+   - Centralizes request context resolution and API handling.
 
 ## Trade-offs
 

@@ -7,10 +7,12 @@
 **What:** A pure `normalizePastedHTML(html: string, bodyFontSize?: string): string` function that implements all paste-normalization rules before TipTap parses the HTML.
 
 **Files:**
+
 - `frontend/components/Editor/Extensions/NormalizePastedHTML.ts` (create)
 - `frontend/tests/normalizePastedHTML.test.ts` (create)
 
 **Done when:**
+
 - Function strips `font-family` from all inline styles (FR1)
 - Function replaces `font-size` with `bodyFontSize` when provided, strips it when not (FR2)
 - Function strips `background-color` from all inline styles (FR3)
@@ -34,9 +36,11 @@
 **What:** A TipTap extension that wraps `normalizePastedHTML` and exposes a `bodyFontSize` option so it can be configured at runtime with the editor's body font size.
 
 **Files:**
+
 - `frontend/components/Editor/Extensions/NormalizePastedText.ts` (create)
 
 **Done when:**
+
 - Extension is named `"normalizePastedText"`
 - `transformPastedHTML` calls `normalizePastedHTML(html, this.options.bodyFontSize)`
 - `bodyFontSize` option defaults to `undefined`
@@ -57,9 +61,11 @@
 **What:** Replace the static `StripExternalPasteColor` extension with `NormalizePastedText` in `TipTapEditor`, passing the body font size from the editor project config.
 
 **Files:**
+
 - `frontend/components/TipTapEditor.tsx` (modify)
 
 **Done when:**
+
 - `StripExternalPasteColor` is removed from the static `extensions` array and its import is removed
 - `NormalizePastedText.configure({ bodyFontSize: editorProjectConfig.body?.fontSize })` is added to the `useEditor` extensions list alongside `CustomHeading`
 - Pasting external text into the editor strips font-family, normalizes font-size, strips background-color, and strips heading inline styles

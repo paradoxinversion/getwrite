@@ -72,16 +72,18 @@ body (`add-field`, `remove-field`, `reorder-fields`, etc.).
 ### Default schema (hardcoded in `default-metadata-schema.ts`)
 
 Group `builtin-document`:
-- `synopsis`  — text, locked
-- `notes`     — text, locked
-- `status`    — select, locked (options pulled at render time from
-                `config.statuses`)
-- `pov`       — resource-ref, locked
+
+- `synopsis` — text, locked
+- `notes` — text, locked
+- `status` — select, locked (options pulled at render time from
+  `config.statuses`)
+- `pov` — resource-ref, locked
 
 Group `builtin-story-timeline`:
-- `storyDate`     — date, locked
+
+- `storyDate` — date, locked
 - `storyDuration` — number, locked (minutes)
-- `storyEndDate`  — date, locked
+- `storyEndDate` — date, locked
 
 The story-timeline group is the existing implementation of in-story
 chronology (feature-catalog item #1). It's already declared and
@@ -92,10 +94,10 @@ the query layer that can filter and aggregate on these fields.
 
 `text | image | audio | folder`. Not extensible. There are no
 first-class "scene", "chapter", or "character" resource types — those
-distinctions are made via *folder structure* (e.g., a Characters
+distinctions are made via _folder structure_ (e.g., a Characters
 folder containing text resources), not via resource subtype.
 
-This makes group-`folderId` scoping the *de facto* resource-typing
+This makes group-`folderId` scoping the _de facto_ resource-typing
 mechanism today.
 
 ### MetadataValue (Zod-validated)
@@ -159,7 +161,7 @@ What it does **not** implement:
 - `SearchBar.tsx` — query input + results.
 - `SearchFilterPanel.tsx` — folder dropdown, status chips, tag chips.
   Filter state: `SearchFilters = { folder?: string, status?: string,
-  tags?: string[] }`.
+tags?: string[] }`.
 
 Not a chip-based boolean composition surface. Backed by the inverted
 full-text index plus filter narrowing.

@@ -13,6 +13,7 @@ Date: 2026-06-17
 **Files touched:** 1
 
 Changes:
+
 - **extraction** — Extracted `loadSpec(spec: ProjectTypeSpec | string): Promise<ProjectTypeSpec>` private helper. The file/object validation branches inside `createProjectFromType` were structurally identical — same two `!res.success` guard checks, same throw pattern — differing only in the validator function called and the error message prefix. Pulling this into a named helper makes the intent of the validation step scannable at a glance and eliminates the duplicated guard structure.
 - **structure** — Replaced `for (let i = 0; i < specObj.folders.length; i += 1)` with `for (const [orderIndex, f] of specObj.folders.entries())` and similarly for default resources. Eliminates the index variables `i`/`j`, the `specObj.defaultResources![j]` non-null assertion, and the manual `specObj.folders[i]` element access — the element is now named at the loop head.
 - **structure** — Inlined the two `const now = new Date().toISOString()` temporaries directly into the `Folder` object literals (`createdAt: new Date().toISOString()`). Each `now` was assigned immediately before the object literal and used only in the `createdAt` field; the intermediate name added no clarity.
@@ -29,6 +30,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `metadataDir` → `metaDir` — removes the redundant "metadata" suffix; the `meta/` directory name is already the canonical short form used everywhere in this codebase
 - **naming** — `metadataEntries` → `metaFilenames` — more precise: these are filenames (strings from `readdir`), not "entries" in the abstract sense
 - **naming** — `metadataName` (map callback param) → `filename` — clearer: it's a filename string; `metadataName` was needlessly verbose in this context
@@ -45,6 +47,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `p` → `filePath` in both `loadProject` and `loadProjectConfig` — the single-character name was opaque; `filePath` makes the variable's role immediately clear without abbreviation
 - **structure** — Inlined the `normalizedConfig` intermediate in `loadProject` — it was a one-use variable whose name added no information beyond what `normalizeProjectConfig(...)` already communicates; the return expression is equally readable inline
 
@@ -69,6 +72,7 @@ No meaningful improvements possible. The file is a single-expression function wi
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `DEFAULT_MAX_REVISIONS = 50` and `DEFAULT_AUTO_PRUNE = true` constants, inlining their values (`50`, `true`) directly at the two use sites in `normalizeProjectConfig`. Each constant was used exactly once — the names added no information beyond the field name already present at the use site (`maxRevisions`, `autoPrune`). Inlining also eliminates a pre-existing ESLint `naming-convention` error on `DEFAULT_AUTO_PRUNE` (the `is/has/...` prefix rule fired on a boolean-typed const).
 - **comments** — Removed the "Default values applied when creating a new project." section comment, which described only the two constants that were removed. The code it documented no longer exists.
 
@@ -81,6 +85,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Replaced the verbose inline return-type annotation `{ project: BuildProjectViewOptions["project"]; folders: FolderWithResources[]; resources: UIResource[] }` with `ReturnType<typeof buildProjectViewAdapter>`. The function is a pure delegation — the return type is exactly the adapter's return type, so `ReturnType<typeof buildProjectViewAdapter>` expresses that precisely without repeating the shape or using a `["project"]` index to sidestep importing `ProjectType`.
 - **structure** — Dropped the `FolderWithResources` and `UIResource` imports from the local import clause. They were only used to spell out the return type annotation; the `ReturnType<...>` form makes them unnecessary in the function body. They remain as re-exports on the next line.
 
@@ -93,6 +98,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **extraction** — Extracted `byOrderIndex(a, b)` helper for the `_orderIndex` comparator. The identical sort callback `(left, right) => left._orderIndex - right._orderIndex` appeared twice (for `rootResources` and per-folder `resources`). Naming the comparator makes the two `.sort()` calls read as intent (`sort(byOrderIndex)`) rather than arithmetic.
 - **consistency** — The folder sort comparator already differed (uses `orderIndex` not `_orderIndex`) so it stays inline; its parameter names were updated from `left`/`right` to `a`/`b` to match the naming convention used in `byOrderIndex`.
 
@@ -137,6 +143,7 @@ No changes. The file is already at its natural minimum. Four single-purpose expo
 **Files touched:** 1
 
 Changes:
+
 - **naming** — Removed unused `validateProjectTypeFile` import. It was imported but never called in this file; its only callers are in `project-creator.ts`. Eliminating it removes the pre-existing `no-unused-vars` lint warning.
 - **naming** — `e` (directory entry loop variable) → `filename`. The name `e` carries no semantic meaning; `filename` makes the loop body self-explanatory.
 - **naming** — `fp` (constructed file path) → `filePath`. Aligns with the `ProjectTypeEntry.filePath` field name it feeds.
@@ -153,6 +160,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `prefersDark` → `isDarkPreferred` (in both `resolvePreferredColorMode` and the new `detectSystemColorMode`). Fixes the pre-existing `@typescript-eslint/naming-convention` lint error; boolean locals must have an `is/has/should/can/did/will` prefix in this project.
 - **naming** — `reducedMotion` local variable (in `getStoredGlobalAppearancePreferences`) → `isReducedMotion`. Fixes the second pre-existing naming-convention lint error. The property name `reducedMotion` on the returned object is unchanged — only the local variable was renamed, using the explicit `reducedMotion: isReducedMotion` form in the return statement.
 - **extraction** — Extracted `detectSystemColorMode()` private helper. The `matchMedia` try/catch pattern was duplicated verbatim inside both `resolvePreferredColorMode` and `resolveColorModeFromAppearance`. Both call sites now delegate to the shared helper, eliminating ~8 lines of duplication and giving the pattern a name that documents what it does. The new function carries full JSDoc.
@@ -163,11 +171,12 @@ Changes:
 
 ### `frontend/src/store/projectsSlice.ts`
 
-**Size delta:** 1058 → 814 lines (−23%, −244 lines) — VERIFIED ON DISK**
+**Size delta:** 1058 → 814 lines (−23%, −244 lines) — VERIFIED ON DISK\*\*
 **Symbols renamed:** 0
 **Files touched:** 1 (no separate files created; all exports remain in this file)
 
 Changes:
+
 - **extraction** — Added `makeSchemaThunk<Args>()` factory — encodes the identical 3-step boilerplate shared by all 15 metadata-schema thunks (resolve context → error guard → call transport → return `{ projectId, schema }`). Each of the 15 thunks reduced from ~20 lines to 2–8 lines.
 - **extraction** — Added `makeFeatureConfigThunk<Args>()` factory — same pattern for the 2 feature-config thunks (`updateProjectFeatures`, `updateProjectOrganizerCardBody`), each reduced from ~20 lines to 4–7 lines.
 - **structure** — Moved `normalizeStoredProject` up adjacent to `buildStoredProject` — both are public normalization utilities; grouping them makes the public surface easier to scan.
@@ -186,6 +195,7 @@ Note: The `(state: any)` pattern on all thunks and selectors was intentionally l
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `ApiErrorResponse` interface — it existed solely to support the old double-cast inside `getApiErrorMessage` and became dead after the helper was simplified.
 - **structure** — Simplified `getApiErrorMessage` to the same `Record<string, unknown>` single-cast + ternary pattern as the other transport services.
 - **structure** — Collapsed `if (onRename) { onRename(projectId, newName); }` to `onRename?.(projectId, newName)` and `if (onDelete) { onDelete(projectId); }` to `onDelete?.(projectId)` — optional chaining is the idiomatic form for conditional callback invocation; identical behavior.
@@ -209,6 +219,7 @@ No changes. The file is already compact and correct.
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Simplified `getApiErrorMessage`: replaced the nested `if` chain with a double-cast into a single `(errorBody as Record<string, unknown>)?.error` read + ternary. Same pattern used in `metadata-schema-transport-service.ts`. The `"error" in errorBody` check was redundant given `?.` handles missing keys safely.
 
 ---
@@ -232,6 +243,7 @@ No changes. Already the minimal correct form — one constant, one function, one
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed three local response interfaces (`LoadProjectRequestBody`, `LoadProjectSuccessResponse`, `LoadProjectErrorResponse`) — they were only used in the return type annotation. The module-level JSDoc already documents the shapes; the interfaces added scaffolding without adding clarity to a 5-line handler.
 - **structure** — Removed now-unused type imports (`LoadedResource`, `Project`) that were only needed for the removed interfaces.
 - **nesting** — Inlined `const result` — single-use variable with no naming benefit.
@@ -262,6 +274,7 @@ No meaningful improvements possible. Already compact.
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `UpdateProjectPreferencesSuccess` and `UpdateProjectPreferencesError` interfaces.
 - **structure** — Collapsed `const rawProject` / `JSON.parse(rawProject)` into a single `JSON.parse(await fs.readFile(...))` expression, eliminating an intermediate variable.
 - **structure** — Inlined the `nextProject` spread directly into `JSON.stringify(...)`, eliminating an intermediate variable.
@@ -276,6 +289,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `UpdateProjectEditorConfigSuccess` and `UpdateProjectEditorConfigError` interfaces.
 - **structure** — Collapsed `const rawProject` / `JSON.parse(rawProject)` into a single expression.
 - **structure** — Inlined `nextConfig` directly into the `nextProject` spread, eliminating an intermediate variable.
@@ -290,6 +304,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `UpdateFeaturesError` interface — replaced inline with `{ error: string }` in the return type union.
 - **naming** — Renamed `isValidation` to `isZodError` — the variable specifically checks for a Zod schema error; the old name was vague.
 - **nesting** — Inlined `const result = await updateFeatureConfig(...)` / `return NextResponse.json(result)` into a single `return NextResponse.json(await updateFeatureConfig(...))`.
@@ -303,6 +318,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Removed `UpdateRevisionSettingsSuccess` and `UpdateRevisionSettingsError` interfaces.
 - **structure** — Collapsed to `Promise<NextResponse>` return type.
 
@@ -315,6 +331,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **comments** — Removed `// get all projects from local` — this restates what the next two lines clearly show; the function-level JSDoc already says the same thing.
 
 ---
@@ -326,6 +343,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Replaced `[] as any[]` catch fallback with `[] as Dirent[]` (imported from `node:fs`) — removes the pre-existing `no-explicit-any` lint warning and makes the type explicit.
 - **structure** — Collapsed `const raw = await fs.readFile(pj, "utf8"); const parsed = JSON.parse(raw)` in `findProjectRoot` into a single expression.
 - **structure** — In the folder-update loop, collapsed `const raw` / `const parsed` into a single typed `JSON.parse(await fs.readFile(...))` expression; added a typed shape annotation to the parsed object (was `any`).
@@ -342,6 +360,7 @@ The slight line increase (+3) is because the typed `Dirent` import adds a line a
 **Files touched:** 1
 
 Changes:
+
 - **naming** — Renamed `fp` to `filePath` — opaque single-letter name becomes self-descriptive.
 - **structure** — Removed intermediate `const raw` — collapsed `fs.readFile` directly into `JSON.parse(...)`.
 - **structure** — Removed redundant explicit type annotation `const res: ReturnType<typeof validateProjectType>` — TypeScript infers this; the annotation added noise without clarity.
@@ -365,6 +384,7 @@ No changes. Already well-structured with meaningful variable names, clear contro
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `loadingTypes` → `isLoadingTypes`, `setLoadingTypes` → `setIsLoadingTypes` — fixes naming-convention lint error on boolean state
 - **naming** — `creating` → `isCreating`, `setCreating` → `setIsCreating` — fixes naming-convention lint error on boolean state
 - **extraction** — Extracted `const selectedType = types?.find(...)` before the JSX — eliminates two repeated `.find()` calls (hint div + validation error div) and replaces the IIFE pattern with a plain conditional
@@ -380,6 +400,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `open` → `isOpen`, `setOpen` → `setIsOpen` — fixes naming-convention lint error
 - **naming** — `renameOpen` → `isRenameOpen`, `setRenameOpen` → `setIsRenameOpen` — fixes naming-convention lint error
 - **naming** — `confirmDeleteOpen` → `isConfirmDeleteOpen`, `setConfirmDeleteOpen` → `setIsConfirmDeleteOpen` — fixes naming-convention lint error
@@ -402,6 +423,7 @@ No meaningful improvements possible; the file was already clean.
 **Files touched:** 1
 
 Changes:
+
 - **extraction** — Extracted `triggerDownload(blob, filename)` as a module-level function — it was defined inline inside `onConfirmCompile`, nested 4 levels deep, and called 4 times; extracting it eliminates the repeated definition and reduces nesting
 - **extraction** — Extracted `resolveFilename(ext, serverFilename)` as a local const helper inside `onConfirmCompile` — the `rawName ? rawName.endsWith(x) ? rawName : rawName+ext : server` pattern was duplicated verbatim 4 times
 - **nesting** — Moved `setCompileTargetProjectId(null)` before the format branches instead of repeating it in each branch, reducing duplication
@@ -419,6 +441,7 @@ Changes:
 **Files touched:** 1
 
 Changes (Antonini + orchestrator):
+
 - **structure** — Inlined `onAppearanceChanged` — it was a one-line identity wrapper around `applyAppearanceToDocument`; passing the function directly to `addEventListener`/`removeEventListener` is cleaner and the stable reference is preserved
 - **structure** (orchestrator) — Removed unused `React` import (`import React, { useEffect }` → `import { useEffect }`). The file uses the automatic JSX runtime and never calls `React.*` directly. This eliminated the pre-existing `no-unused-vars` lint warning surfaced by Antonini's refactor.
 
@@ -455,6 +478,7 @@ No meaningful improvements possible.
 **Files touched:** 1
 
 Changes:
+
 - **structure** — `toFontWeightSelectValue`: replaced the verbose if-chain (4 conditional blocks, two `normalizedWeight` comparisons spelled out longhand) with optional-chain + two guard returns — same logic, 10 fewer lines.
 
 ---
@@ -474,6 +498,7 @@ No meaningful improvements possible.
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `notesEnabled` → `isNotesEnabled` (the local `const` from `useAppSelector`) — fixes naming-convention lint error. The `resolveSelectValue` function's parameter was also updated in the JSDoc `@param` tag for accuracy; the parameter name itself is a function parameter and not subject to the boolean-prefix rule — left unchanged.
 
 ---
@@ -485,6 +510,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **naming** — `cascadesViewOff` → `isCascadesViewOff` — fixes naming-convention lint error.
 
 ---
@@ -504,6 +530,7 @@ No meaningful improvements possible.
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Collapsed the two-step `selectedProjectId` + `selectedProject` selector pattern into a single `useAppSelector(state => selectedProjectId ? selectProject(...) : null)`. Eliminates the null-check duplication.
 
 ---
@@ -517,6 +544,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **nesting** — `updateSelectedDefinition`'s `setItems` callback: removed the redundant explicit `return` from the outer arrow, collapsed `const updatedDefinition` + `const nextKey` + conditional `setSelectedKey` + return object from 12 lines to 7. All logic identical.
 - **naming** — Anonymous positional params in four `.filter()` callbacks renamed from verbose `folderIndex`/`resourceIndex`/`statusIndex` to `i` — the positional index meaning is already established by the surrounding `index` parameter; the longer names added noise. Same change applied to `.map()` in `handleUpdateStatus`.
 
@@ -529,6 +557,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Dropped `import React from "react"`: the project uses `jsx: "react-jsx"` (automatic JSX runtime); no `React.*` call exists in this file, so the import was dead weight.
 - **extraction** — Extracted `MetadataSourceRow` sub-component (with `MetadataSourceRowProps` interface). The Metadata Source checkbox + conditional Input Type select block appeared verbatim in both the Folders section and the Default Folders section (each ~18 lines). Both usages replaced with the named component. The identical 36 lines of duplicated markup became two 8-line `<MetadataSourceRow ... />` call sites.
 
@@ -541,6 +570,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Dropped `import React from "react"`: same reason as above (automatic JSX runtime, no `React.*` usage).
 
 ---
@@ -552,6 +582,7 @@ Changes:
 **Files touched:** 1
 
 Changes:
+
 - **structure** — Replaced `import React, { useState }` with `import { useState, useEffect }`: the file used `React.useEffect` directly but never needed the default `React` object for anything else. Converting to the named import is idiomatic and consistent with the automatic JSX runtime.
 - **nesting** — Collapsed the two separate `useAppSelector` calls for `selectedProjectId` and `selectedProject` into a single selector. The intermediate `selectedProjectId` local variable existed only to thread into the second selector.
 - **nesting** — `handleCloseManager`'s three-branch if/return chain reformatted as three single-line guard clauses. All three branches are one-statement actions; the single-line form removes 6 blank lines and makes the guard structure visually scannable.
@@ -577,15 +608,16 @@ The `projectsSlice.ts` headline unification (the thunk factory pattern) was achi
 **Baseline (before refactor):** Typecheck clean. 16/16 test files, 105 tests passing. Lint had pre-existing error-level naming-convention issues in several in-scope files.
 
 **After refactor:**
+
 - **Typecheck:** Clean (zero errors)
 - **Tests:** 16/16 test files, 105 tests passing (identical to baseline)
 - **Lint (in-scope files):** All error-level naming-convention issues in the slice's touched files eliminated. Remaining items in slice files are warnings only (pre-existing `no-explicit-any`, `no-unused-vars`, `import/no-anonymous-default-export`).
 - **knip:** Unused files (16) and unused exports (110) identical to baseline.
-  Unused *exported types* went 95 → 98 (+3): `UIResource` and `FolderWithResources`
+  Unused _exported types_ went 95 → 98 (+3): `UIResource` and `FolderWithResources`
   (re-exported public facade in `project-view.ts`) and `LoadedResource`
   (`project-loader.ts`). These are intentional public type exports still used
-  *within* their own modules (e.g. `LoadedResource` is the element type of
-  `loadProjectFromDisk`'s return). They lost their last *cross-file by-name*
+  _within_ their own modules (e.g. `LoadedResource` is the element type of
+  `loadProjectFromDisk`'s return). They lost their last _cross-file by-name_
   importer when legitimate internal simplifications landed (`project-view.ts`
   switched to `ReturnType<typeof buildProjectViewAdapter>`; `project/route.ts`
   dropped its redundant `LoadProjectSuccessResponse` interface). Left in place:
@@ -596,14 +628,14 @@ The `projectsSlice.ts` headline unification (the thunk factory pattern) was achi
 
 ## Slice Totals
 
-| Layer | Before | After | Delta |
-|---|---|---|---|
-| Core/Models (12 files) | 1,357 | 1,321 | −36 lines (−3%) |
-| Store (5 files) | 1,321 | 1,054 | −267 lines (−20%) |
-| API (11 files) | 753 | 668 | −85 lines (−11%) |
-| UI Start/ (4 files) | 1,215 | 1,175 | −40 lines (−3%) |
-| UI preferences/ (10 files) | 1,570 | 1,549 | −21 lines (−1%) |
-| UI project-types/ (4 files) | 1,355 | 1,324 | −31 lines (−2%) |
-| **Total** | **7,571** | **7,091** | **−480 lines (−6%)** |
+| Layer                       | Before    | After     | Delta                |
+| --------------------------- | --------- | --------- | -------------------- |
+| Core/Models (12 files)      | 1,357     | 1,321     | −36 lines (−3%)      |
+| Store (5 files)             | 1,321     | 1,054     | −267 lines (−20%)    |
+| API (11 files)              | 753       | 668       | −85 lines (−11%)     |
+| UI Start/ (4 files)         | 1,215     | 1,175     | −40 lines (−3%)      |
+| UI preferences/ (10 files)  | 1,570     | 1,549     | −21 lines (−1%)      |
+| UI project-types/ (4 files) | 1,355     | 1,324     | −31 lines (−2%)      |
+| **Total**                   | **7,571** | **7,091** | **−480 lines (−6%)** |
 
 **Headline target confirmed on disk:** `projectsSlice.ts` 1058 → 814 lines (−244 lines, −23%).

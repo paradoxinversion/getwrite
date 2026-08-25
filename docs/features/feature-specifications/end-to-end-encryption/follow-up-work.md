@@ -17,7 +17,7 @@ the WebView, but the wiring added in T16b is HTTP-only.
       `native-encryption-backend.ts` (+ `.web-stub.ts`) and the
       `turbopack.resolveAlias` entry, following ADR-021 Phase 1/2. Code only; no
       device needed. ~3 pts.
-- [ ] **On-device measurement.** Two claims in ADR-022 are still *inferences*:
+- [ ] **On-device measurement.** Two claims in ADR-022 are still _inferences_:
       that `crypto.subtle` exists in the WebView (deduced from Capacitor serving
       `https://localhost`), and that unlock costs ~0.8–1.3 s (extrapolated from
       Apple Silicon by a 3–5× guess — the least-evidenced number in the feature).
@@ -58,7 +58,7 @@ both verified to carry no user-authored text. Details in `tasks.md` under T22.
 > **The migration rescues fewer users than it looks like it does.** Replacing
 > `GetWrite.app` is what destroys the in-bundle directory, so anyone updating
 > the normal way — a new `.dmg` over the old app — has lost the data before any
-> code in the new bundle can run. Nothing shipped *inside* the app can execute
+> code in the new bundle can run. Nothing shipped _inside_ the app can execute
 > early enough. It helps only where the old directory survives to the new
 > build's first launch. Confirmed on 2026-08-06: repackaging over the installed
 > build destroyed the encrypted test project (`271707fe-…`, plus its keyring and
@@ -113,7 +113,7 @@ Fixed:
 
 - **Encrypting a second project failed outright.** Every crypto module documented
   "must be the plain adapter" and then defaulted to `getStorageAdapter()`, which
-  under a request *is* the routed encrypting adapter. Registering the second
+  under a request _is_ the routed encrypting adapter. Registering the second
   project's key mid-call flipped that adapter into decrypting the plaintext the
   sweep was partway through sealing, and stranded a sealed, unparseable
   `.converting.json`. Fixed with `getPlainStorageAdapter()` (`io.ts`), which
@@ -184,7 +184,7 @@ test proves the component, never the wiring.
 
 ## Open questions
 
-- [ ] **The ⌘K content-search symptom is still unexplained.** Search *does* find
+- [ ] **The ⌘K content-search symptom is still unexplained.** Search _does_ find
       content through the encrypting adapter — proved by
       `tests/unit/search-canonical-text.test.ts` — so decryption was not the
       cause. The `catch { return "" }` that was hiding the real failure is fixed,
@@ -225,7 +225,7 @@ never mounted, a seam built but adopted in one place, a list never refreshed
 after unlock, search reporting undecryptable content as empty. Four of them, all
 found by using the application, none by 2966 tests.
 
-A reachability sweep afterwards found unreferenced exports but would *not* have
+A reachability sweep afterwards found unreferenced exports but would _not_ have
 caught the worst of them: that code had one caller and looked used. Counting
 finds unreachable code, not under-adopted seams.
 

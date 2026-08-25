@@ -14,11 +14,11 @@ Revision behavior should be easy to reason about and implemented consistently. C
 ## Options Considered
 
 1. Distribute revision state and lifecycle handling across components
-    - Can reduce slice responsibilities.
-    - Risks inconsistent behavior and higher mental load.
+   - Can reduce slice responsibilities.
+   - Risks inconsistent behavior and higher mental load.
 2. Centralize revision state and lifecycle in `revisionsSlice` (chosen)
-    - Keeps revision behavior consistent and straightforward.
-    - Aligns with the existing domain-slice pattern.
+   - Keeps revision behavior consistent and straightforward.
+   - Aligns with the existing domain-slice pattern.
 
 ## Trade-offs
 

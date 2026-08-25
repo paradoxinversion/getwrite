@@ -14,15 +14,15 @@
 
 ## File Map
 
-| Action | File |
-|---|---|
-| Modify | `docs/standards/code-documentation.md` |
-| Modify | `docs/standards/typescript-implementation.md` |
-| Rewrite | `docs/standards/testing.md` |
-| Rewrite | `.github/skills/code-documentation/SKILL.md` |
-| Delete | `.github/skills/code-documentation/references/javascript-typescript.md` |
-| Modify | `.github/skills/frontend-design/SKILL.md` |
-| Modify | `.github/skills/scholar/SKILL.md` |
+| Action  | File                                                                    |
+| ------- | ----------------------------------------------------------------------- |
+| Modify  | `docs/standards/code-documentation.md`                                  |
+| Modify  | `docs/standards/typescript-implementation.md`                           |
+| Rewrite | `docs/standards/testing.md`                                             |
+| Rewrite | `.github/skills/code-documentation/SKILL.md`                            |
+| Delete  | `.github/skills/code-documentation/references/javascript-typescript.md` |
+| Modify  | `.github/skills/frontend-design/SKILL.md`                               |
+| Modify  | `.github/skills/scholar/SKILL.md`                                       |
 
 ---
 
@@ -31,15 +31,18 @@
 **Goal:** Merge documentation rules from three sources into one standard. After this task, `docs/standards/code-documentation.md` contains everything; the other two sources will be trimmed/deleted in Tasks 2 and 3.
 
 **Files:**
+
 - Modify: `docs/standards/code-documentation.md`
 - Reference (read-only): `.github/skills/code-documentation/references/javascript-typescript.md`
 
 - [ ] **Step 1: Verify the gap — confirm Section 9 exists in `typescript-implementation.md`**
 
   Run:
+
   ```bash
   grep -n "Code Document Discipline" frontend/../docs/standards/typescript-implementation.md
   ```
+
   Expected: line ~91 shows `## 9. Code Document Discipline`
 
 - [ ] **Step 2: Replace `docs/standards/code-documentation.md` with the merged standard**
@@ -79,6 +82,7 @@
   ## 4. Completeness Check
 
   Before finishing documentation work, verify:
+
   - Every exported function, type, and interface has a docstring
   - Every type/interface property has a description
   - The module docstring and last-updated timestamp are present at the top of the file
@@ -87,6 +91,7 @@
 - [ ] **Step 3: Verify the merged standard contains all required rules**
 
   Check that the file contains each of these strings:
+
   ```bash
   grep -c "@module" docs/standards/code-documentation.md          # expect 1
   grep -c "//Last Updated" docs/standards/code-documentation.md     # expect 1 (no space after //)
@@ -96,6 +101,7 @@
   grep -c "interface" docs/standards/code-documentation.md         # expect 1
   grep -c "implicit" docs/standards/code-documentation.md          # expect 1
   ```
+
   All must return 1.
 
 - [ ] **Step 4: Commit**
@@ -112,6 +118,7 @@
 **Goal:** Delete the two-line Section 9 that duplicated the documentation standard. The merged standard from Task 1 is now authoritative.
 
 **Files:**
+
 - Modify: `docs/standards/typescript-implementation.md`
 
 - [ ] **Step 1: Confirm the exact lines to remove**
@@ -119,7 +126,9 @@
   ```bash
   grep -n "" docs/standards/typescript-implementation.md | tail -10
   ```
+
   Expected output includes:
+
   ```
   91:## 9. Code Document Discipline
   92:
@@ -132,6 +141,7 @@
 - [ ] **Step 2: Remove Section 9**
 
   Delete these lines from `docs/standards/typescript-implementation.md`:
+
   ```
   ## 9. Code Document Discipline
 
@@ -139,6 +149,7 @@
   - Include thorough variable comments
 
   ```
+
   The file should end with `End of TypeScript Implementation Standard.` immediately after Section 8.
 
 - [ ] **Step 3: Verify Section 9 is gone and the file ends cleanly**
@@ -147,6 +158,7 @@
   grep -c "Code Document Discipline" docs/standards/typescript-implementation.md  # expect 0
   tail -5 docs/standards/typescript-implementation.md
   ```
+
   Expected tail: the last non-empty line is `End of TypeScript Implementation Standard.`
 
 - [ ] **Step 4: Commit**
@@ -163,6 +175,7 @@
 **Goal:** The skill body becomes a lightweight invocation wrapper (~10 lines) that points at the standard. The `references/javascript-typescript.md` file is deleted — its content now lives in `docs/standards/code-documentation.md`.
 
 **Files:**
+
 - Rewrite: `.github/skills/code-documentation/SKILL.md`
 - Delete: `.github/skills/code-documentation/references/javascript-typescript.md`
 
@@ -175,9 +188,9 @@
   name: code-documentation
   description: Guide for documenting code. Use this when creating or updating documentation for source code files.
   metadata:
-      author: saboteur-labs
-      version: 2.0
-      last_updated: 2026-03-23
+    author: saboteur-labs
+    version: 2.0
+    last_updated: 2026-03-23
   ---
 
   # Code Documentation Skill
@@ -234,6 +247,7 @@
 **Goal:** Replace the 3-line Copilot-framed stub with a full, agent-agnostic standard covering environment, all four command variants, file locations, and test scope.
 
 **Files:**
+
 - Rewrite: `docs/standards/testing.md`
 
 - [ ] **Step 1: Confirm current state of the file**
@@ -263,12 +277,12 @@
 
   ## 2. Commands
 
-  | Mode | Command |
-  |---|---|
-  | Watch (development) | `pnpm test` |
-  | CI / single pass | `pnpm test:ci` |
-  | Targeted by file | `pnpm test:ci <filename-without-extension>` |
-  | E2E | `pnpm test:e2e` |
+  | Mode                | Command                                     |
+  | ------------------- | ------------------------------------------- |
+  | Watch (development) | `pnpm test`                                 |
+  | CI / single pass    | `pnpm test:ci`                              |
+  | Targeted by file    | `pnpm test:ci <filename-without-extension>` |
+  | E2E                 | `pnpm test:e2e`                             |
 
   - E2E tests require Storybook running on port 6006; start with `pnpm storybook` before running `pnpm test:e2e`
 
@@ -312,6 +326,7 @@
 **Goal:** Insert a non-negotiable brand constraint block before the existing `## Design Thinking` section. No other changes to the skill body.
 
 **Files:**
+
 - Modify: `.github/skills/frontend-design/SKILL.md`
 
 - [ ] **Step 1: Confirm insertion point**
@@ -319,6 +334,7 @@
   ```bash
   grep -n "## Design Thinking" .github/skills/frontend-design/SKILL.md
   ```
+
   Expected: one match. Note the line number — the preamble inserts immediately before it.
 
 - [ ] **Step 2: Insert the brand-deference preamble**
@@ -348,7 +364,6 @@
   **Fallback:** When `STYLING.md` does not cover a scenario (component layout, iconography, interaction choreography), the creative judgment guidance below applies. The fallback covers genuine gaps only — it does not override any rule in `STYLING.md`, including the anti-patterns in Section 9.
 
   ---
-
   ```
 
 - [ ] **Step 3: Verify the preamble is in place, correctly ordered, and the rest of the file is unchanged**
@@ -377,6 +392,7 @@
 **Goal:** Replace the broad Invocation Triggers section (4 catch-all conditions) with three precise trigger conditions and six explicit skip conditions. Replace the Protocol section with the cheap scan model (filename-first, hard cap of 3 pages, no-op fast path).
 
 **Files:**
+
 - Modify: `.github/skills/scholar/SKILL.md`
 
 - [ ] **Step 1: Confirm the two sections to replace**
@@ -384,6 +400,7 @@
   ```bash
   grep -n "## Invocation Triggers\|## Protocol" .github/skills/scholar/SKILL.md
   ```
+
   Expected: two matches — `## Invocation Triggers` around line 19, `## Protocol (How to use)` around line 50.
 
 - [ ] **Step 2: Replace the `## Invocation Triggers` section**
@@ -391,6 +408,7 @@
   Find and replace the entire `## Invocation Triggers` section (lines 19–27 in the current file):
 
   **Remove:**
+
   ```markdown
   ## Invocation Triggers
 
@@ -403,6 +421,7 @@
   ```
 
   **Replace with:**
+
   ```markdown
   ## Invocation Triggers
 
@@ -427,6 +446,7 @@
   Find and replace the entire `## Protocol (How to use)` section (lines 50–56 in the current file):
 
   **Remove:**
+
   ```markdown
   ## Protocol (How to use)
 
@@ -438,6 +458,7 @@
   ```
 
   **Replace with:**
+
   ```markdown
   ## Protocol (How to use)
 
@@ -459,14 +480,17 @@
 - [ ] **Step 4: Update the frontmatter version and last_updated**
 
   In the frontmatter, change:
+
   ```yaml
-      version: 1.0
-      last_updated: 2026-03-13
+  version: 1.0
+  last_updated: 2026-03-13
   ```
+
   to:
+
   ```yaml
-      version: 1.1
-      last_updated: 2026-03-23
+  version: 1.1
+  last_updated: 2026-03-23
   ```
 
 - [ ] **Step 5: Verify the changes**

@@ -139,14 +139,14 @@ Knip side-effect: The baseline had knip flagging all 5 `Shell*` state interfaces
 
 ## Gate result
 
-| Check | Result |
-|---|---|
-| `pnpm typecheck` | Clean (0 errors) |
-| `pnpm lint` (in-scope files only) | Clean (0 errors in AppShell, ShellModalCoordinator, ShellSettingsMenu, OrganizerView, TimelineView, app/page, app/layout, app/preferences/page, app/project-types/page) |
-| `pnpm lint` (repo-wide) | 29 errors remain — all pre-existing baseline in out-of-scope files. Reduced from 39 errors at baseline (10 fewer, all from in-scope file fixes). |
-| `vitest run shellModalCoordinator appShellTimelineGating viewSwitcher` | 13/13 tests pass |
-| `vitest run` (broad) | 2056/2057 tests pass (1 skipped, pre-existing) |
-| `pnpm knip` | Pre-existing findings only; 5 fewer unused-export findings than baseline (ShellContextActionState, ShellCreateModalState, ShellExportModalState, ShellCompileModalState, ShellRenameModalState — resolved by cross-file unification) |
+| Check                                                                  | Result                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm typecheck`                                                       | Clean (0 errors)                                                                                                                                                                                                                     |
+| `pnpm lint` (in-scope files only)                                      | Clean (0 errors in AppShell, ShellModalCoordinator, ShellSettingsMenu, OrganizerView, TimelineView, app/page, app/layout, app/preferences/page, app/project-types/page)                                                              |
+| `pnpm lint` (repo-wide)                                                | 29 errors remain — all pre-existing baseline in out-of-scope files. Reduced from 39 errors at baseline (10 fewer, all from in-scope file fixes).                                                                                     |
+| `vitest run shellModalCoordinator appShellTimelineGating viewSwitcher` | 13/13 tests pass                                                                                                                                                                                                                     |
+| `vitest run` (broad)                                                   | 2056/2057 tests pass (1 skipped, pre-existing)                                                                                                                                                                                       |
+| `pnpm knip`                                                            | Pre-existing findings only; 5 fewer unused-export findings than baseline (ShellContextActionState, ShellCreateModalState, ShellExportModalState, ShellCompileModalState, ShellRenameModalState — resolved by cross-file unification) |
 
 ---
 

@@ -1,14 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "tags": [
-    "-lintignore"
-  ],
+  "tags": ["-lintignore"],
   "ignore": ["scripts/hosted-smoke/smoke.mjs"],
   "workspaces": {
     ".": {},
-    "cli": {
-      "entry": ["src/getwrite-cli.ts"],
-      "project": ["src/**/*.ts"]
-    }
+    "cli": { "entry": ["src/getwrite-cli.ts"], "project": ["src/**/*.ts"] }
   }
 }

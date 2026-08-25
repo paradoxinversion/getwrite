@@ -133,7 +133,7 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **Done when:** Every Timeline visual whose contract matches a canonical variant uses the canonical primitive; CSS rules for the migrated patterns are deleted from `timeline.css`; the follow-up note enumerates which Timeline visuals stayed bespoke and why; existing Timeline tests pass unchanged; full gate suite passes.
 **Depends on:** 10
 **Estimate:** 5
-**Notes:** Phase one deferred Timeline as visually unique. The cut here is contract-based: if the variant matches, migrate; otherwise document. Watch the red token rule (FR 6) — Timeline's canonical-position indicator usage is the *one* legitimate red surface and must remain.
+**Notes:** Phase one deferred Timeline as visually unique. The cut here is contract-based: if the variant matches, migrate; otherwise document. Watch the red token rule (FR 6) — Timeline's canonical-position indicator usage is the _one_ legitimate red surface and must remain.
 **Done:** [x]
 
 ---

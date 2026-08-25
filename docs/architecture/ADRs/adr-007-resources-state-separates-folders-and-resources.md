@@ -18,11 +18,11 @@ Resource state should stay simple and easy to reason about. Components need fast
 ## Options Considered
 
 1. Store folders and non-folder resources in one unified collection
-    - Simplifies one part of storage shape.
-    - Requires repeated filtering and conditional logic because folders have different behavior.
+   - Simplifies one part of storage shape.
+   - Requires repeated filtering and conditional logic because folders have different behavior.
 2. Keep folders and non-folder resources separate (chosen)
-    - Keeps read/write paths clearer for most component usage.
-    - Avoids extra filtering in common flows.
+   - Keeps read/write paths clearer for most component usage.
+   - Avoids extra filtering in common flows.
 
 ## Trade-offs
 

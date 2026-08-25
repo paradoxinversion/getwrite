@@ -5,13 +5,13 @@
 
 ## Context
 
-Four slices built GetWrite's hosted-storage foundation: request-scoped `StorageContext` (ADR-017), tenant resolution (ADR-018), route enforcement, and adapter isolation. After the last of these, every file under `frontend/src/lib/models/` performs its data-path I/O through the `io.ts` wrappers, which resolve `StorageContext.adapter` per call. The model layer is now *adapter-agnostic*.
+Four slices built GetWrite's hosted-storage foundation: request-scoped `StorageContext` (ADR-017), tenant resolution (ADR-018), route enforcement, and adapter isolation. After the last of these, every file under `frontend/src/lib/models/` performs its data-path I/O through the `io.ts` wrappers, which resolve `StorageContext.adapter` per call. The model layer is now _adapter-agnostic_.
 
 But nothing outside tests ever injected a non-default adapter. `withStorageContext` resolved `tenantRoot` per request yet always bound the process-default `fs/promises` adapter, so the adapter half of the seam was unexercised. ADR-017 named an object-storage adapter (S3/R2, isolating tenants by key prefix) as a sanctioned future "backend swap," and `docs/standards/storage-context.md` §5 recorded that "the remaining backend work (a concrete non-filesystem adapter) is deferred; the model layer is ready for it." This ADR is that work.
 
 Constraints in force at the time of the decision:
 
-- **Object stores are semantically different from a POSIX filesystem.** They are a flat key/value namespace: no directories, no atomic `rename`, no `fsync`, and `readdir` becomes a list-prefix. ADR-017 flagged that adopting one "changes correctness semantics of the model layer, not just its backend." The model layer, however, consumes only a *thin* slice of those semantics — reconnaissance confirmed it reads only `Stats.isDirectory()` + existence and `Dirent.{name,isDirectory,isFile}`, and depends on the `err.code === "ENOENT"` convention for missing paths.
+- **Object stores are semantically different from a POSIX filesystem.** They are a flat key/value namespace: no directories, no atomic `rename`, no `fsync`, and `readdir` becomes a list-prefix. ADR-017 flagged that adopting one "changes correctness semantics of the model layer, not just its backend." The model layer, however, consumes only a _thin_ slice of those semantics — reconnaissance confirmed it reads only `Stats.isDirectory()` + existence and `Dirent.{name,isDirectory,isFile}`, and depends on the `err.code === "ENOENT"` convention for missing paths.
 - **One POSIX-hard dependency exists.** `revision.ts` renames a temp directory to `v-<N>` and relies on the rename failing if the destination already exists. Object stores have no atomic directory rename and no fail-if-exists primitive.
 - **The dependency bar is real.** `docs/standards/package-selection.md` requires justifying and version-verifying any new dependency, and GetWrite has no object-store client today. A network client (AWS SDK) is heavy, cannot run in CI without a mock/MinIO, and does not by itself solve cross-instance locking.
 - **Local-first must stay byte-for-byte.** Desktop/Electron and today's hosted single-volume path must be unaffected unless a deployment explicitly opts into the new backend.
@@ -23,12 +23,14 @@ Constraints in force at the time of the decision:
 Pull in `@aws-sdk/client-s3` (or a lighter S3v4 client) and implement `StorageAdapter` directly against it.
 
 **Pros:**
+
 - Delivers a production cloud backend in one landing; strongest "it runs on S3" signal.
 - Forces the eventual-consistency and credential questions to be settled now.
 
 **Cons:**
+
 - A heavy new dependency requiring version sign-off, and unusable in CI without a mock or MinIO — the contract can't be proven in the normal test gate.
-- Still drags in the full correctness-semantics rework (rename emulation, list-prefix `readdir`, dir markers) *and* leaves cross-instance locking unsolved — so it is bigger and riskier without removing the hard parts.
+- Still drags in the full correctness-semantics rework (rename emulation, list-prefix `readdir`, dir markers) _and_ leaves cross-instance locking unsolved — so it is bigger and riskier without removing the hard parts.
 - Couples the first proof of the seam to one vendor's client before the object-store→filesystem bridge is validated.
 
 ### Option 2: `ObjectStore` interface + two dependency-free implementations
@@ -36,23 +38,27 @@ Pull in `@aws-sdk/client-s3` (or a lighter S3v4 client) and implement `StorageAd
 Define a minimal `ObjectStore` key/value contract (`get`/`put`/`delete`/`list`/`has` over `Buffer`s) and implement `objectStoreAdapter(store)` — the bridge that maps paths to keys, synthesizes the thin `Stats`/`Dirent` shapes, uses trailing-slash directory markers so empty directories are observable, models `readdir` as a prefix list, and emulates `rename`. Ship two `ObjectStore` implementations: an in-memory `Map` store (tests) and a filesystem-backed store that persists each object as a flat percent-encoded file (runnable in dev/CI). Select the backend per request behind an env-gated `resolveBackendAdapter()`. A real S3/R2 client becomes a later `ObjectStore` implementation.
 
 **Pros:**
+
 - Confronts the genuinely hard problems (rename emulation, dir markers, prefix listing, ENOENT parity) head-on, and proves them against a persistent store in the normal CI gate — no cloud, no new dependency.
 - Yields a reusable adapter-conformance suite (which the repo lacked) run against the fs adapter and both object stores, so "the seam is transparent to the model layer" is a passing test, not a claim.
 - Reduces a future S3/R2 client to a ~50-line `ObjectStore` implementation behind the same selector — a backend change, not a rewrite, exactly as ADR-017 promised.
 - Default path stays byte-for-byte the filesystem adapter; the object store is strictly opt-in.
 
 **Cons:**
+
 - No live cloud backend at the end of this slice; "runs on S3" is deferred to a later client implementation.
-- The filesystem-backed `ObjectStore` stores bytes on disk, so it proves object-store *semantics* rather than exercising real network/eventual-consistency behavior.
+- The filesystem-backed `ObjectStore` stores bytes on disk, so it proves object-store _semantics_ rather than exercising real network/eventual-consistency behavior.
 
 ### Option 3: Ship the interface now and a thin S3 client wired behind the selector
 
 Do Option 2 and also include a minimal real S3/R2 `ObjectStore` behind the selector.
 
 **Pros:**
+
 - A live bucket works if configured, alongside the tested fs-backed proof.
 
 **Cons:**
+
 - Reintroduces the dependency and version sign-off, and the S3 path remains unverifiable in CI — a partially-tested surface shipped as if complete.
 - Larger scope for no additional proof of the seam over Option 2.
 
@@ -82,7 +88,7 @@ On the one POSIX-hard dependency: the object-store adapter **preserves the fail-
 
 ### Neutral
 
-- `object-store.ts` (the fs-backed store) legitimately uses `node:fs` directly. It *is* a storage backend, the same category as `io.ts` and `memoryAdapter.ts`, and so sits outside the "model code routes through the adapter" rule.
+- `object-store.ts` (the fs-backed store) legitimately uses `node:fs` directly. It _is_ a storage backend, the same category as `io.ts` and `memoryAdapter.ts`, and so sits outside the "model code routes through the adapter" rule.
 - Cross-instance locking is unchanged and out of scope: the in-process locks remain correct under ADR-017's one-instance-per-tenant pin. A distributed-coordination mechanism is a separate, later decision.
 - Tenant isolation still rests on `tenantRoot` — now realized as an object-key prefix rather than a directory path — consistent with ADR-018's revisit note.
 

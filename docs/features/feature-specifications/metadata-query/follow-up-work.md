@@ -9,6 +9,7 @@ but the actual implementation in `backlinks.ts` (confirmed by unit tests) stores
 `sourceId → [targetIds]` (forward links, not inverse).
 
 The `query-intrinsics.ts` implementation follows the actual code:
+
 - `linksTo`: direct lookup `index[resource.id]`
 - `linkedFrom`: O(n) scan inverting the index at read time
 
@@ -69,6 +70,7 @@ The spec mockup shows the count of affected sidecars in the Clear option descrip
 The existing `schemaManager.test.tsx` suite is blocked by the pre-existing `DialogTitle`/`Dialog` context issue (see Task 23 follow-up). The new `DeprecateOrClearDialog` is not yet covered by component tests.
 
 **Recommended action:** Once the DialogTitle issue is fixed, add tests that:
+
 1. Click the trash icon on an unlocked field and verify `DeprecateOrClearDialog` renders.
 2. Select "Deprecate" and confirm — verify `deprecateMetadataField` is dispatched.
 3. Select "Clear" and confirm — verify `clearMetadataField` is dispatched.

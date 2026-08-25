@@ -1,8 +1,8 @@
 # Spike: KDF and AEAD selection for end-to-end encryption
 
-Resolves the Task 1 risk in `tasks.md`: *"Argon2id is not in WebCrypto and Node's
+Resolves the Task 1 risk in `tasks.md`: _"Argon2id is not in WebCrypto and Node's
 `crypto.scrypt` is not in the browser — a shared implementation may need a WASM
-dependency."*
+dependency."_
 
 **Outcome: de-risked.** A single implementation covers desktop and Android. No
 dual code path is needed.
@@ -14,18 +14,18 @@ Scripts: `kdf-spike.mjs`, `argon-spike.mjs` in the session scratchpad.
 
 ## 1. AEAD: AES-256-GCM via WebCrypto — settled, no dependency
 
-`globalThis.crypto.subtle` exists in Node 24 *and* in the Android WebView, so one
+`globalThis.crypto.subtle` exists in Node 24 _and_ in the Android WebView, so one
 `SubtleCrypto` call path serves both targets. Capacitor sets no `androidScheme`,
 so Android defaults to `https://localhost` — a secure context, which is what
 gates `crypto.subtle` availability.
 
-| Payload | Seal | Open | Throughput |
-| --- | --- | --- | --- |
-| 512 B | 0.025 ms | 0.014 ms | 19 MB/s |
-| 4 KB | 0.015 ms | 0.013 ms | 258 MB/s |
-| 64 KB | 0.042 ms | 0.028 ms | 1.5 GB/s |
-| 1 MB | 0.224 ms | 0.153 ms | 4.5 GB/s |
-| 10 MB | 3.97 ms | 2.66 ms | 2.5 GB/s |
+| Payload | Seal     | Open     | Throughput |
+| ------- | -------- | -------- | ---------- |
+| 512 B   | 0.025 ms | 0.014 ms | 19 MB/s    |
+| 4 KB    | 0.015 ms | 0.013 ms | 258 MB/s   |
+| 64 KB   | 0.042 ms | 0.028 ms | 1.5 GB/s   |
+| 1 MB    | 0.224 ms | 0.153 ms | 4.5 GB/s   |
+| 10 MB   | 3.97 ms  | 2.66 ms  | 2.5 GB/s   |
 
 Envelope overhead is a flat **+28 bytes** (12-byte nonce + 16-byte tag).
 Tampered envelopes are rejected; zero-length payloads round-trip (FR16).
@@ -39,14 +39,14 @@ of a native-path write. The budget's real risk was never the cipher.
 
 WebCrypto offers only PBKDF2. Measured PBKDF2 cost on this machine:
 
-| Parameters | Time |
-| --- | --- |
-| SHA-512 × 210,000 | 37 ms |
-| SHA-256 × 600,000 | 42 ms |
-| SHA-256 × 1,000,000 | 73 ms |
+| Parameters          | Time   |
+| ------------------- | ------ |
+| SHA-512 × 210,000   | 37 ms  |
+| SHA-256 × 600,000   | 42 ms  |
+| SHA-256 × 1,000,000 | 73 ms  |
 | SHA-256 × 2,000,000 | 141 ms |
 
-Those numbers are the argument *against* PBKDF2, not for it. At 42 ms for the
+Those numbers are the argument _against_ PBKDF2, not for it. At 42 ms for the
 OWASP-recommended 600k iterations, reaching a meaningful work factor needs
 iteration counts in the millions — and PBKDF2 is compute-only, so GPUs and ASICs
 parallelize it far more effectively than they do a memory-hard function.
@@ -55,11 +55,11 @@ equivalent at any iteration count.
 
 Two zero-runtime-dependency Argon2id implementations, both benchmarked:
 
-| Parameters | `@noble/hashes` (pure JS) | `hash-wasm` (WASM) |
-| --- | --- | --- |
-| m=19 MiB, t=2, p=1 (OWASP min) | 266 ms | 19 ms |
-| m=45 MiB, t=1, p=1 | 325 ms | 22 ms |
-| m=64 MiB, t=3, p=1 | 1362 ms | 94 ms |
+| Parameters                     | `@noble/hashes` (pure JS) | `hash-wasm` (WASM) |
+| ------------------------------ | ------------------------- | ------------------ |
+| m=19 MiB, t=2, p=1 (OWASP min) | 266 ms                    | 19 ms              |
+| m=45 MiB, t=1, p=1             | 325 ms                    | 22 ms              |
+| m=64 MiB, t=3, p=1             | 1362 ms                   | 94 ms              |
 
 **The load-bearing finding: the two produce byte-identical output for identical
 parameters** (verified in `argon-spike.mjs`). So the choice is not a lock-in.
@@ -67,12 +67,12 @@ A target could use one implementation and another target the other, and the same
 passphrase still derives the same key — which also means switching later is not a
 data migration.
 
-| | `@noble/hashes` 2.2.0 | `hash-wasm` 4.12.0 |
-| --- | --- | --- |
-| Runtime dependencies | none | none |
-| Installed size | 1.0 MB | 2.0 MB |
-| Form | pure JS/TS | WASM binary + JS loader |
-| WebView considerations | none | WASM instantiate + CSP |
+|                        | `@noble/hashes` 2.2.0 | `hash-wasm` 4.12.0      |
+| ---------------------- | --------------------- | ----------------------- |
+| Runtime dependencies   | none                  | none                    |
+| Installed size         | 1.0 MB                | 2.0 MB                  |
+| Form                   | pure JS/TS            | WASM binary + JS loader |
+| WebView considerations | none                  | WASM instantiate + CSP  |
 
 ## 3. Extrapolation to phone (needs on-device confirmation)
 
@@ -85,7 +85,7 @@ the existing device harness:
 - WASM at m=64 MiB t=3: 94 ms → **~300–500 ms** per unlock.
 
 Unlock happens once per session (FR7), so ~1 s is tolerable. The real difference
-is *security per unit of wall-clock*: within any fixed time budget, WASM affords
+is _security per unit of wall-clock_: within any fixed time budget, WASM affords
 substantially heavier parameters, and heavier parameters are the entire defense.
 
 Memory is not a constraint either way — 19 MiB is comfortable in an Android

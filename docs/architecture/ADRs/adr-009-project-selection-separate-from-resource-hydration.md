@@ -14,11 +14,11 @@ Project selection is handled separately from resource/folder population, with di
 ## Options Considered
 
 1. Couple selection and all resource/folder population into one broader flow
-    - Fewer explicit steps.
-    - Blurs boundaries and makes data-availability timing harder to reason about.
+   - Fewer explicit steps.
+   - Blurs boundaries and makes data-availability timing harder to reason about.
 2. Keep selection and hydration as distinct steps (chosen)
-    - Preserves clear separation of concerns.
-    - Keeps loading behavior explicit and easier to maintain.
+   - Preserves clear separation of concerns.
+   - Keeps loading behavior explicit and easier to maintain.
 
 ## Trade-offs
 

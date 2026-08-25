@@ -46,26 +46,19 @@ Examples
 Minimal `project.json`:
 
 ```json
-{
-    "name": "My Project",
-    "maxRevisions": 50,
-    "autoPrune": true
-}
+{ "name": "My Project", "maxRevisions": 50, "autoPrune": true }
 ```
 
 Advanced `project.json` (dev-friendly):
 
 ```json
 {
-    "id": "proj-abc",
-    "name": "Novel Draft",
-    "description": "A project for my novel",
-    "maxRevisions": 100,
-    "autoPrune": true,
-    "meta": {
-        "enablePreviews": true,
-        "index": { "enabled": true }
-    }
+  "id": "proj-abc",
+  "name": "Novel Draft",
+  "description": "A project for my novel",
+  "maxRevisions": 100,
+  "autoPrune": true,
+  "meta": { "enablePreviews": true, "index": { "enabled": true } }
 }
 ```
 

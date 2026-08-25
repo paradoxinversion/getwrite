@@ -24,7 +24,7 @@ moves.
 
 ## Non-goals
 
-- Allowing the user to *change* node type from this indicator (read-only
+- Allowing the user to _change_ node type from this indicator (read-only
   display).
 - Displaying inline mark formatting (bold, italic, links) — node type only.
 - Surfacing node type in non-editor views (DataView, Organizer, Timeline).

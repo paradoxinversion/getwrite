@@ -5,6 +5,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 1: Add `multi-resource-ref` to field type union
+
 **What:** Extend `MetadataFieldTypeSchema` (Zod enum) and `MetadataFieldType` (TS union) to include `"multi-resource-ref"`.
 **Files:** `frontend/src/lib/models/schemas.ts`, `frontend/src/lib/models/types.ts`
 **Done when:** `MetadataFieldTypeSchema.safeParse("multi-resource-ref")` succeeds; a `MetadataField` literal with `type: "multi-resource-ref"` type-checks; `pnpm typecheck` passes.
@@ -16,6 +17,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 2: Extend `MetadataField` with `refFolder`, `includeSubfolders`, `maxSelections`
+
 **What:** Add three optional properties to `MetadataFieldSchema` (Zod) and the `MetadataField` TS interface: `refFolder?: string`, `includeSubfolders?: boolean`, `maxSelections?: number` (positive integer).
 **Files:** `frontend/src/lib/models/schemas.ts`, `frontend/src/lib/models/types.ts`
 **Done when:** A `MetadataField` literal carrying any subset of the three new properties round-trips through `MetadataFieldSchema.safeParse`; `maxSelections` is validated as a positive integer (`z.number().int().positive().optional()`); `pnpm typecheck` and `pnpm test:ci` pass.
@@ -27,6 +29,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 3: Model + API + Redux for ref-property updates
+
 **What:** Add an `update-ref-properties` action (model function + route handler + Redux thunk) that patches `refFolder`, `includeSubfolders`, and `maxSelections` on a single field.
 **Files:** `frontend/src/lib/models/metadata-schema.ts`, `frontend/app/api/project/metadata-schema/route.ts`, `frontend/src/store/projectsSlice.ts` (transport service file alongside)
 **Done when:** Dispatching the new thunk patches the three properties in `state.projects.projects[id].metadataSchema` after the API returns; unit tests in `metadata-schema-types.test.ts` cover the model function happy path and locked-field guard; `pnpm test:ci` passes.
@@ -38,6 +41,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 4: Build `MultiResourceRefInput` component (chips, autocomplete, keyboard, click-to-navigate)
+
 **What:** Create the chip-based input that renders selected resources as `Chip`s, drives an autocomplete dropdown, handles Enter/Backspace, and dispatches `setSelectedResourceId` on chip click.
 **Files:** `frontend/components/Sidebar/controls/MultiResourceRefInput.tsx` (new), `frontend/tests/multi-resource-ref-input.test.tsx` (new)
 **Done when:** Typing one or more characters shows suggestions filtered case-insensitively (FR 3); selecting from the dropdown or pressing Enter on an exact match adds a chip and clears the input (FR 4); Enter on no match adds nothing (FR 5); each chip renders via `Chip` (shape `sharp`, size `sm`) with `onDismiss` removing only that ref (FR 6); Tab cycles between chips, Backspace on empty input removes the last chip (FR 7); chips with non-null `id` dispatch `setSelectedResourceId(id)` on click and chips with `id: null` render with no `onClick` (FR 16); unit tests cover each behavior; `pnpm test:ci` and `pnpm typecheck` pass.
@@ -49,6 +53,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 5: Folder-scoped autocomplete candidates
+
 **What:** Filter the `resourceOptions` passed into `MultiResourceRefInput` (or filter inside it given a `refFolder` / `includeSubfolders` prop) so candidates are limited to the configured folder and optionally its descendants.
 **Files:** `frontend/components/Sidebar/MetadataSidebar.tsx` (or a co-located helper), `frontend/components/Sidebar/controls/MultiResourceRefInput.tsx`
 **Done when:** Given a field with `refFolder: "<folderId>"` and `includeSubfolders: false`, the autocomplete only surfaces resources whose `folderId === refFolder` (FR 11); with `includeSubfolders: true`, candidates also include resources in any descendant folder (FR 12); when `refFolder` is unset, all resources remain candidates; unit test covers all three cases; `pnpm test:ci` passes.
@@ -60,6 +65,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 6: Max-selections enforcement
+
 **What:** When `maxSelections` is set, prevent the input from adding chips beyond the cap and disable the text input once the cap is reached.
 **Files:** `frontend/components/Sidebar/controls/MultiResourceRefInput.tsx`, `frontend/tests/multi-resource-ref-input.test.tsx`
 **Done when:** With `maxSelections: 2` and two chips selected, the text input is disabled (`disabled` attribute set) and no further chips can be added via Enter or suggestion click; removing a chip re-enables the input; unit test covers cap reached, cap exceeded attempt blocked, removal re-enables; `pnpm test:ci` passes.
@@ -71,6 +77,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 7: Wire `MultiResourceRefInput` into `MetadataSidebar`
+
 **What:** Add a `case "multi-resource-ref":` branch in `MetadataSidebar`'s field-renderer switch that mounts `MultiResourceRefInput` with the correct `value`, `onChange`, scoped `resourceOptions`, and `maxSelections`.
 **Files:** `frontend/components/Sidebar/MetadataSidebar.tsx`
 **Done when:** A schema field with `type: "multi-resource-ref"` renders `MultiResourceRefInput` in the sidebar; its `onChange` writes the resulting `ResourceRef[]` to the sidecar through the existing per-field save path; adding, removing, and reordering chips persist correctly; an existing sidecar value (`ResourceRef[]`) loads and renders without a migration step (FR 8); `pnpm typecheck` passes.
@@ -82,6 +89,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 8: SchemaManager — add `multi-resource-ref` to field-type selector
+
 **What:** Add `"multi-resource-ref": "Multi Ref"` (or similar label) to `FIELD_TYPE_LABELS` and ensure the type dropdown lists it.
 **Files:** `frontend/components/SchemaManager/SchemaManager.tsx`
 **Done when:** The field-type dropdown in SchemaManager includes "Multi Ref"; selecting it dispatches `changeMetadataFieldType` with `"multi-resource-ref"` and the sidebar renders the new control for that field; `pnpm typecheck` passes.
@@ -93,6 +101,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 9: SchemaManager — folder picker + Include Subfolders checkbox
+
 **What:** Add UI controls in SchemaManager to set `refFolder` (folder picker dropdown) and `includeSubfolders` (checkbox) on a `multi-resource-ref` field, wired to the Task 3 thunk.
 **Files:** `frontend/components/SchemaManager/SchemaManager.tsx`
 **Done when:** When a field's type is `multi-resource-ref`, a folder dropdown (built from `state.resources.folders`) and an "Include Subfolders" checkbox appear; selecting a folder dispatches the ref-properties thunk; the checkbox is hidden until `refFolder` is set (FR 13); changes round-trip to disk via the existing API route; `pnpm typecheck` passes.
@@ -104,6 +113,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 10: SchemaManager — `maxSelections` number input
+
 **What:** Add an optional number input in SchemaManager that sets `maxSelections` on a `multi-resource-ref` field, wired to the Task 3 thunk.
 **Files:** `frontend/components/SchemaManager/SchemaManager.tsx`
 **Done when:** A number input labeled "Max selections" appears for `multi-resource-ref` fields; entering a positive integer dispatches the thunk; clearing the input clears the property (unbounded); `pnpm typecheck` passes.
@@ -115,6 +125,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ### Task 11: Storybook story for `MultiResourceRefInput`
+
 **What:** Create a stories file covering empty state, chips present, autocomplete open, and a11y verification.
 **Files:** `frontend/stories/Sidebar/MultiResourceRefInput.stories.tsx` (new — match existing `stories/` subdirectory convention)
 **Done when:** Named stories `Empty`, `WithChips`, `AutocompleteOpen`, and `MaxSelectionsReached` render in Storybook without console errors; the `@storybook/addon-a11y` panel reports no violations; keyboard Tab reaches each chip's dismiss button and the text input; `pnpm storybook` builds.
@@ -126,6 +137,7 @@ Spec: `docs/features/feature-specifications/metadata/multi-ref-selection/multi-r
 ---
 
 ## Summary
+
 - **Total tasks:** 11
 - **Total estimated effort:** 25 story points
 - **Critical path:** Tasks 1 → 2 → 4 → 5 → 7 (14 pts) — the longest dependent chain runs through the input component, its folder-scope extension, and the sidebar wiring.

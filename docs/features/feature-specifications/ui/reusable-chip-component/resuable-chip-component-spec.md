@@ -44,10 +44,10 @@ A reusable `Chip` component providing a compact, labeled UI element for surfacin
 7. The component must accept an optional `onClick` callback. When provided without `onDismiss`, the chip root element renders as a `<button>`. When omitted, it renders as a `<span>`. When both `onClick` and `onDismiss` are provided, the root renders as a non-interactive `<span>` containing a `chip__label-action` `<button>` for the label and a sibling dismiss `<button>` — this avoids nesting interactive controls (ARIA `nested-interactive` violation). The `onClick` and `onDismiss` handlers must not propagate to each other.
 8. The component must accept a `size` prop (`"sm" | "md" | "lg"`) defaulting to `"md"`. Sizes must map to the following values:
 
-   | Size | Font size | Padding |
-   |------|-----------|---------|
-   | `sm` | 9px       | `2px 6px` |
-   | `md` | 10px      | `3px 8px` |
+   | Size | Font size | Padding    |
+   | ---- | --------- | ---------- |
+   | `sm` | 9px       | `2px 6px`  |
+   | `md` | 10px      | `3px 8px`  |
    | `lg` | 12px      | `5px 12px` |
 
 9. All chip CSS classes must live in `getwrite-utilities.css` under `@layer components`, following the existing BEM-like naming convention (e.g. `chip`, `chip--sharp`, `chip--rounded`, `chip--sm`, `chip--lg`, `chip__dismiss`).
@@ -58,12 +58,12 @@ A reusable `Chip` component providing a compact, labeled UI element for surfacin
 
 None — all questions resolved prior to implementation.
 
-| Question | Decision |
-|---|---|
-| OQ-1: Color model | Arbitrary CSS color string (`color?: string`); contrast is caller's responsibility |
-| OQ-2: Shape semantics | `sharp` = `border-radius: 0`; `rounded` = `border-radius: 9999px` |
+| Question                 | Decision                                                                                                                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OQ-1: Color model        | Arbitrary CSS color string (`color?: string`); contrast is caller's responsibility                                                                                                                                                                                 |
+| OQ-2: Shape semantics    | `sharp` = `border-radius: 0`; `rounded` = `border-radius: 9999px`                                                                                                                                                                                                  |
 | OQ-3: Base interactivity | Chip renders as `<button>` when `onClick` is provided alone, `<span>` otherwise. When both `onClick` and `onDismiss` are present, root is a non-interactive `<span>` with sibling `chip__label-action` + dismiss buttons to satisfy ARIA nested-interactive rules. |
-| OQ-4: Size variants | Three sizes: `sm` (9px, 2/6px), `md` (10px, 3/8px, default), `lg` (12px, 5/12px) |
+| OQ-4: Size variants      | Three sizes: `sm` (9px, 2/6px), `md` (10px, 3/8px, default), `lg` (12px, 5/12px)                                                                                                                                                                                   |
 
 ## Out of scope (deferred)
 

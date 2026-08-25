@@ -29,22 +29,22 @@
 
 ```json
 {
-    "id": "b19abcd4-81b2-44ef-b4b4-ba1310dbdf87",
-    "name": "Title Page",
-    "type": "text",
-    "createdAt": "2026-02-21T07:17:41.691Z",
-    "modifiedAt": "2026-02-21T07:17:41.691Z",
-    "folderId": "folder-123",
-    "tags": ["front-matter"],
-    "preserve": true,
-    "metadata": {},
-    "userMetadata": {
-        "orderIndex": 0,
-        "status": "Draft",
-        "notes": "Opening chapter — introduce setting before character.",
-        "characters": ["Elena", "Marcus"],
-        "pov": "Third person limited"
-    }
+  "id": "b19abcd4-81b2-44ef-b4b4-ba1310dbdf87",
+  "name": "Title Page",
+  "type": "text",
+  "createdAt": "2026-02-21T07:17:41.691Z",
+  "modifiedAt": "2026-02-21T07:17:41.691Z",
+  "folderId": "folder-123",
+  "tags": ["front-matter"],
+  "preserve": true,
+  "metadata": {},
+  "userMetadata": {
+    "orderIndex": 0,
+    "status": "Draft",
+    "notes": "Opening chapter — introduce setting before character.",
+    "characters": ["Elena", "Marcus"],
+    "pov": "Third person limited"
+  }
 }
 ```
 

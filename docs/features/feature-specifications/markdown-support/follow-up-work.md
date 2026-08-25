@@ -26,9 +26,9 @@
    representation; preserving it would require wrapping affected paragraphs in
    inline `<p style="line-height:…">` HTML, which makes exports unusable as
    Markdown for a display-only setting. Decision: the paragraph and its text
-   round-trip; the attribute is normalized to default. *This deviates from a
+   round-trip; the attribute is normalized to default. _This deviates from a
    literal reading of the Task 3 done-condition ("parse back to the original
-   node").* It should instead be reported by the Task 4 lossy-export warning.
+   node")._ It should instead be reported by the Task 4 lossy-export warning.
 
 2. **Text color (`textStyle` color) deferred to Task 4. — RESOLVED in Task 4.**
    `textStyle` color/background/font marks have no GFM representation and are
@@ -45,7 +45,7 @@
 3. **Flaky test: `tests/unit/media-file-route.test.ts` (test-isolation bug).**
    This file fails intermittently in the full `pnpm test:ci` run (errors:
    `ENOTEMPTY: directory not empty` on temp-dir `rmdir`, and `Unexpected end of
-   JSON input`) but passes reliably in isolation. Observed across Tasks 1–3, so
+JSON input`) but passes reliably in isolation. Observed across Tasks 1–3, so
    it predates this feature. Likely a parallel temp-directory setup/cleanup
    race. Worth fixing independently (unique temp dirs per test / await cleanup).
    Update (Task 8): `tests/reorder-persistence.test.tsx` and an
@@ -68,7 +68,7 @@
    (`e2e/markdown-source-toggle.e2e.spec.ts`, 9 tests) covering the
    presentational layer end-to-end — the "Edit as Markdown" warning modal
    (open/contents/confirm/cancel/escape) and the `MarkdownSourceView` source
-   view (textarea display, editing, return-to-rich toggle). *Still open:* this
+   view (textarea display, editing, return-to-rich toggle). _Still open:_ this
    drives the Storybook components, not the real ProseMirror editor wired inside
    `TipTapEditor`. Fully closing the gap still needs the real editor to mount in
    a browser test (relying on the Task 1 `elementFromPoint` stub) or a dedicated
@@ -88,8 +88,8 @@
    Because nothing was emitted while editing Markdown source, the in-progress
    `sourceText` was a detached buffer, and `TipTapEditor`'s value-sync effect
    calls `setMode("rich")` on any external `value` change (resource/revision
-   switch), dropping the unsaved edits. *Surfaced while smoke-testing the toggle
-   on 2026-06-16.*
+   switch), dropping the unsaved edits. _Surfaced while smoke-testing the toggle
+   on 2026-06-16._
    **Resolution (Option B — autosave in source mode):** `MarkdownSourceView`'s
    `onChange` now routes through a debounced `commitSourceMarkdown` (400 ms) that
    parses GFM → doc, loads it into the hidden editor, and emits `onChange` so the
@@ -98,20 +98,20 @@
    autosave queue's wrong-target protection; the debounce is additionally
    cancelled on toggle-back, on external `value` swaps, and on unmount so a late
    fire can't write the old buffer into a newly-selected resource.
-   - *Residual (accepted):* a sub-second trailing window — the last keystrokes
+   - _Residual (accepted):_ a sub-second trailing window — the last keystrokes
      within the debounce before a resource switch — can still be lost, because
      the only safe flush point is "while still on the resource." The normal exit
      (toggle-back) always commits fully.
-   - *Open question:* the canonical revision is now continuously rewritten with
+   - _Open question:_ the canonical revision is now continuously rewritten with
      the **normalized** round-tripped doc during source editing (consistent with
      toggle-back, but it diverges from the literal source text once typing
      starts).
-   - *Test coverage:* the commit path is editor-coupled and lives inside
+   - _Test coverage:_ the commit path is editor-coupled and lives inside
      `TipTapEditor`, which short-circuits to the mock under Vitest (same
      `inTestEnv` limit as the rest of the toggle wiring), so it is verified by
      manual smoke-test plus the serializer/source-view unit tests rather than a
      direct unit test.
-   - *Deferred alternatives* (lift mode to the shell for guaranteed commit-on-
+   - _Deferred alternatives_ (lift mode to the shell for guaranteed commit-on-
      leave / warn-on-leave / per-resource draft buffer) are captured in the
      `saboteur-pos` note "markdown source-mode autosave: data-loss options".
 
@@ -132,7 +132,7 @@
    **Update (2026-06-16):** the source/rich toggle UI now has a Storybook
    Playwright pass (`e2e/markdown-source-toggle.e2e.spec.ts`); the export and
    compile modals already had e2e (`e2e/export-modal.e2e.spec.ts`,
-   `e2e/compile-preview.e2e.spec.ts`). *Still open:* no e2e exercises the **real
+   `e2e/compile-preview.e2e.spec.ts`). _Still open:_ no e2e exercises the **real
    ProseMirror editor** through the toggle (see Task 5 item 1), and no e2e drives
    a full export/compile **download + warning** round trip through the live shell
    (`page.tsx`/`AppShell`/`ShellModalCoordinator`) — that wiring is still covered
@@ -158,8 +158,8 @@ each affected construct with its occurrence count and how it is handled
    and never mounts ProseMirror (see Task 5 item 1). The modal and its
    warning-rendering logic are tested directly via `MarkdownSwitchWarningModal`
    (unit) and a Storybook Playwright pass (`e2e/markdown-source-toggle.e2e.spec
-   .ts`). **Resolution:** user smoke-tested in the running app — the modal
+.ts`). **Resolution:** user smoke-tested in the running app — the modal
    appears on "Edit as Markdown", Cancel keeps rich mode, Confirm enters source
-   mode. *Still open:* the toolbar-button → modal → `switchToSource` thread
+   mode. _Still open:_ the toolbar-button → modal → `switchToSource` thread
    inside the real editor is exercised only manually, not by an automated test,
    for the same `inTestEnv` reason above.

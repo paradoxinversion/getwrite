@@ -49,13 +49,16 @@ getwrite-cli project create [projectRoot] --spec <specPath> [--name <name>]
 ```
 
 **Arguments:**
+
 - `projectRoot` (optional) — directory to create the project in. Defaults to `.` (current directory).
 
 **Options:**
+
 - `-s, --spec <specPath>` (required) — path to a project-type JSON spec file. See `getwrite-config/templates/project-types/` for bundled specs.
 - `-n, --name <name>` (optional) — display name for the project. Defaults to the spec's `name` field.
 
 **What it does:**
+
 1. Validates the spec file.
 2. Creates `<projectRoot>/project.json`.
 3. Creates `<projectRoot>/folders/<slug>/folder.json` for each folder in the spec.
@@ -66,6 +69,7 @@ getwrite-cli project create [projectRoot] --spec <specPath> [--name <name>]
 **Exit codes:** `0` = success, `2` = error
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs project create ./my-novel \
   --spec getwrite-config/templates/project-types/novel_project_type.json \
@@ -89,6 +93,7 @@ Writes an empty text template to `<projectRoot>/meta/templates/<templateId>.json
 ```
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs templates save ./my-novel scene "Scene"
 ```
@@ -106,6 +111,7 @@ getwrite-cli templates create <projectRoot> <templateId> [name]
 Loads `<projectRoot>/meta/templates/<templateId>.json` and instantiates a new resource from it, optionally overriding the display name. Prints the new resource's UUID on success.
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs templates create ./my-novel scene "Opening Scene"
 # Created resource b19abcd4-81b2-44ef-b4b4-ba1310dbdf87
@@ -128,6 +134,7 @@ Duplicated resource -> <newId>
 ```
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs templates duplicate ./my-novel b19abcd4-81b2-44ef-b4b4-ba1310dbdf87
 ```
@@ -145,6 +152,7 @@ getwrite-cli templates list <projectRoot>
 Reads all `.json` files from `<projectRoot>/meta/templates/` and prints one tab-separated line per template: `<id>\t<name>\t<type>`.
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs templates list ./my-novel
 # scene    Scene    text
@@ -162,12 +170,15 @@ getwrite-cli prune [projectRoot] [--max <number>]
 ```
 
 **Arguments:**
+
 - `projectRoot` (optional) — project to prune. Defaults to `process.cwd()`.
 
 **Options:**
+
 - `-m, --max <number>` (optional) — maximum revisions to keep per resource. Defaults to `50`.
 
 **What it does:**
+
 1. Reads all resource UUIDs from `<projectRoot>/resources/`.
 2. For each resource, calls `pruneRevisions(projectRoot, resourceId, maxRevisions)`.
 3. Deletes selected revision directories (`revisions/<resourceId>/v-<N>/`).
@@ -176,6 +187,7 @@ getwrite-cli prune [projectRoot] [--max <number>]
 **Exit codes:** `0` = success, `2` = unexpected error
 
 **Examples:**
+
 ```sh
 # Prune current directory project, keeping 50 revisions (default)
 node cli/dist/bin/getwrite-cli.cjs prune
@@ -195,9 +207,11 @@ getwrite-cli reindex [projectRoot]
 ```
 
 **Arguments:**
+
 - `projectRoot` (optional) — project to reindex. Defaults to `process.cwd()`.
 
 **What it does:**
+
 1. Reads all resource UUIDs from `<projectRoot>/resources/`.
 2. For each resource, loads its content and re-indexes it into `meta/index/inverted.json`.
 3. Recomputes backlinks across all resources and persists `meta/backlinks.json`.
@@ -205,6 +219,7 @@ getwrite-cli reindex [projectRoot]
 **Exit codes:** `0` = success, `2` = unexpected error
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs reindex ./my-novel
 # [reindex] Done — indexed 12 resource(s) in ./my-novel
@@ -221,9 +236,11 @@ getwrite-cli doctor [projectRoot]
 ```
 
 **Arguments:**
+
 - `projectRoot` (optional) — project to check. Defaults to `process.cwd()`.
 
 **What it does:**
+
 1. Collects every folder id from `<projectRoot>/folders/**/folder.json`.
 2. Flags each resource sidecar whose `folderId` is set but matches no folder.
 3. Flags each folder whose parent (`parentId`/`folderId`) matches no folder.
@@ -231,6 +248,7 @@ getwrite-cli doctor [projectRoot]
 **Exit codes:** `0` = no problems, `1` = one or more problems found, `2` = unexpected error. (The non-zero exit on findings makes it usable as a CI/pre-commit gate.)
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs doctor ./my-novel
 # [doctor] Found 6 problem(s) in ./my-novel:
@@ -251,6 +269,7 @@ getwrite-cli screenshots capture [options]
 ```
 
 **Options:**
+
 - `-b, --storybook <url>` (default `http://localhost:6006`) — base URL of a running Storybook instance.
 - `-o, --out <dir>` (default `./screenshots`) — directory to write PNG files into.
 - `-l, --limit <n>` (default `6`) — maximum number of stories to capture.
@@ -260,6 +279,7 @@ It fetches Storybook's `/index.json` manifest to discover story IDs, navigates t
 **Exit codes:** `1` = no stories found in `index.json`, `2` = unexpected capture error
 
 **Example:**
+
 ```sh
 # Capture up to 20 stories from a remote Storybook, saving to /tmp/shots
 node cli/dist/bin/getwrite-cli.cjs screenshots capture \
@@ -320,6 +340,7 @@ session record. Any failure or unverified item retains the workspace for
 diagnosis.
 
 Two non-obvious behaviors baked into the harness:
+
 - The server URL must use `localhost`, not `127.0.0.1` — Next 16 treats a
   bare IP as a foreign origin absent `allowedDevOrigins` and refuses the HMR
   socket and client chunks, so the page returns 200 but React never hydrates.
@@ -328,6 +349,7 @@ Two non-obvious behaviors baked into the harness:
   and an unread pipe buffer would deadlock the server after one request.
 
 **Example:**
+
 ```sh
 node cli/dist/bin/getwrite-cli.cjs qa start
 # [qa start] Workspace: /var/folders/.../getwrite-qa-xxxxxx
@@ -338,9 +360,9 @@ node cli/dist/bin/getwrite-cli.cjs qa start
 
 ## Environment Variables
 
-| Variable                | Effect                                                     |
-| ----------------------- | ---------------------------------------------------------- |
-| `GETWRITE_CLI_TESTING`  | When set, suppresses `process.exit` calls (for test usage) |
+| Variable               | Effect                                                     |
+| ---------------------- | ---------------------------------------------------------- |
+| `GETWRITE_CLI_TESTING` | When set, suppresses `process.exit` calls (for test usage) |
 
 ---
 
