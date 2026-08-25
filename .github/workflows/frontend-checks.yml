@@ -30,8 +30,8 @@ jobs:
               working-directory: frontend
               run: pnpm run check:no-hex
 
-    markdown-format:
-        name: Markdown formatting
+    format-check:
+        name: Formatting (markdown, JSON, YAML)
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Check markdown formatting
+            - name: Check formatting
               run: pnpm run format:check
 
     quality-gate:
