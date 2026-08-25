@@ -105,7 +105,7 @@ selection for comparison.
 **Notes:** Shipped.
 
 ### Feature 6: Metadata-source folders and reference integrity — Shipped
-**Value:** A novelist can turn any folder into a Character/Location/Item-style
+**Value:** A novelist can turn any folder into a typed
 reference source by flag rather than by name, and a deleted-but-referenced
 resource never silently vanishes from where it's cited.
 **Vertical slice:** `isMetadataSource` folder flag (settable via the
@@ -124,10 +124,14 @@ codebase as protected or name-recognized folders today.
 ### Feature 7: Typed resource metadata — Shipped
 **Value:** A novelist can attach structured, queryable facts to any resource
 instead of relying on prose or ad hoc tags.
-**Vertical slice:** Metadata schema for Notes, Status (project-scoped,
-reorderable, user-defined options), Characters, Locations, Items, POV
-(free text or linked with fallback-string preservation), and Timeframe
-(begin/end, unvalidated ordering); sidecar persistence; Metadata sidebar UI.
+**Vertical slice:** The built-in metadata schema — a Document group of
+Synopsis, Notes, Status (locked, project-scoped select with user-defined
+reorderable options), and Point of View (single resource reference accepting
+free text, preserved as a name with a null id); and a Timeline group of Story
+Date, Duration, and Story End Date (unvalidated start/end ordering). Entity
+reference fields such as characters or locations are not built-ins — see
+Feature 6 (metadata-source folders) and Feature 18 (user-defined fields).
+Sidecar persistence; Metadata sidebar UI.
 **Requirements covered:** FR-9
 **User stories:** US-3
 **Depends on:** Feature 6
@@ -157,7 +161,7 @@ panel (folder, Status, Tags).
 **Notes:** Shipped. Indexes and searches only each resource's canonical
 revision — retained revisions are not searchable until FR-29 (Feature 27)
 ships. Full-text search's own filters are folder/Status/Tags only; it has no
-predicate over Character/Location/Item/Word Count today (see Feature 32).
+predicate over the query builder's fields today (see Feature 32).
 
 ### Feature 10: Backlinks index — Shipped
 **Value:** A plain-file writer can navigate a project by following actual
@@ -183,7 +187,7 @@ rendering dispatch (text/image/audio/mixed).
 `timelineView` feature flag and is disabled unless it is on; turning it on
 force-enables the timeline date fields at the feature-config write seam, so
 the view can never be on without its data. Organizer's only control today is a
-"Hide bodies" toggle — filtering by Status/Character/Location/Word Count is
+"Hide bodies" toggle — filtering by Status, word count, or reference fields is
 entirely unbuilt and is broken out separately as Feature 24 (Not started),
 not folded into this entry's Shipped status.
 
@@ -355,11 +359,12 @@ excludes it behind a fail-closed, server-side gate
 (`crypto/encryption-availability.ts`) because the model layer does not yet
 run client-side there.
 
-### Feature 24: Organizer view — Status/Character/Location/Word Count filters — Not started
+### Feature 24: Organizer view — card filtering — Not started
 **Value:** A plain-file writer filters the Organizer's card view by the
 facets that matter to them, instead of only being able to hide/show bodies.
 **Vertical slice:** Filter-state model in Organizer view, filter UI
-controls, query wiring for Status, Character, Location, and Word Count.
+controls, query wiring for Status, word count, and the project's
+resource-reference fields.
 **Requirements covered:** FR-26
 **User stories:** US-7
 **Depends on:** Feature 11
@@ -476,7 +481,7 @@ adoption risk called out in the parent spec's Constraints.
 
 ### Feature 32: Join full-text search with saved-query predicates — Not started
 **Value:** A plain-file writer filters by full-text content and by
-Character/Location/Item/Word Count in the same search, instead of using two
+the query builder's fields in the same search, instead of using two
 disconnected surfaces.
 **Vertical slice:** Shared predicate model spanning full-text search and
 the saved-query builder, UI wiring so either surface can apply the other's
@@ -487,8 +492,8 @@ predicates.
 **Branch suggestion:** feat/join-search-and-query-predicates
 **Notes:** Not started. Both surfaces ship independently today (Feature 9's
 full-text search; Feature 8's saved-query builder) but have never been
-joined — full-text search has no predicate over Character/Location/Item/Word
-Count, and the saved-query builder has no full-text-over-content predicate.
+joined — full-text search has no predicate over the query builder's fields,
+and the saved-query builder has no full-text-over-content predicate.
 
 ---
 

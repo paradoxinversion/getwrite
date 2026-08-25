@@ -44,8 +44,9 @@ version.
 - A writer can author in a rich-text surface that autosaves into a single,
   always-present canonical revision, with prior revisions retained and
   diffable.
-- A writer can attach typed metadata (characters, locations, items, POV,
-  timeframe, status, notes) to any resource and query across that metadata.
+- A writer can attach typed metadata to any resource — the built-in fields
+  plus any field they define themselves, including references to the contents
+  of any folder marked a metadata source — and query across all of it.
 - A writer can search full text across a project, filter by metadata, and
   follow backlinks between resources.
 - A writer can compile a selected subtree into a single manuscript file
@@ -174,20 +175,24 @@ lost work.
   pruning configuration. [US-9]
 - FR-7: Users MUST be able to view a word-based diff between the current
   canonical revision and any other retained revision of a text resource. [US-10]
-- FR-8: A folder's contents MUST be offered as Character/Location/Item-style
-  reference sources when the folder carries an author-declared
+- FR-8: A folder's contents MUST be offered as typed reference sources for
+  other resources' metadata when the folder carries an author-declared
   `isMetadataSource` flag; this flag is settable on any folder via the
   project-type editor, and reference scoping is by folder id, not folder
   name — no folder name carries application semantics. Deleting a resource
   that is referenced elsewhere MUST NOT remove the reference entry; it MUST
   nullify the reference (retaining `{id: null, name}` in place) rather than
   delete the entry, including within multi-reference arrays. [US-3]
-- FR-9: Text resources MUST support typed metadata: Notes, Status
-  (project-scoped, reorderable, user-defined options), Characters,
-  Locations, Items, POV (free text or linked to a Character resource, with
-  the string preserved if the linked resource is later deleted), and
-  Timeframe (begin/end timestamps, stored with no ordering validation
-  between them). [US-3]
+- FR-9: Text resources MUST support the built-in metadata schema: a Document
+  group of Synopsis, Notes, Status (a locked, project-scoped select whose
+  options are user-defined and reorderable), and Point of View (a single
+  resource reference, which also accepts free text — preserved as a name with
+  a null id when no resource is linked, including when a previously linked
+  resource is deleted); and a Timeline group of Story Date, Duration, and
+  Story End Date (stored with no ordering validation between start and end).
+  Reference fields for entities such as characters, locations, or items are
+  NOT built-ins — they arise from folders marked as metadata sources (FR-8)
+  and from user-defined schema fields (FR-20). [US-3]
 - FR-10: Users MUST be able to save a metadata query and have it appear in
   the resource tree as a smart folder. [US-7]
 - FR-11: Users MUST be able to search full text across all resources in a
@@ -264,9 +269,11 @@ lost work.
 
 ### In Progress Requirements
 
-- FR-26: Organizer view MUST support filtering cards by Status, Character,
-  Location, and Word Count; none of these filters exist today — Organizer's
-  only control is a "Hide bodies" toggle. [US-7]
+- FR-26: Organizer view MUST support filtering cards by Status, by word
+  count, and by the resource-reference fields a project defines (the
+  characters and locations folders the fiction templates provide being the
+  common case); none of these filters exist today — Organizer's only control
+  is a "Hide bodies" toggle. [US-7]
 - FR-27: Desktop builds MUST be signed and installable without an OS
   security warning on macOS and Windows. [US-8]
 
@@ -302,10 +309,12 @@ lost work.
   structure. This is a real, planned feature belonging here in Later, not
   in Out of Scope. [US-4]
 - FR-34: The product SHOULD extend full-text search filtering to the saved
-  query builder's predicates (Character, Location, Item, Word Count),
-  joining the two currently-separate filter surfaces — full-text search has
-  no predicate over those fields today, and the saved-query builder has no
-  full-text-over-content predicate. [US-7]
+  query builder's predicates — its intrinsics (word count, character count,
+  created/updated dates, tags, inbound and outbound links) and any
+  user-defined schema field, including reference fields sourced from
+  metadata-source folders — joining the two currently-separate filter
+  surfaces. Full-text search has no predicate over those fields today, and
+  the saved-query builder has no full-text-over-content predicate. [US-7]
 
 ## Constraints
 

@@ -70,8 +70,10 @@ different folders this way — Chapters and Parts in the fiction types, Research
 and Dialogue & Scripts in game documentation, Fact Checking and Interviews in
 the article type, alongside the Characters, Items and Locations folders that
 the novel and serial types happen to provide. The second is *queryability*: every resource
-carries typed metadata — status, characters, locations, POV, timeframe, notes —
-which is indexed and can be queried, with saved queries surfacing in the resource
+carries typed metadata — the built-ins (synopsis, notes, status, point of view,
+and story-timeline dates) plus whatever fields the writer defines, including
+references into any metadata-source folder — all of which is indexed and can be
+queried, with saved queries surfacing in the resource
 tree as smart folders. Resource identity is independent of path, so moving a
 scene never breaks an association.
 
@@ -86,8 +88,9 @@ without ambiguity about which text is "the" text.
   real folders and files on disk.
 - Writers can edit in a rich-text surface that autosaves into a single canonical
   revision, with prior revisions retained and diffable.
-- Writers can attach typed metadata — characters, locations, items, POV,
-  timeframe, status, notes — to any resource.
+- Writers can attach typed metadata to any resource — built-in fields like
+  status, notes and point of view, plus fields they define themselves and
+  references into any folder they have marked a metadata source.
 - Writers can query that metadata and pin saved queries into the tree as smart
   folders.
 - Writers can search full text across resources with filters, and follow
@@ -117,7 +120,7 @@ release line is already at **2.1.0** (`getwrite-v2.1.0`, released 2026-08-18, pe
 **Working product — complete except distribution.** Genuinely useful day-to-day, not merely demonstrable.
 - Typed metadata layer with sidecars and a per-project schema — *shipped*. This is the differentiator; without it GetWrite is a folder of files.
 - Metadata queries and smart folders — *shipped*. Metadata that cannot be interrogated does not repay the cost of entering it.
-- Full-text search with folder/status/tag filters, plus backlinks — *shipped*. Required once a project exceeds what a writer can hold in memory. Note the richer predicates (character, location, word count) live in the saved-query builder, which has no full-text search; joining the two is planned, not shipped.
+- Full-text search with folder/status/tag filters, plus backlinks — *shipped*. Required once a project exceeds what a writer can hold in memory. Note the richer predicates — word count, character count, dates, tags, links, and any user-defined field including folder references — live in the saved-query builder, which has no full-text search; joining the two is planned, not shipped.
 - Compile and export to PDF/DOCX/Markdown/text — *shipped*. The point at which the work leaves the tool; a writing app without it is a draft holder.
 - Signed, installable desktop builds — *in progress, and the main thing standing between the current release and the stated success bar*. An unsigned build the OS warns against is an adoption wall, not a polish item.
 
@@ -127,7 +130,7 @@ release line is already at **2.1.0** (`getwrite-v2.1.0`, released 2026-08-18, pe
 
 **Current — in flight.** Refinements and the parallel platform track.
 - Trash recovery UI — model shipped, UI not started. Lower urgency because deletion already warns and the data is recoverable on disk.
-- Organizer view filters (status, character, location, word count) — *not started*. Verified against code 2026-08-24: no Organizer filtering of any kind ships; its only control is a show/hide-bodies toggle. Earlier documents described status and folder filtering as shipped; that was inaccurate.
+- Organizer view card filtering (status, word count, reference fields) — *not started*. Verified against code 2026-08-24: no Organizer filtering of any kind ships; its only control is a show/hide-bodies toggle. Earlier documents described status and folder filtering as shipped; that was inaccurate.
 - Hosted access and multi-device sync for a single writer — foundations shipped (per-user tenancy, better-auth identity, object-store backend, route-level enforcement, a live-infra smoke harness). Owner-confirmed as genuine roadmap and **timeboxed to a fixed calendar horizon in parallel with desktop work**, rather than gated on desktop adoption metrics. Note E2EE is *not* among these foundations — it is a shipped desktop/Android feature that hosted deliberately excludes (see below).
 - A conflict model for offline multi-device edits — *not yet designed*. Newly named: sync for one writer across devices still needs merge resolution even though collaboration is out of scope.
 - Durable search backend for large projects — under evaluation. Deferred until the JSON index demonstrably bottlenecks.
