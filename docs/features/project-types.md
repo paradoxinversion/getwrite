@@ -13,42 +13,106 @@ This is the developer reference for the project-type JSON format, validation, an
 - `id` (string): stable identifier for the project type (snake_case recommended).
 - `name` (string): human-facing display name.
 - `description` (string, optional): short summary of the type.
-- `folders` (array of objects): ordered list of folders. Each folder object has:
-    - `name` (string): display name for the folder (e.g., "Workspace", "Front Matter").
-    - `special` (boolean, optional): **deprecated and ignored.** Still accepted for
-      backward compatibility with project types written before the Workspace
-      requirement was removed, but it assigns no semantics — no folder name or
-      flag carries application behaviour (`schemas.ts`, `types.ts`). To make a
-      folder's contents referenceable as typed metadata, use the folder's
-      `metadataSource` flag instead.
-- `defaultResources` (array of objects, optional): resources to create by default. Each entry has:
-    - `folder` (string): folder name that owns the resource. If omitted, the first folder is used.
+- `folders` (array of objects): ordered list of **top-level** folders. Each has:
+    - `name` (string): display name (e.g. `"Workspace"`, `"Story Elements"`).
+    - `metadataSource` (object, optional): marks the folder as a metadata
+      source — see below.
+    - `defaultResources` (array, optional): resources seeded into this folder.
+    - `special` (boolean, optional): **deprecated and ignored.** See
+      [Deprecated: `special`](#deprecated-special).
+- `defaultFolders` (array of objects, optional): **subfolders**, each declared
+  flat with a pointer to its parent rather than nested. Each has:
+    - `folder` (string): the name of the parent folder it is created under.
+      The parent may itself be a `defaultFolders` entry, so trees nest to any
+      depth.
+    - `name` (string): display name.
+    - `metadataSource` (object, optional), `special` (boolean, optional): as above.
+- `defaultResources` (array of objects, optional): resources to create. Each has:
+    - `folder` (string): folder name that owns the resource. If omitted, the
+      first folder is used.
     - `name` (string): resource title.
-    - `type` (string): resource type (e.g., `text`).
+    - `type` (string): resource type (e.g. `text`).
     - `template` (string, optional): initial plain text for the resource.
+- `statuses` (array of strings, optional), `wordCountGoal` (integer, optional),
+  `editorConfig` (object, optional).
 
-## Example (minimal)
+The schema is `.strict()` — unknown top-level keys are rejected.
+
+### Metadata sources
+
+A folder marked as a metadata source has its contents offered as linkable
+references from other resources' metadata. This is the mechanism behind
+Characters, Locations, and Items in the fiction templates — but **it is
+entirely generic**. Nothing keys off a folder's name:
+
+```json
+{
+    "name": "Characters",
+    "folder": "Story Elements",
+    "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" }
+}
+```
+
+- `isMetadataSource` (boolean, required within the object).
+- `metadataInputType` (optional): `"text" | "multiselect" | "autocomplete"`.
+  Only meaningful when `isMetadataSource` is `true`.
+
+Across the six built-in templates roughly twenty different folders carry this
+flag — `Chapters` and `Parts` in the fiction types, `Research` and
+`Dialogue & Scripts` in game documentation, `Fact Checking` and
+`Interviews & Transcripts` in the article type, as well as the
+`Characters` / `Items` / `Locations` folders. Any folder you declare can be one.
+
+### Deprecated: `special`
+
+`special` is accepted by the schema and propagated, but **nothing reads it**.
+It predates the removal of the Workspace requirement, when certain folder
+names carried application behaviour. Today no folder name or flag confers
+ordering, protection, or UI semantics (`schemas.ts`, `types.ts`), and there is
+no protected folder — any folder can be renamed, moved, or deleted.
+
+If you are updating a hand-written project type: drop `special`, and where you
+relied on a folder being a reference source, declare `metadataSource` instead.
+Leaving `special` in place is harmless; it simply does nothing.
+
+## Example
+
+Excerpted from the real `novel` template
+(`getwrite-config/templates/project-types/novel_project_type.json`):
 
 ```json
 {
     "id": "novel",
     "name": "Novel",
-    "description": "Novel project skeleton with front/back matter",
     "folders": [
-        { "name": "Workspace", "special": false },
-        { "name": "Front Matter", "special": true },
-        { "name": "Back Matter", "special": true }
+        { "name": "Workspace" },
+        { "name": "Story Elements" },
+        { "name": "Outline" },
+        { "name": "Notes" }
+    ],
+    "defaultFolders": [
+        { "name": "Front Matter", "folder": "Workspace" },
+        { "name": "Chapters", "folder": "Workspace",
+          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } },
+        { "name": "Chapter 1", "folder": "Chapters" },
+        { "name": "Characters", "folder": "Story Elements",
+          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } },
+        { "name": "Locations", "folder": "Story Elements",
+          "metadataSource": { "isMetadataSource": true, "metadataInputType": "multiselect" } }
     ],
     "defaultResources": [
         {
-            "folder": "Front Matter",
-            "name": "Title Page",
+            "folder": "Characters",
+            "name": "Character Profile",
             "type": "text",
-            "template": "Title:\nAuthor:\n"
+            "template": "# Character Name\n\n- Description\n- Significance\n"
         }
     ]
 }
 ```
+
+Note that `Front Matter` here is an ordinary folder with no flag and no
+behaviour. There is no `Back Matter` folder in any shipped template.
 
 ## Validation & Runtime
 

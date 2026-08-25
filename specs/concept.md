@@ -64,9 +64,12 @@ On top of that substrate sit two things the plain-files approach normally gives
 up. The first is *structure*: projects are scaffolded from declarative
 project-type specs that define folder layout and starter resources. Any folder
 may be declared a *metadata source*, making its contents available as typed
-references from other resources — the built-in templates use this for
-Characters, Locations, and Items, but the mechanism is generic and no folder
-name carries application semantics. The second is *queryability*: every resource
+references from other resources. The mechanism is generic: no folder name
+carries application semantics, and the built-in templates flag roughly twenty
+different folders this way — Chapters and Parts in the fiction types, Research
+and Dialogue & Scripts in game documentation, Fact Checking and Interviews in
+the article type, alongside the Characters, Items and Locations folders that
+the novel and serial types happen to provide. The second is *queryability*: every resource
 carries typed metadata — status, characters, locations, POV, timeframe, notes —
 which is indexed and can be queried, with saved queries surfacing in the resource
 tree as smart folders. Resource identity is independent of path, so moving a

@@ -111,8 +111,10 @@ lost work.
   project type so that I get a working folder structure immediately. [Shipped]
 - US-2: As a novelist, I want to compile a selected subtree of my project
   into a single manuscript file so that I can produce a deliverable draft. [Shipped]
-- US-3: As a novelist, I want to associate Characters/Locations/Items
-  entries with scenes so that I can track who and what appears where. [Shipped]
+- US-3: As a novelist, I want to mark a folder as a metadata source and
+  link its entries to my scenes, so that I can track who and what appears
+  where — whether that folder holds characters, locations, factions, or
+  anything else my project needs. [Shipped]
 - US-4: As a novelist migrating from Scrivener or Word, I want to import my
   existing project into GetWrite so that I don't have to manually
   re-create its structure. [Later]
