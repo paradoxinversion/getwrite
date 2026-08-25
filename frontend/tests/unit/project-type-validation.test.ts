@@ -105,7 +105,7 @@ describe("project-type folder freedom (Workspace requirement removed)", () => {
     expect(res.success).toBe(true);
   });
 
-  it("accepts a special Workspace folder alongside non-special folders", () => {
+  it("still accepts the deprecated `special` flag on any folder", () => {
     const spec = {
       id: "multi-folder",
       name: "Multi Folder",

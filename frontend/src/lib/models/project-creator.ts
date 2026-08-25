@@ -68,8 +68,11 @@ export interface ProjectTypeSpecFolder {
   /** Human-friendly folder name (displayed in the UI). */
   name: string;
   /**
-   * Optional flag for special folders (e.g. workspace, drafts). Implementation
-   * may choose to treat `special` folders differently in ordering or UI.
+   * @deprecated Accepted and propagated for backward compatibility with
+   * project types written before the Workspace requirement was removed, but
+   * nothing reads it: no folder name or flag confers ordering, protection, or
+   * UI semantics. To make a folder's contents referenceable as typed
+   * metadata, use `metadataSource` instead.
    */
   special?: boolean;
   metadataSource?: MetadataSource;

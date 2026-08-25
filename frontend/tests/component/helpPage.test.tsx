@@ -38,7 +38,7 @@ describe("HelpPage", () => {
           return (
             (element?.tagName === "P" &&
               element?.textContent?.includes(
-                "Workspace folder is always at the top of the tree and cannot be moved, renamed, or deleted.",
+                "no folder is protected, none is pinned to a fixed position",
               )) ??
             false
           );
