@@ -2,7 +2,7 @@
 
 ## Purpose and User Interaction
 
-The Timeline View gives writers a horizontal, time-based picture of their story. Each scene is represented as a chip placed along a date axis according to its Story Date — the in-story date and time the scene takes place, not the date the writer worked on it. The view answers the question: *in what order do things actually happen in the world of this story?*
+The Timeline View gives writers a horizontal, time-based picture of their story. Each scene is represented as a chip placed along a date axis according to its Story Date — the in-story date and time the scene takes place, not the date the writer worked on it. The view answers the question: _in what order do things actually happen in the world of this story?_
 
 The Timeline View is enabled per project. Turn it on from **User Preferences → Timeline view**; because the view reads the story-date fields, enabling it also turns those fields on (and turning the date fields off turns the view off). Once enabled, writers open the Timeline by switching to the Timeline tab in the Work Area, where it reflects whatever story dates have been entered in the metadata sidebar for individual scenes. While the view is disabled, its tab is greyed out with a tooltip pointing to the preference.
 
@@ -38,7 +38,7 @@ The axis start and end are computed automatically from the earliest and latest d
 
 ### Gap labels
 
-When two adjacent scenes (within the same row) have a large gap between them — more than 5% of the total axis span — a small label appears between them showing how much story time separates them (e.g., *3d*, *2h*, *6mo*). This helps writers spot unintentional jumps or confirm deliberate time skips.
+When two adjacent scenes (within the same row) have a large gap between them — more than 5% of the total axis span — a small label appears between them showing how much story time separates them (e.g., _3d_, _2h_, _6mo_). This helps writers spot unintentional jumps or confirm deliberate time skips.
 
 ### Row height and lane stacking
 
@@ -50,7 +50,7 @@ Scenes in the same group can end up positioned so close together on the axis tha
 
 ### Layout
 
-The Timeline View follows the standard Work Area layout: a title bar showing *Timeline — Project Name*, an optional POV legend, and the timeline track below. The track area is horizontally scrollable when the content is wider than the viewport.
+The Timeline View follows the standard Work Area layout: a title bar showing _Timeline — Project Name_, an optional POV legend, and the timeline track below. The track area is horizontally scrollable when the content is wider than the viewport.
 
 ### POV legend
 
@@ -58,14 +58,14 @@ When two or more distinct POV characters are present, a row of color swatches an
 
 ### Toolbar
 
-A slim bar sits above the track. On the left it shows the count of dated scenes (*N scenes*). On the right are the zoom-out (−), zoom percentage, and zoom-in (+) buttons. Zoom buttons dim when the minimum or maximum zoom level is reached.
+A slim bar sits above the track. On the left it shows the count of dated scenes (_N scenes_). On the right are the zoom-out (−), zoom percentage, and zoom-in (+) buttons. Zoom buttons dim when the minimum or maximum zoom level is reached.
 
 ### Axis
 
 A row of evenly spaced tick marks runs above the scene rows. Each tick has a short vertical line and a date label below it. The label format adapts automatically to the current zoom level:
 
-- At wide spans: *Jan 12* or *2024 Jan*
-- At narrow spans: *Jan 12 14:30*
+- At wide spans: _Jan 12_ or _2024 Jan_
+- At narrow spans: _Jan 12 14:30_
 
 ### Scene chips
 

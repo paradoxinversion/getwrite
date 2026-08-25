@@ -10,11 +10,11 @@ the query feature adds a third.
 
 ### The paths
 
-| Path | What it creates | Status |
-|------|-----------------|--------|
-| MetadataSidebar `+ Add field` | Declared field (in first group, type `text`, generic key) | Exists |
-| SchemaManager `+ Add field` | Declared field with full control (group, type, label, options, etc.) | Exists |
-| Chip UI "Add a new field…" | Declared field with prefilled name and inferred default group/type | **New** |
+| Path                          | What it creates                                                      | Status  |
+| ----------------------------- | -------------------------------------------------------------------- | ------- |
+| MetadataSidebar `+ Add field` | Declared field (in first group, type `text`, generic key)            | Exists  |
+| SchemaManager `+ Add field`   | Declared field with full control (group, type, label, options, etc.) | Exists  |
+| Chip UI "Add a new field…"    | Declared field with prefilled name and inferred default group/type   | **New** |
 
 All three produce **declared fields** in `metadataSchema`. There is
 no observed-field tier (see `05-schema-layer.md` for the open question
@@ -81,7 +81,7 @@ The same three safeguards apply on **every** creation path:
    should match before submitting.
 3. **Fuzzy-match warning.** Typing `Tone` (capitalized) when `tone`
    exists shows "Did you mean `tone`?" with a one-click switch.
-   Critical because the slug regex `[a-z0-9-]+` *would* reject
+   Critical because the slug regex `[a-z0-9-]+` _would_ reject
    `Tone` outright, but a warning is more helpful than a validation
    error.
 

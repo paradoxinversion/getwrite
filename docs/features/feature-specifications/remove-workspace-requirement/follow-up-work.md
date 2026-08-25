@@ -10,7 +10,7 @@ was deferred and any context for a future pass.
 **Context:** Task 4 removed the "Workspace guardrail warning" banner from
 `frontend/components/project-types/ProjectTypesManagerPage.tsx`. That banner was
 rendered from `validateDraft(selectedItem.definition)` and, despite its title,
-surfaced *all* schema errors (e.g. invalid `id` pattern, empty `folders`), not
+surfaced _all_ schema errors (e.g. invalid `id` pattern, empty `folders`), not
 just the Workspace requirement.
 
 **Why deferred:** FR7 explicitly requires removing the Workspace guardrail
@@ -38,7 +38,7 @@ frozen install.
 **`tests/unit/media-file-route.test.ts` is flaky.** Under the full parallel
 `vitest run` it intermittently fails on temp-directory teardown
 (`ENOTEMPTY: directory not empty, rmdir …/meta` and an
-`EnvironmentTeardownError` closing rpc), with a *different* test failing each
+`EnvironmentTeardownError` closing rpc), with a _different_ test failing each
 run. It passes 5/5 in isolation. This is a temp-dir cleanup race unrelated to
 the Workspace-requirement work — worth a separate hardening pass (e.g. retrying
 the rmdir or isolating the temp roots) but out of scope here.

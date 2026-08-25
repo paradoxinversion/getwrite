@@ -14,11 +14,11 @@ Canonical revision selection is enforced client-side as exactly one active canon
 ## Options Considered
 
 1. No revisions, with one source of truth only
-    - Simpler state model.
-    - Prevents users from reviewing how content changed over time.
+   - Simpler state model.
+   - Prevents users from reviewing how content changed over time.
 2. Revisions with a single canonical entry and stale-update safeguards (chosen)
-    - Preserves historical visibility and explicit diffing.
-    - Maintains a clear active baseline.
+   - Preserves historical visibility and explicit diffing.
+   - Maintains a clear active baseline.
 
 ## Trade-offs
 

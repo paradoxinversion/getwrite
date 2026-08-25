@@ -28,7 +28,7 @@ they describe augmentations and net-new layers, not greenfield work.
   stale-ref detection.
 - `07-metadata-sidebar.md` — Augmentations to the existing
   `MetadataSidebar`: placeholders for unset fields, improved `+ Add
-  field` flow, conflict states, cross-link to SchemaManager.
+field` flow, conflict states, cross-link to SchemaManager.
 - `08-creation-paths.md` — How the three field-creation entry points
   (sidebar, SchemaManager, chip UI) converge.
 - `09-current-state.md` — The authoritative reference for what the

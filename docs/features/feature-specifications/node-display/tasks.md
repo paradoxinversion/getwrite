@@ -103,7 +103,7 @@ dev session updates the indicator; with no resource open the indicator shows the
 `EditView.tsx:325`; store labels in local React state initialized to `[]` so the
 empty state is the default (FR-1, FR-6). **Deviation from the original hint:**
 instead of resetting `EditView` state to `[]` on resource change, the freshness
-is handled deterministically *inside* `TipTapEditor` — its `value`-sync effect
+is handled deterministically _inside_ `TipTapEditor` — its `value`-sync effect
 now resets the change-guard and re-emits after `setContent`, so a resource/
 revision switch repopulates the indicator with the newly loaded document's
 cursor node rather than blanking to the placeholder. This both avoids stale

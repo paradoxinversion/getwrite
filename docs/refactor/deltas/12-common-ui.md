@@ -7,6 +7,7 @@ Date: 2026-06-17. Gate: green (typecheck clean, 13 test files / 168 tests pass, 
 ## Per-file deltas (delegated to Antonini)
 
 ### `components/common/TagsManagerModal.tsx`
+
 Lines before → after: 183 → 183 (rename-only pass, no line count change).
 Symbols renamed: 2 (`useColor` → `shouldUseColor`, `setUseColor` → `setShouldUseColor`).
 Files touched: 1.
@@ -16,6 +17,7 @@ Files touched: 1.
 ---
 
 ### `components/common/UI/CollapsibleSection/CollapsibleSection.tsx`
+
 Lines before → after: 89 → 89 (rename-only pass, no line count change).
 Symbols renamed: 1 (`next` → `isNowOpen`, local to `toggle`).
 Files touched: 1.
@@ -25,6 +27,7 @@ Files touched: 1.
 ---
 
 ### `components/common/UI/ContextMenu/EditContextMenu.tsx`
+
 Lines before → after: 170 → 170 (within-line change only).
 Symbols renamed: 0.
 Files touched: 1.
@@ -34,6 +37,7 @@ Files touched: 1.
 ---
 
 ### `components/common/UI/hooks/useDismissableMenu.ts`
+
 Lines before → after: 76 → 76 (net neutral — one line added, one removed).
 Symbols renamed: 0.
 Files touched: 1.
@@ -43,6 +47,7 @@ Files touched: 1.
 ---
 
 ### `src/lib/toast-service.ts`
+
 Lines before → after: 130 → 111 (−14%).
 Symbols renamed: 0.
 Files touched: 1.
@@ -54,6 +59,7 @@ Files touched: 1.
 ---
 
 ### `src/hooks/use-toast.ts`
+
 Lines before → after: 45 → 29 (−35%).
 Symbols renamed: 0.
 Files touched: 1.
@@ -63,6 +69,7 @@ Files touched: 1.
 ---
 
 ### `components/common/MenuItemButton.tsx`
+
 Lines before → after: 63 → 63 (within-line import change, no line count change).
 Symbols renamed: 0.
 Files touched: 1.
@@ -72,6 +79,7 @@ Files touched: 1.
 ---
 
 ### `components/Sidebar/controls/LabeledField.tsx`
+
 Lines before → after: 24 → 24 (within-line changes only).
 Symbols renamed: 0.
 Files touched: 1.
@@ -105,6 +113,7 @@ Files touched: 1.
 ## Signature stability
 
 All exported prop interfaces and function signatures are unchanged:
+
 - `TagsManagerModalProps`, `CollapsibleSectionProps`, `UseDismissableMenuOptions`, `UseDismissableMenuReturn`, `TabsProps`, `TabsListProps`, `TabsTriggerProps`, `TabsContentProps`, `ChipProps`, `ConfirmDialogProps`, `MenuItemButtonProps`, `LabeledFieldProps` — all unchanged.
 - Exported functions/hooks: `TagsManagerModal`, `CollapsibleSection`, `useDismissableMenu`, `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`, `Chip`, `ConfirmDialog`, `MenuItemButton`, `LabeledField`, `useSyncedControlledValue`, `toastService`, `useToast` — all unchanged.
 

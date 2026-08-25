@@ -208,14 +208,15 @@ Assessment after per-file passes:
 
 ## Gate result
 
-| Check | Result |
-|---|---|
-| `pnpm typecheck` (frontend/) | Clean (0 errors) |
-| `pnpm lint` on slice-02 files | Clean — all slice-02 file errors resolved |
-| Vitest slice filters (7 files, 204 tests) | 204/204 pass |
-| `pnpm knip` (repo root) | Identical to baseline — no new unused exports or files |
+| Check                                     | Result                                                 |
+| ----------------------------------------- | ------------------------------------------------------ |
+| `pnpm typecheck` (frontend/)              | Clean (0 errors)                                       |
+| `pnpm lint` on slice-02 files             | Clean — all slice-02 file errors resolved              |
+| Vitest slice filters (7 files, 204 tests) | 204/204 pass                                           |
+| `pnpm knip` (repo root)                   | Identical to baseline — no new unused exports or files |
 
 **Baseline-red issues outside slice scope (not fixed):**
+
 - `AppShell.tsx` — `queryBuilderOpen`, `saveDialogOpen`, `timelineViewEnabled`, `ok` naming errors (slice 10 scope)
 - `ShellLayoutController.tsx` — `leftOpen`, `rightOpen` (slice 10 scope)
 - `UpdateNotice.tsx` — `hidden`, `active` (slice 10 scope)

@@ -31,17 +31,17 @@ Writes are atomic: content and metadata are first written to a temporary directo
 
 Each `metadata.json` contains a `Revision` object:
 
-| Field           | Type             | Description                                                   |
-| --------------- | ---------------- | ------------------------------------------------------------- |
-| `id`            | UUID             | Stable revision UUID (not the same as versionNumber)          |
-| `resourceId`    | UUID             | Resource this revision belongs to                             |
-| `versionNumber` | number           | Sequential version number                                     |
-| `createdAt`     | ISO string       | When the revision was created                                 |
-| `savedAt`       | ISO string       | When the metadata was last written (updated on canonical set) |
-| `author`        | string?          | Optional author identifier                                    |
-| `filePath`      | string           | Absolute path to `content.bin`                                |
-| `isCanonical`   | boolean          | Whether this is the currently canonical revision              |
-| `metadata`      | object?          | Arbitrary key/value bag; `metadata.preserve = true` prevents pruning |
+| Field           | Type       | Description                                                          |
+| --------------- | ---------- | -------------------------------------------------------------------- |
+| `id`            | UUID       | Stable revision UUID (not the same as versionNumber)                 |
+| `resourceId`    | UUID       | Resource this revision belongs to                                    |
+| `versionNumber` | number     | Sequential version number                                            |
+| `createdAt`     | ISO string | When the revision was created                                        |
+| `savedAt`       | ISO string | When the metadata was last written (updated on canonical set)        |
+| `author`        | string?    | Optional author identifier                                           |
+| `filePath`      | string     | Absolute path to `content.bin`                                       |
+| `isCanonical`   | boolean    | Whether this is the currently canonical revision                     |
+| `metadata`      | object?    | Arbitrary key/value bag; `metadata.preserve = true` prevents pruning |
 
 ---
 
@@ -72,6 +72,7 @@ Pruning removes old revisions to enforce a `maxRevisions` cap.
 ### Selection rules (`selectPruneCandidates`)
 
 Given all revisions for a resource:
+
 1. Exclude canonical revisions (`isCanonical: true`)
 2. Exclude preserved revisions (`metadata.preserve: true`)
 3. Sort remaining by ascending `versionNumber` (oldest first)
@@ -97,6 +98,7 @@ See [docs/features/cli.md](./cli.md) for full CLI reference.
 ### `pruneExecutor.ts`
 
 The `runCli` function in `pruneExecutor.ts` orchestrates CLI-driven pruning. It:
+
 1. Reads all resource IDs from `resources/`
 2. Calls `pruneRevisions` for each with the configured `maxRevisions`
 3. Reports pruned counts to stdout
@@ -105,12 +107,12 @@ The `runCli` function in `pruneExecutor.ts` orchestrates CLI-driven pruning. It:
 
 ## API Routes
 
-| Method | Path                                     | Description                         |
-| ------ | ---------------------------------------- | ------------------------------------ |
-| GET    | `/api/resource/revision/[resource-id]`   | Fetch revision metadata + content    |
-| POST   | `/api/resource/revision/[resource-id]`   | Save a new revision                  |
-| PATCH  | `/api/resource/revision/[resource-id]`   | Set canonical or update canonical content |
-| DELETE | `/api/resource/revision/[resource-id]`   | Delete a revision by UUID            |
+| Method | Path                                   | Description                               |
+| ------ | -------------------------------------- | ----------------------------------------- |
+| GET    | `/api/resource/revision/[resource-id]` | Fetch revision metadata + content         |
+| POST   | `/api/resource/revision/[resource-id]` | Save a new revision                       |
+| PATCH  | `/api/resource/revision/[resource-id]` | Set canonical or update canonical content |
+| DELETE | `/api/resource/revision/[resource-id]` | Delete a revision by UUID                 |
 
 See [docs/api/openapi.yaml](../api/openapi.yaml) for full request/response schemas.
 
@@ -143,13 +145,13 @@ The revision directories under `<projectRoot>/revisions/<resourceId>/` are **not
 
 ## Source Files
 
-| File                                             | Role                                                    |
-| ------------------------------------------------ | ------------------------------------------------------- |
-| `frontend/src/lib/models/revision.ts`            | Core revision filesystem utilities                      |
-| `frontend/src/lib/models/pruneExecutor.ts`       | CLI-orchestrated pruning across all project resources   |
-| `frontend/src/lib/models/trash.ts`               | Soft-delete implementation                              |
-| `frontend/src/store/revisionsSlice.ts`           | Redux state for revision UI                             |
-| `frontend/src/store/revision-canonical-guards.ts`| Client-side canonical invariant enforcement             |
-| `frontend/src/store/revision-normalization.ts`   | Normalizes raw revision data into `RevisionEntry` shape |
-| `frontend/src/store/revision-transport-service.ts`| Transport layer for revision operations (HTTP web/desktop, in-process native) |
-| `frontend/app/api/resource/revision/[resource-id]/route.ts` | Next.js route handler                      |
+| File                                                        | Role                                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `frontend/src/lib/models/revision.ts`                       | Core revision filesystem utilities                                            |
+| `frontend/src/lib/models/pruneExecutor.ts`                  | CLI-orchestrated pruning across all project resources                         |
+| `frontend/src/lib/models/trash.ts`                          | Soft-delete implementation                                                    |
+| `frontend/src/store/revisionsSlice.ts`                      | Redux state for revision UI                                                   |
+| `frontend/src/store/revision-canonical-guards.ts`           | Client-side canonical invariant enforcement                                   |
+| `frontend/src/store/revision-normalization.ts`              | Normalizes raw revision data into `RevisionEntry` shape                       |
+| `frontend/src/store/revision-transport-service.ts`          | Transport layer for revision operations (HTTP web/desktop, in-process native) |
+| `frontend/app/api/resource/revision/[resource-id]/route.ts` | Next.js route handler                                                         |

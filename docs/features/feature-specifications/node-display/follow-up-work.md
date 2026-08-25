@@ -20,6 +20,7 @@ Node Display at parity with the word count and leave the Storybook a11y addon in
 or changing the global token under this task.
 
 **To address later (whole-footer or design-system scope, with design sign-off):**
+
 - Option A — darken the footer text to a contrast-safe token (e.g. `text-gw-ink`
   ~13:1, or a darkened secondary) for **both** the word count and the Node
   Display, keeping them consistent. Scope: `EditView.tsx` footer only.
@@ -62,7 +63,7 @@ to `components/common/UI/tooltipStyle.ts` and is now shared by `Chip` and
 **What remains shared only at the style level:** each consumer still imports
 `react-tooltip` directly and wires up its own `data-tooltip-id` /
 `data-tooltip-content` anchor plus a co-located `<Tooltip>` (the pattern in
-`Chip`, `MenuBar`, and `EditorMenuInput`). Only the *style* is centralized.
+`Chip`, `MenuBar`, and `EditorMenuInput`). Only the _style_ is centralized.
 
 **Why deferred:** Out of scope for the Node Display feature, and not worth a new
 abstraction for the current handful of call sites. The duplication is the

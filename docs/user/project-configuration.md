@@ -20,11 +20,9 @@ Example with custom statuses:
 
 ```json
 {
-    "name": "My Novel",
-    "maxRevisions": 100,
-    "config": {
-        "statuses": ["Outline", "First Draft", "Revised", "Final"]
-    }
+  "name": "My Novel",
+  "maxRevisions": 100,
+  "config": { "statuses": ["Outline", "First Draft", "Revised", "Final"] }
 }
 ```
 
@@ -33,20 +31,17 @@ Example
 Minimal:
 
 ```json
-{
-    "name": "My Novel",
-    "maxRevisions": 50
-}
+{ "name": "My Novel", "maxRevisions": 50 }
 ```
 
 Recommended for writers:
 
 ```json
 {
-    "name": "Novel Draft",
-    "description": "Work-in-progress novel",
-    "maxRevisions": 200,
-    "autoPrune": true
+  "name": "Novel Draft",
+  "description": "Work-in-progress novel",
+  "maxRevisions": 200,
+  "autoPrune": true
 }
 ```
 

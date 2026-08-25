@@ -32,9 +32,9 @@ When suggesting a package version:
 - Prefer the latest stable version.
 - Avoid pre-release or beta versions unless explicitly requested.
 - Ensure compatibility with:
-    - Existing project dependencies
-    - Declared runtime environment
-    - TypeScript version (if applicable)
+  - Existing project dependencies
+  - Declared runtime environment
+  - TypeScript version (if applicable)
 
 Do not guess version numbers if the project already defines them.
 
@@ -101,11 +101,11 @@ Before finalizing a dependency:
 
 - Identify its declared peer dependencies.
 - Confirm compatibility with:
-    - React version
-    - Next.js version
-    - Vite version
-    - TypeScript version
-    - Node runtime version
+  - React version
+  - Next.js version
+  - Vite version
+  - TypeScript version
+  - Node runtime version
 
 Do not assume compatibility across major versions.
 

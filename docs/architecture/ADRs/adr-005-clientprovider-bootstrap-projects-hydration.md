@@ -14,9 +14,9 @@ A clear, lightweight entry point was needed to provide Redux state to the app an
 ## Options Considered
 
 1. **Use Redux `Provider` directly with bootstrap logic elsewhere**
-    - Simpler in file count, but spreads initialization concerns and makes startup flow harder to reason about.
+   - Simpler in file count, but spreads initialization concerns and makes startup flow harder to reason about.
 2. **Use dedicated `ClientProvider` (chosen)**
-    - Centralizes startup behavior in one place while keeping the wrapper intentionally lightweight.
+   - Centralizes startup behavior in one place while keeping the wrapper intentionally lightweight.
 
 ## Trade-offs
 

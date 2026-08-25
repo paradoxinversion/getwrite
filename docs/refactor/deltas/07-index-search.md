@@ -24,6 +24,7 @@ cross-file fix). All private module variables; no propagation.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Renamed `t: Task` → `task: Task` in `runTask` and `processQueue`. `t` was too terse;
   `task` aligns with the `Task` type name and makes access chains self-documenting.
 - Collapsed the convoluted `loadResourceContent` fallback block. The original used a
@@ -43,6 +44,7 @@ cross-file fix). All private module variables; no propagation.
   `side?.["slug"] as string | undefined`. The `|| undefined` was redundant.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Renamed `running` → `isRunning`, `stopped` → `isStopped`,
   `shutdownHooksInstalled` → `isShutdownHooksInstalled`. Required by the ESLint
   naming-convention rule (boolean variables must carry an `is/has/should/...` prefix).
@@ -64,6 +66,7 @@ removes). Characters: 6,737 → 6,799 (+62, ~0.9% larger). The added `resolveBod
 helper and doc comment account for the growth.
 
 **Symbols renamed:** 3 (all private):
+
 - `removeFromIndexObj` → `purgeTermsForResource`
 - `perTermFreq` → `termHits`
 - `resolveBodyText` (new private helper extracted from `indexResource`)
@@ -71,6 +74,7 @@ helper and doc comment account for the growth.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Extracted 12-line body-text resolution chain from `indexResource` into
   `resolveBodyText(projectRoot, res)`. `indexResource` now reads as a clear linear
   sequence: load index → purge old entries → resolve text → count terms → write.
@@ -85,6 +89,7 @@ helper and doc comment account for the growth.
   `new Set(Object.values(index).flatMap(Object.keys))`.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Added named intermediate `invertedIndex` before `export default` to fix the
   `import/no-anonymous-default-export` warning (pre-existing, now cleared).
 
@@ -101,6 +106,7 @@ callback for consistency. Plus `ResolverMaps` type alias added.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Removed unused `import fs from "node:fs/promises"` and `import type { UUID }`;
   added `import type { Dirent }`, `import type { ResourceRef, MetadataValue }` to
   enable proper types downstream.
@@ -122,6 +128,7 @@ callback for consistency. Plus `ResolverMaps` type alias added.
 - Removed `maps as any` cast and `sidecar as Record<string, unknown>` cast.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Replaced all `catch (_err)` and `catch (_)` patterns with bare `catch {}` to
   silence pre-existing `no-unused-vars` warnings.
 - Added named intermediate `backlinks` before `export default` to fix the
@@ -139,6 +146,7 @@ ESLint error).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Renamed local `verbose` to `isVerbose`. ESLint naming-convention rule requires boolean
   local variables to carry an `is/has/...` prefix; this was a pre-existing lint error.
 - Extracted duplicated `fs.watch(resourcesDir, ...)` call into `startWatcher()` helper.
@@ -162,6 +170,7 @@ ESLint error).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Inverted the `flattenUserMetadata` guard from a triple-negative early-return
   (`=== null || !== "object" || Array.isArray`) to a positive affirmative check
   (`&& typeof === "object" && !Array.isArray`). The happy path (spreading
@@ -179,6 +188,7 @@ ESLint error).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - `levenshtein`: replaced `prev.splice(0, n + 1, ...curr)` with destructured swap
   `[prev, curr] = [curr, prev]`, changed `const` to `let` for both row arrays. The
   splice pattern mutated the array non-obviously; the destructured swap is idiomatic.
@@ -207,6 +217,7 @@ for named default).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Replaced cast-then-test pattern (`if ((resource as ImageResource).type === "image")`)
   with direct discriminated-union narrowing (`if (resource.type === "image")`).
   TypeScript narrows automatically inside the branch; subsequent explicit casts removed.
@@ -219,6 +230,7 @@ for named default).
 - Replaced `catch (_)` with bare `catch {}` to fix pre-existing `no-unused-vars` warning.
 
 **Changes (orchestrator — cross-file baseline fix):**
+
 - Added named intermediate `previews` before `export default` to fix the
   `import/no-anonymous-default-export` warning (pre-existing, now cleared).
 
@@ -233,6 +245,7 @@ for named default).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Renamed loop variable `ti` → `termIdx`. Eliminates context switch between `ti` (outer
   loop counter) and `termIdx` (field name in pushed object) — they now match, making the
   shorthand property `{ pos, termIdx, len: term.length }` read naturally.
@@ -258,6 +271,7 @@ comments explain non-obvious decisions, naming is precise, logic is flat.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Merged two scattered `export type { ... } from "./search-transport-service"` statements
   into a single re-export on one line; moved `import type { RootState }` beside other
   imports.
@@ -277,6 +291,7 @@ differences).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Tightened intermediate cast in `getApiErrorMessage` from `{ error?: unknown }`
   (optional) to `{ error: unknown }` (required). The `"error" in errorBody` guard
   already proves the property exists; the `?` was misleading. Shape and runtime behavior
@@ -296,6 +311,7 @@ scope.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Promoted `type SidecarData` and `interface ScoredCandidate` from inside `executeSearch`
   to module scope. They described module-level shapes; keeping them inside a function hid
   that.
@@ -303,7 +319,7 @@ scope.
   try/catch block at the top of `executeSearch` assigning into a `let`. The helper gives
   the pattern a name and makes the error path visible.
 - Extracted multi-term scoring branch into `scoreMultiTermCandidates(projectRoot,
-  rankedIds, terms)`. The original used a `let candidates` declaration followed by a
+rankedIds, terms)`. The original used a `let candidates` declaration followed by a
   mutating `if/else`. The helper returns `ScoredCandidate[]` directly; the proximity
   scoring strategy comment now sits at the top of that function. `executeSearch` now
   reads as a single ternary assignment.
@@ -321,8 +337,9 @@ scope.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Removed redundant `import type { Dirent }` — used only to annotate `let entries:
-  Dirent[]`, which TypeScript infers from `fs.readdir(..., { withFileTypes: true })`.
+Dirent[]`, which TypeScript infers from `fs.readdir(..., { withFileTypes: true })`.
   Dropping the annotation and import removes one line.
 
 ---
@@ -337,6 +354,7 @@ propagate; fixes pre-existing lint error).
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Removed unused `import type { ListboxOption }` — imported but never referenced
   (pre-existing lint warning, now cleared).
 - Renamed state variable `open` → `isOpen` — fixes ESLint naming-convention error
@@ -365,6 +383,7 @@ available within the stated constraints.
 **Files touched:** 1
 
 **Changes (Antonini):**
+
 - Removed unused `import type { ListboxOption }` (pre-existing lint warning, cleared).
 - Removed unused `ResourceTypeIcon` component — defined but never called in the render
   path (pre-existing lint warning, cleared). `getResourceTypeLabel` helper is still
@@ -415,6 +434,7 @@ two-level re-export. No duplication warranting structural unification was found 
 
 Pre- and post-change grep of `^export ` for all 17 in-scope files confirms no public
 signatures were added, removed, or retyped. All changes are internal-only:
+
 - Private variable renames (`running`, `stopped`, `shutdownHooksInstalled`,
   `perTermFreq`, `removeFromIndexObj`, `ti`) propagate only within their files.
 - New private helpers (`resolveBodyText`, `loadTagAssignments`,
@@ -430,12 +450,12 @@ signatures were added, removed, or retyped. All changes are internal-only:
 
 From `frontend/`:
 
-| Check | Result |
-|---|---|
-| `pnpm typecheck` | PASS — clean |
-| `pnpm lint` (slice files) | PASS — 1 pre-existing warning (`previews.ts:83 no-explicit-any`) deferred; all errors cleared |
-| `pnpm exec vitest run` (11 test files) | PASS — 139/139 |
-| `pnpm knip` (repo root) | Pre-existing failures only; no new issues introduced |
+| Check                                  | Result                                                                                        |
+| -------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`                       | PASS — clean                                                                                  |
+| `pnpm lint` (slice files)              | PASS — 1 pre-existing warning (`previews.ts:83 no-explicit-any`) deferred; all errors cleared |
+| `pnpm exec vitest run` (11 test files) | PASS — 139/139                                                                                |
+| `pnpm knip` (repo root)                | Pre-existing failures only; no new issues introduced                                          |
 
 Repo-wide lint: 411 problems (88 errors, 323 warnings) post-slice vs. 453 baseline (93
 errors, 360 warnings). Net: 42 fewer problems, 5 fewer errors, 37 fewer warnings — all

@@ -1,6 +1,6 @@
 # Metadata Queries & Smart Folders
 
-Your documents carry a lot of structured information — point-of-view, status, story dates, tags, word counts, custom fields, and more (see [Metadata](metadata.md)). **Metadata queries** let you ask questions of all that information at once: *show me every scene from Mara's POV, tagged `flashback`, under 500 words.* Save a query and it becomes a **smart folder** — a living collection that always reflects whatever currently matches, no manual upkeep required.
+Your documents carry a lot of structured information — point-of-view, status, story dates, tags, word counts, custom fields, and more (see [Metadata](metadata.md)). **Metadata queries** let you ask questions of all that information at once: _show me every scene from Mara's POV, tagged `flashback`, under 500 words._ Save a query and it becomes a **smart folder** — a living collection that always reflects whatever currently matches, no manual upkeep required.
 
 For a long project, this turns a pile of documents into something you can interrogate: find what's missing, gather what belongs together, and keep an eye on the shape of the whole.
 
@@ -9,7 +9,7 @@ For a long project, this turns a pile of documents into something you can interr
 GetWrite has two ways to find things, and they complement each other:
 
 - **[Search](search.md)** (`Cmd/Ctrl+K`) is for quickly jumping to a document when you know roughly what it's called.
-- **Metadata queries** are for filtering your project by what documents *are* — their status, POV, dates, tags, length, and relationships — and for saving those filters to reuse.
+- **Metadata queries** are for filtering your project by what documents _are_ — their status, POV, dates, tags, length, and relationships — and for saving those filters to reuse.
 
 ## Building a query
 
@@ -41,39 +41,39 @@ You can filter on two kinds of fields.
 
 **Built-in document attributes** — properties every resource has, even though they aren't metadata fields you set by hand:
 
-| Field | What it filters on |
-| --- | --- |
-| **Type** | Whether the resource is text, image, audio, or a folder. |
-| **Folder** | Which folder the resource lives in. |
-| **Word Count** | Length of a text document, in words. |
-| **Character Count** | Length of a text document, in characters. |
-| **Created At** | When the resource was created. |
-| **Updated At** | When the resource was last changed. |
-| **Statuses** | The workflow status values applied to the resource. |
-| **Tags** | The [tags](metadata.md#tags) assigned to the resource. |
-| **Linked From** | Other resources that link *to* this one. |
-| **Links To** | Resources this one links *to*. |
+| Field               | What it filters on                                       |
+| ------------------- | -------------------------------------------------------- |
+| **Type**            | Whether the resource is text, image, audio, or a folder. |
+| **Folder**          | Which folder the resource lives in.                      |
+| **Word Count**      | Length of a text document, in words.                     |
+| **Character Count** | Length of a text document, in characters.                |
+| **Created At**      | When the resource was created.                           |
+| **Updated At**      | When the resource was last changed.                      |
+| **Statuses**        | The workflow status values applied to the resource.      |
+| **Tags**            | The [tags](metadata.md#tags) assigned to the resource.   |
+| **Linked From**     | Other resources that link _to_ this one.                 |
+| **Links To**        | Resources this one links _to_.                           |
 
-`Linked From` and `Links To` let you walk the web of connections in your project — for example, *every scene that references the Antagonist's character sheet*.
+`Linked From` and `Links To` let you walk the web of connections in your project — for example, _every scene that references the Antagonist's character sheet_.
 
 ## Operators by field type
 
-The operators offered depend on the field's type, so you can never build a nonsensical condition. Every field also supports **is empty** and **has any value**, which is the key to quality-control queries like *scenes without a POV* or *resources missing a status*.
+The operators offered depend on the field's type, so you can never build a nonsensical condition. Every field also supports **is empty** and **has any value**, which is the key to quality-control queries like _scenes without a POV_ or _resources missing a status_.
 
-| Field type | Operators |
-| --- | --- |
-| **Text** (e.g. Notes, Synopsis) | is · is not · contains · does not contain · starts with · matches regex · is empty · has any value |
-| **Number** (e.g. Word Count) | equals · does not equal · is less than · is at most · is greater than · is at least · is between · is empty · has any value |
-| **Date** (e.g. Story Date, Created At) | is on · is before · is after · is between · in the last · is empty · has any value |
-| **Yes/No** | is true · is false · is empty · has any value |
-| **Single choice / single reference** (e.g. Status, POV) | is · is not · is any of · is none of · is empty · has any value |
-| **Multiple choice / multiple references** (e.g. Tags, Statuses) | includes · does not include · includes all of · includes any of · includes none of · is empty · has any value |
+| Field type                                                      | Operators                                                                                                                   |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Text** (e.g. Notes, Synopsis)                                 | is · is not · contains · does not contain · starts with · matches regex · is empty · has any value                          |
+| **Number** (e.g. Word Count)                                    | equals · does not equal · is less than · is at most · is greater than · is at least · is between · is empty · has any value |
+| **Date** (e.g. Story Date, Created At)                          | is on · is before · is after · is between · in the last · is empty · has any value                                          |
+| **Yes/No**                                                      | is true · is false · is empty · has any value                                                                               |
+| **Single choice / single reference** (e.g. Status, POV)         | is · is not · is any of · is none of · is empty · has any value                                                             |
+| **Multiple choice / multiple references** (e.g. Tags, Statuses) | includes · does not include · includes all of · includes any of · includes none of · is empty · has any value               |
 
 ## Saving as a smart folder
 
 Once a query does what you want, give it a name and save it. It then appears as a **smart folder** in the sidebar, marked with a search icon.
 
-Click a smart folder any time to run it and see what currently matches. Because it re-runs against your project's live data, the results stay current as you write and edit — a smart folder called *Needs a POV* empties itself as you fill in the missing fields.
+Click a smart folder any time to run it and see what currently matches. Because it re-runs against your project's live data, the results stay current as you write and edit — a smart folder called _Needs a POV_ empties itself as you fill in the missing fields.
 
 Hover a smart folder to **edit** it (refine the query) or **delete** it. Editing opens the query builder pre-filled with the saved conditions.
 
@@ -85,8 +85,8 @@ When a query's logic goes beyond the two levels of grouping the chip builder sup
 
 A few questions you can answer with a saved smart folder:
 
-- **Find a specific set of scenes** — *Tags includes `flashback`* AND *POV is Mara* AND *Word Count is less than 500*.
-- **Story-time slice** — *Story Date is between* two in-story dates, regardless of where those scenes sit in your document order. Pairs naturally with the [Timeline view](views/timeline.md).
-- **Quality control** — *Status is empty* to catch documents you haven't triaged, or *POV is empty* to find scenes missing a viewpoint.
-- **Staleness** — *Updated At is before* a given date to surface chapters you haven't touched in a while.
-- **Co-occurrence** — a custom multi-value field (say, Characters) that *includes all of* Alice and Bob, to find every scene they share.
+- **Find a specific set of scenes** — _Tags includes `flashback`_ AND _POV is Mara_ AND _Word Count is less than 500_.
+- **Story-time slice** — _Story Date is between_ two in-story dates, regardless of where those scenes sit in your document order. Pairs naturally with the [Timeline view](views/timeline.md).
+- **Quality control** — _Status is empty_ to catch documents you haven't triaged, or _POV is empty_ to find scenes missing a viewpoint.
+- **Staleness** — _Updated At is before_ a given date to surface chapters you haven't touched in a while.
+- **Co-occurrence** — a custom multi-value field (say, Characters) that _includes all of_ Alice and Bob, to find every scene they share.

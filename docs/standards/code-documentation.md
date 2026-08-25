@@ -30,6 +30,7 @@ This document applies when creating or modifying comments and documentation in J
 ## 4. Completeness Check
 
 Before finishing documentation work, verify:
+
 - Every exported function, type, and interface has a docstring
 - Every type/interface property has a description
 - The module docstring and last-updated timestamp are present at the top of the file

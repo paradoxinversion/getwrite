@@ -8,6 +8,7 @@ Derived from: [full-text-search-spec.md](./full-text-search-spec.md)
 
 **What:** A pure function `extractSnippet(text, query, maxLen)` that returns ≤ 160 characters of content centered on the first match of any query term.
 **Files:**
+
 - `frontend/src/lib/models/search-snippet.ts` (create)
 - `frontend/tests/unit/search-snippet.test.ts` (create)
 
@@ -22,6 +23,7 @@ Derived from: [full-text-search-spec.md](./full-text-search-spec.md)
 
 **What:** Adds an optional `searchResultLimit` field to the project-scoped user preferences type and updates the parse/merge helpers to round-trip it correctly.
 **Files:**
+
 - `frontend/src/lib/user-preferences.ts` (modify)
 
 **Done when:** `typecheck` passes; calling `mergeUserPreferencesIntoProjectMetadata` with `{ searchResultLimit: 25 }` and reading back via `getUserPreferencesFromProjectMetadata` returns `25`; non-numeric or missing values return `undefined`.
@@ -35,10 +37,12 @@ Derived from: [full-text-search-spec.md](./full-text-search-spec.md)
 
 **What:** A `GET /api/project/[project-id]/search` route that queries the inverted index, loads sidecar metadata and canonical revision content per result, extracts snippets, applies filters, enforces the result limit, and returns a typed `SearchResult[]`.
 **Files:**
+
 - `frontend/app/api/project/[project-id]/search/route.ts` (create)
 - `frontend/tests/unit/search-route.test.ts` (create)
 
 **Done when:**
+
 - `GET ?q=hello` returns `{ resourceId, title, snippet, status, folderId, tags }[]` ranked by `search()` from `inverted-index.ts`.
 - `GET ?q=hello&folder=<id>&status=Draft&tags=tagA` returns only matching resources (all three filters combinable).
 - Result count is capped at 50 by default; `searchResultLimit` from project preferences overrides the cap.
@@ -59,10 +63,12 @@ Derived from: [full-text-search-spec.md](./full-text-search-spec.md)
 
 **What:** Replaces the `SearchBar`'s client-side fuzzy title logic with a debounced fetch to the search API, and updates the result rows to show title and snippet.
 **Files:**
+
 - `frontend/components/SearchBar/SearchBar.tsx` (modify)
 - `frontend/tests/searchBar.test.tsx` (modify)
 
 **Done when:**
+
 - Typing 2+ characters into the `SearchBar` fires a debounced (200 ms) `GET /api/project/[id]/search?q=…` using the active project's ID from Redux (`selectSelectedProjectId`).
 - Fewer than 2 characters produces no API call and an empty results list.
 - Each result row renders the resource `title` and the `snippet` returned by the API.
@@ -82,11 +88,13 @@ Derived from: [full-text-search-spec.md](./full-text-search-spec.md)
 
 **What:** An expandable `SearchFilterPanel` component that renders folder, status, and tag filter controls and appends active selections as query parameters to the search request.
 **Files:**
+
 - `frontend/components/SearchBar/SearchFilterPanel.tsx` (create)
 - `frontend/components/SearchBar/SearchBar.tsx` (modify — integrate panel toggle and pass active filters to fetch)
 - `frontend/tests/searchBar.test.tsx` (modify — add filter interaction tests)
 
 **Done when:**
+
 - A toggle button adjacent to the search input opens and closes the filter panel.
 - The panel contains: a folder selector (populated from Redux resource folders for the active project), status chips (from `StoredProject.statuses`), and tag chips (from `StoredProject.metadata.tags`).
 - Selecting any filter re-fires the search with the corresponding `folder`, `status`, or `tags` query parameters appended.

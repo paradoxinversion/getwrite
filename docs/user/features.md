@@ -68,7 +68,7 @@ Folders can act as **metadata providers** (Characters, Locations, Items, and the
 
 ### Metadata queries & smart folders
 
-All that metadata becomes searchable: build a filter from simple chips ("POV is Mara *and* status is Draft *and* word count under 500") and GetWrite gathers every matching document. You can filter on your own fields and on built-in attributes like word count, dates, tags, and which documents link to which. Save a query as a **smart folder** and it becomes a living collection that always reflects what currently matches — perfect for tracking drafts in progress, catching documents missing key metadata, or pulling together every scene a character appears in.
+All that metadata becomes searchable: build a filter from simple chips ("POV is Mara _and_ status is Draft _and_ word count under 500") and GetWrite gathers every matching document. You can filter on your own fields and on built-in attributes like word count, dates, tags, and which documents link to which. Save a query as a **smart folder** and it becomes a living collection that always reflects what currently matches — perfect for tracking drafts in progress, catching documents missing key metadata, or pulling together every scene a character appears in.
 
 → [Metadata Queries & Smart Folders](metadata-queries.md)
 

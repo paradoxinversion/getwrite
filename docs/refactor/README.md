@@ -11,20 +11,20 @@ one agent can refactor a whole feature with the tests that cover it.
 
 ## Slices
 
-| # | Slice | ~Lines | Risk | Status | Doc |
-|---|---|---|---|---|---|
-| 1 | Foundation (shared) | 1.5k | 🔴 | ✅ Done (2026-06-17) | [01-foundation.md](01-foundation.md) |
-| 2 | Query / Smart Folders | 4.5k | 🟡 | ✅ Done (2026-06-17) | [02-query.md](02-query.md) |
-| 3 | Revisions | 3k | 🔴 | ✅ Done (2026-06-17) | [03-revisions.md](03-revisions.md) |
-| 4 | Metadata & Schema | 5.5k | 🟡 | ✅ Done (2026-06-17) | [04-metadata-schema.md](04-metadata-schema.md) |
-| 5 | Resources / Templates / Trash | 4k | 🟡 | ✅ Done (2026-06-17) | [05-resources.md](05-resources.md) |
-| 6 | Projects & Types | 6k | 🟡 | ✅ Done (2026-06-17) | [06-projects.md](06-projects.md) |
-| 7 | Index & Search | 2.5k | 🟡 | ✅ Done (2026-06-17) | [07-index-search.md](07-index-search.md) |
-| 8 | Editor (TipTap) | 3k | 🟡 | ✅ Done (2026-06-17) | [08-editor.md](08-editor.md) |
-| 9 | Compile & Export | 1.2k | 🟢 | ✅ Done (2026-06-17) | [09-compile-export.md](09-compile-export.md) |
-| 10 | Layout / Shell | 3.5k | 🔴 | ✅ Done (2026-06-17) | [10-shell.md](10-shell.md) |
-| 11 | Timeline | 1.2k | 🟢 | ✅ Done (2026-06-17) | [11-timeline.md](11-timeline.md) |
-| 12 | Common UI primitives | 2k | 🟡 | ✅ Done (2026-06-17) | [12-common-ui.md](12-common-ui.md) |
+| #   | Slice                         | ~Lines | Risk | Status               | Doc                                            |
+| --- | ----------------------------- | ------ | ---- | -------------------- | ---------------------------------------------- |
+| 1   | Foundation (shared)           | 1.5k   | 🔴   | ✅ Done (2026-06-17) | [01-foundation.md](01-foundation.md)           |
+| 2   | Query / Smart Folders         | 4.5k   | 🟡   | ✅ Done (2026-06-17) | [02-query.md](02-query.md)                     |
+| 3   | Revisions                     | 3k     | 🔴   | ✅ Done (2026-06-17) | [03-revisions.md](03-revisions.md)             |
+| 4   | Metadata & Schema             | 5.5k   | 🟡   | ✅ Done (2026-06-17) | [04-metadata-schema.md](04-metadata-schema.md) |
+| 5   | Resources / Templates / Trash | 4k     | 🟡   | ✅ Done (2026-06-17) | [05-resources.md](05-resources.md)             |
+| 6   | Projects & Types              | 6k     | 🟡   | ✅ Done (2026-06-17) | [06-projects.md](06-projects.md)               |
+| 7   | Index & Search                | 2.5k   | 🟡   | ✅ Done (2026-06-17) | [07-index-search.md](07-index-search.md)       |
+| 8   | Editor (TipTap)               | 3k     | 🟡   | ✅ Done (2026-06-17) | [08-editor.md](08-editor.md)                   |
+| 9   | Compile & Export              | 1.2k   | 🟢   | ✅ Done (2026-06-17) | [09-compile-export.md](09-compile-export.md)   |
+| 10  | Layout / Shell                | 3.5k   | 🔴   | ✅ Done (2026-06-17) | [10-shell.md](10-shell.md)                     |
+| 11  | Timeline                      | 1.2k   | 🟢   | ✅ Done (2026-06-17) | [11-timeline.md](11-timeline.md)               |
+| 12  | Common UI primitives          | 2k     | 🟡   | ✅ Done (2026-06-17) | [12-common-ui.md](12-common-ui.md)             |
 
 Status legend: ⬜ Not started · 🚧 In progress · ✅ Done (gate green for the slice's own files). Slice 9 landed via commits `f21de5e` (brevity/clarity pass) and `a1a08cd` (route unification); route unification was its headline goal.
 

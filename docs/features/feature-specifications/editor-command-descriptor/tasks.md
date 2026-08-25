@@ -11,6 +11,7 @@
 **Files:** `frontend/tests/editorMenuBar.test.tsx` (add a new `describe` block to the existing file)
 
 **Done when:**
+
 - A test asserts `useToolbarCommands(...)` returns exactly `toolbarCommandSchema.length` groups
 - A test asserts every command `id` in each group produces a `ResolvedToolbarItem` with the correct `kind` (matching the schema's `kind`)
 - A test asserts `onClick` (icon), `onChange` (input), and `onSelectColor` (color-submenu) are `typeof === "function"` for every resolved item in the schema

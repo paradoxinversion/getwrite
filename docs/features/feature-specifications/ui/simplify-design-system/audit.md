@@ -10,17 +10,17 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 
 ## Ranking summary
 
-| Rank | Category | Raw count | Files | Est. LOC saved | Impact score | Recommendation |
-|---|---|---:|---:|---:|---:|---|
-| 1 | Button (raw `<button>`) | 117 | 46 | ~300 | **highest** | migrate |
-| 2 | Dialog / Modal / Overlay | 12 components + 3 inline | 15 | ~400 | **highest** | migrate (highest risk) |
-| 3 | Card / Surface (bordered, rounded) | 55 | ~25 | ~150 | high | migrate |
-| 4 | Input / Textarea / Select | 48 form controls | 27 | ~150 | high | migrate |
-| 5 | CollapsibleSection ↔ SidebarSection (near-duplicate) | 2 components | 4 | ~60 | medium | **merge** (no shadcn needed) |
-| 6 | Chip / Tag / Badge | 5+ parallel CSS systems | 6 | ~80 | medium | migrate (consolidate to existing `Chip`) |
-| 7 | `Toaster.tsx` hardcoded hex | 13 hex literals | 1 | ~15 | low | **token sweep** (no primitive needed) |
-| — | MenuItemButton | 20 uses, 3 containers | 3 | — | — | **leave** (already consolidated) |
-| — | ViewSwitcher (tablist) | 1 use | 1 | — | — | **leave / defer** (isolated, well-tested) |
+| Rank | Category                                             |                Raw count | Files | Est. LOC saved | Impact score | Recommendation                            |
+| ---- | ---------------------------------------------------- | -----------------------: | ----: | -------------: | -----------: | ----------------------------------------- |
+| 1    | Button (raw `<button>`)                              |                      117 |    46 |           ~300 |  **highest** | migrate                                   |
+| 2    | Dialog / Modal / Overlay                             | 12 components + 3 inline |    15 |           ~400 |  **highest** | migrate (highest risk)                    |
+| 3    | Card / Surface (bordered, rounded)                   |                       55 |   ~25 |           ~150 |         high | migrate                                   |
+| 4    | Input / Textarea / Select                            |         48 form controls |    27 |           ~150 |         high | migrate                                   |
+| 5    | CollapsibleSection ↔ SidebarSection (near-duplicate) |             2 components |     4 |            ~60 |       medium | **merge** (no shadcn needed)              |
+| 6    | Chip / Tag / Badge                                   |  5+ parallel CSS systems |     6 |            ~80 |       medium | migrate (consolidate to existing `Chip`)  |
+| 7    | `Toaster.tsx` hardcoded hex                          |          13 hex literals |     1 |            ~15 |          low | **token sweep** (no primitive needed)     |
+| —    | MenuItemButton                                       |    20 uses, 3 containers |     3 |              — |            — | **leave** (already consolidated)          |
+| —    | ViewSwitcher (tablist)                               |                    1 use |     1 |              — |            — | **leave / defer** (isolated, well-tested) |
 
 **Phase-one migration recommendation (per spec FR 1–7):** categories 1, 2, 3, 4. They alone yield ~1000 LOC of savings, all four hit the duplication threshold easily, and they cover every visual primitive that appears more than ~10 times. Categories 5–7 are small one-off cleanups bundled into the same PR train.
 
@@ -31,28 +31,28 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 **Raw count:** 117 occurrences across 46 files.
 **Top offenders (count per file):**
 
-| Count | File |
-|---:|---|
-| 11 | `SchemaManager/SchemaManager.tsx` |
-| 8 | `project-types/ProjectTypeEditorForm.tsx` |
-| 7 | `Editor/RevisionControl/RevisionControl.tsx` |
-| 6 | `preferences/HeadingSettingsModal.tsx`, `Layout/AppShell.tsx` |
-| 5 | `preferences/UserPreferencesPage.tsx`, `Timeline/Timeline.tsx` |
-| 4 | `common/CompilePreviewModal.tsx` |
-| 3 | `preferences/DefaultRevisionNameModal.tsx`, `preferences/BodySettingsModal.tsx`, `common/UI/Chip/Chip.tsx`, `common/TagsManagerModal.tsx`, `Timeline/TimelineChip.tsx`, `Start/StartPage.tsx`, `Start/CreateProjectModal.tsx` |
+| Count | File                                                                                                                                                                                                                          |
+| ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    11 | `SchemaManager/SchemaManager.tsx`                                                                                                                                                                                             |
+|     8 | `project-types/ProjectTypeEditorForm.tsx`                                                                                                                                                                                     |
+|     7 | `Editor/RevisionControl/RevisionControl.tsx`                                                                                                                                                                                  |
+|     6 | `preferences/HeadingSettingsModal.tsx`, `Layout/AppShell.tsx`                                                                                                                                                                 |
+|     5 | `preferences/UserPreferencesPage.tsx`, `Timeline/Timeline.tsx`                                                                                                                                                                |
+|     4 | `common/CompilePreviewModal.tsx`                                                                                                                                                                                              |
+|     3 | `preferences/DefaultRevisionNameModal.tsx`, `preferences/BodySettingsModal.tsx`, `common/UI/Chip/Chip.tsx`, `common/TagsManagerModal.tsx`, `Timeline/TimelineChip.tsx`, `Start/StartPage.tsx`, `Start/CreateProjectModal.tsx` |
 
 **Duplication patterns observed** (exact classNames, repeat count):
 
-| Repeats | Pattern (truncated) | Visual role |
-|---:|---|---|
-| 8 | `project-type-editor-action-button` (CSS class) | toolbar action |
-| 6 | `rounded-md border border-gw-border bg-transparent px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gw-secondary transition-colors duration-150 hover:bg-gw-chrome2` | modal-footer secondary |
-| 5 | `border border-gw-primary text-gw-primary bg-transparent rounded-md font-mono text-[10px] uppercase tracking-[0.16em] px-4 py-2 hover:bg-gw-chrome2 transition-colors duration-150` | modal cancel / outline |
-| 4 | `project-modal-button-{primary,secondary}` (CSS classes) | project-modal footer |
-| 4 | `appshell-{topbar-button,sidebar-toggle}` (CSS classes) | top-bar icon button |
-| 3 | `timeline-chip` (CSS class) | timeline chip clickable |
-| 2 | `compile-modal-generate-button` (CSS class) | compile primary |
-| many | one-off Tailwind clusters | misc |
+| Repeats | Pattern (truncated)                                                                                                                                                                  | Visual role             |
+| ------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+|       8 | `project-type-editor-action-button` (CSS class)                                                                                                                                      | toolbar action          |
+|       6 | `rounded-md border border-gw-border bg-transparent px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gw-secondary transition-colors duration-150 hover:bg-gw-chrome2` | modal-footer secondary  |
+|       5 | `border border-gw-primary text-gw-primary bg-transparent rounded-md font-mono text-[10px] uppercase tracking-[0.16em] px-4 py-2 hover:bg-gw-chrome2 transition-colors duration-150`  | modal cancel / outline  |
+|       4 | `project-modal-button-{primary,secondary}` (CSS classes)                                                                                                                             | project-modal footer    |
+|       4 | `appshell-{topbar-button,sidebar-toggle}` (CSS classes)                                                                                                                              | top-bar icon button     |
+|       3 | `timeline-chip` (CSS class)                                                                                                                                                          | timeline chip clickable |
+|       2 | `compile-modal-generate-button` (CSS class)                                                                                                                                          | compile primary         |
+|    many | one-off Tailwind clusters                                                                                                                                                            | misc                    |
 
 **Why it scores #1:** four distinct visual variants (secondary, primary outline, icon-only, danger) are repeated inline with copy-paste Tailwind in nearly every modal. A canonical `Button` with ~3 variants (`default`, `outline`, `ghost`) plus a `size` prop replaces 117 call sites with a uniform API and deletes ~300 lines of repeated class strings.
 
@@ -69,6 +69,7 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 ## 2. Dialog / Modal / Overlay
 
 **Raw count:**
+
 - **4 distinct overlay implementations** in `components/common/`:
   1. `ModalOverlayShell.tsx` (30 LOC) — uses `appshell-modal-*` CSS classes.
   2. `ProjectModalFrame.tsx` (38 LOC) — uses `project-modal-*` CSS classes.
@@ -77,21 +78,21 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 
 - **12 modal components** built on top of the four overlays:
 
-| File | LOC | Overlay used |
-|---|---:|---|
-| `common/CompilePreviewModal.tsx` | 198 | ModalOverlayShell |
-| `common/ExportPreviewModal.tsx` | 60 | ModalOverlayShell |
-| `common/TagsManagerModal.tsx` | 204 | ModalOverlayShell |
-| `common/ResourceCommandPalette.tsx` | 235 | inline `fixed inset-0` |
-| `common/ConfirmDialog.tsx` | 114 | self-contained |
-| `preferences/BodySettingsModal.tsx` | 114 | ModalOverlayShell |
-| `preferences/DefaultRevisionNameModal.tsx` | 117 | ModalOverlayShell |
-| `preferences/HeadingSettingsModal.tsx` | 424 | ModalOverlayShell |
-| `Start/CreateProjectModal.tsx` | 370 | ProjectModalFrame |
-| `Start/RenameProjectModal.tsx` | 81 | inline `fixed inset-0` |
-| `ResourceTree/CreateResourceModal.tsx` | 172 | ProjectModalFrame |
-| `ResourceTree/RenameResourceModal.tsx` | 92 | inline `fixed inset-0` |
-| **Subtotal** | **2181** | |
+| File                                       |      LOC | Overlay used           |
+| ------------------------------------------ | -------: | ---------------------- |
+| `common/CompilePreviewModal.tsx`           |      198 | ModalOverlayShell      |
+| `common/ExportPreviewModal.tsx`            |       60 | ModalOverlayShell      |
+| `common/TagsManagerModal.tsx`              |      204 | ModalOverlayShell      |
+| `common/ResourceCommandPalette.tsx`        |      235 | inline `fixed inset-0` |
+| `common/ConfirmDialog.tsx`                 |      114 | self-contained         |
+| `preferences/BodySettingsModal.tsx`        |      114 | ModalOverlayShell      |
+| `preferences/DefaultRevisionNameModal.tsx` |      117 | ModalOverlayShell      |
+| `preferences/HeadingSettingsModal.tsx`     |      424 | ModalOverlayShell      |
+| `Start/CreateProjectModal.tsx`             |      370 | ProjectModalFrame      |
+| `Start/RenameProjectModal.tsx`             |       81 | inline `fixed inset-0` |
+| `ResourceTree/CreateResourceModal.tsx`     |      172 | ProjectModalFrame      |
+| `ResourceTree/RenameResourceModal.tsx`     |       92 | inline `fixed inset-0` |
+| **Subtotal**                               | **2181** |                        |
 
 **Findings:**
 
@@ -112,11 +113,11 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 
 **Representative inline implementations:**
 
-| File | Pattern |
-|---|---|
-| `WorkArea/Views/OrganizerView/OrganizerCard.tsx` | `h-48 border border-gw-border rounded-md p-4 bg-gw-chrome` |
-| `help/HelpSectionCard.tsx` | uses `help-section-card help-card` CSS classes |
-| `Start/StartPage.tsx`, `Sidebar/MetadataSidebar.tsx`, multiple preferences modals | repeated `border border-gw-border rounded-md …` |
+| File                                                                              | Pattern                                                    |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `WorkArea/Views/OrganizerView/OrganizerCard.tsx`                                  | `h-48 border border-gw-border rounded-md p-4 bg-gw-chrome` |
+| `help/HelpSectionCard.tsx`                                                        | uses `help-section-card help-card` CSS classes             |
+| `Start/StartPage.tsx`, `Sidebar/MetadataSidebar.tsx`, multiple preferences modals | repeated `border border-gw-border rounded-md …`            |
 
 **Findings:**
 
@@ -135,23 +136,23 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 
 **Raw count:**
 
-| Type | Count | Notable files |
-|---|---:|---|
-| `<input type="text/email/etc">` | 21 typed + ~30 untyped | `ProjectTypeEditorForm.tsx` (7), `EditorMenuInput.tsx` (6), `HeadingSettingsModal.tsx` (4), `SchemaManager.tsx` (4) |
-| `<input type="checkbox">` | 12 | `SchemaManager.tsx`, `BooleanToggle.tsx`, `MultiSelectList.tsx`, `CompilePreviewModal.tsx`, `CompileResourceTree.tsx`, `TagsManagerModal.tsx`, `UserPreferencesPage.tsx`, `ProjectTypeEditorForm.tsx` |
-| `<select>` | 11 | spread across 11 files |
-| `<textarea>` | 4 | `ProjectTypeEditorForm.tsx`, `SynopsisInput.tsx`, `NotesInput.tsx`, `SchemaManager.tsx` |
+| Type                            |                  Count | Notable files                                                                                                                                                                                         |
+| ------------------------------- | ---------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<input type="text/email/etc">` | 21 typed + ~30 untyped | `ProjectTypeEditorForm.tsx` (7), `EditorMenuInput.tsx` (6), `HeadingSettingsModal.tsx` (4), `SchemaManager.tsx` (4)                                                                                   |
+| `<input type="checkbox">`       |                     12 | `SchemaManager.tsx`, `BooleanToggle.tsx`, `MultiSelectList.tsx`, `CompilePreviewModal.tsx`, `CompileResourceTree.tsx`, `TagsManagerModal.tsx`, `UserPreferencesPage.tsx`, `ProjectTypeEditorForm.tsx` |
+| `<select>`                      |                     11 | spread across 11 files                                                                                                                                                                                |
+| `<textarea>`                    |                      4 | `ProjectTypeEditorForm.tsx`, `SynopsisInput.tsx`, `NotesInput.tsx`, `SchemaManager.tsx`                                                                                                               |
 
 **Duplication patterns** (exact classNames, repeat count):
 
-| Repeats | Pattern | Used in |
-|---:|---|---|
-| 4 | `w-full mt-2 p-2 border border-gw-border rounded text-sm` | `MetadataSidebar`, `SelectInput`, `NumberInput`, `ResourceRefInput` |
-| 2 | `w-full p-2 border rounded text-sm` (no token) | misc |
-| 2 | `compile-tree-checkbox` (CSS class) | `CompilePreviewModal`, `CompileResourceTree` |
-| 1 | `w-full rounded-md border border-gw-border bg-transparent px-3 py-2 text-sm text-gw-primary placeholder-gw-secondary focus:outline-none focus:ring-1 focus:ring-gw-border` | various |
-| 1 | `w-full mt-2 p-2 border border-brand-mid text-sm` | uses **legacy `brand-mid` token** (drift) |
-| 1 | `w-full mt-1 p-2 border rounded text-sm` | inconsistent margin |
+| Repeats | Pattern                                                                                                                                                                    | Used in                                                             |
+| ------: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+|       4 | `w-full mt-2 p-2 border border-gw-border rounded text-sm`                                                                                                                  | `MetadataSidebar`, `SelectInput`, `NumberInput`, `ResourceRefInput` |
+|       2 | `w-full p-2 border rounded text-sm` (no token)                                                                                                                             | misc                                                                |
+|       2 | `compile-tree-checkbox` (CSS class)                                                                                                                                        | `CompilePreviewModal`, `CompileResourceTree`                        |
+|       1 | `w-full rounded-md border border-gw-border bg-transparent px-3 py-2 text-sm text-gw-primary placeholder-gw-secondary focus:outline-none focus:ring-1 focus:ring-gw-border` | various                                                             |
+|       1 | `w-full mt-2 p-2 border border-brand-mid text-sm`                                                                                                                          | uses **legacy `brand-mid` token** (drift)                           |
+|       1 | `w-full mt-1 p-2 border rounded text-sm`                                                                                                                                   | inconsistent margin                                                 |
 
 **Findings:**
 
@@ -186,13 +187,13 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 
 **Raw count:** 5+ parallel chip/tag CSS class systems.
 
-| System | File(s) | Status |
-|---|---|---|
-| `Chip` component (`components/common/UI/Chip/Chip.tsx`) | imported in 1 place (`MultiResourceRefInput.tsx`) | **under-used** |
-| `metadata-sidebar-tag` (CSS classes) | `Sidebar/TagsSection.tsx` | parallel implementation |
-| `searchbar-chip` (CSS classes) | `SearchBar/SearchBar.tsx`, `SearchBar/SearchFilterPanel.tsx` | parallel implementation |
-| `TimelineChip.tsx` (separate component) | `Timeline/TimelineChip.tsx`, `Timeline/TimelineRow.tsx` | parallel implementation |
-| revision-badge inline | `Editor/RevisionControl/RevisionControl.tsx` | inline |
+| System                                                  | File(s)                                                      | Status                  |
+| ------------------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
+| `Chip` component (`components/common/UI/Chip/Chip.tsx`) | imported in 1 place (`MultiResourceRefInput.tsx`)            | **under-used**          |
+| `metadata-sidebar-tag` (CSS classes)                    | `Sidebar/TagsSection.tsx`                                    | parallel implementation |
+| `searchbar-chip` (CSS classes)                          | `SearchBar/SearchBar.tsx`, `SearchBar/SearchFilterPanel.tsx` | parallel implementation |
+| `TimelineChip.tsx` (separate component)                 | `Timeline/TimelineChip.tsx`, `Timeline/TimelineRow.tsx`      | parallel implementation |
+| revision-badge inline                                   | `Editor/RevisionControl/RevisionControl.tsx`                 | inline                  |
 
 **Findings:**
 
@@ -223,7 +224,7 @@ Method: ripgrep across `<element>` opens, classNames, and CSS-class anchors; spo
 ### MenuItemButton
 
 - **Status:** already consolidated. Used in 20 places by 3 menu containers (`ResourceContextMenu`, `ShellSettingsMenu`, `ManageProjectMenu`).
-- The menu *containers* repeat outside-click + arrow-key + escape logic, but that's a hook (a `useMenu` / `useDismissable`), not a visual primitive. **Defer** to a separate behavior-consolidation pass.
+- The menu _containers_ repeat outside-click + arrow-key + escape logic, but that's a hook (a `useMenu` / `useDismissable`), not a visual primitive. **Defer** to a separate behavior-consolidation pass.
 
 ### ViewSwitcher
 
@@ -285,7 +286,7 @@ Based on this audit, the phase-one canonical primitives are:
 
 **Out of phase one:**
 
-- `MenuItem` migration (Task 7 in tasks.md) — `MenuItemButton` is already shared; the duplication is in menu *containers*, not items. **Recommend deferring Task 7** and replacing it with a "menu-container behavior hook" task in a phase-two iteration.
+- `MenuItem` migration (Task 7 in tasks.md) — `MenuItemButton` is already shared; the duplication is in menu _containers_, not items. **Recommend deferring Task 7** and replacing it with a "menu-container behavior hook" task in a phase-two iteration.
 - Timeline / TipTap-specific visuals.
 - ViewSwitcher.
 

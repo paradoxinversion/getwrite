@@ -59,7 +59,7 @@ Wrap the same interface the model layer already consumes: `encryptingAdapter(inn
 **Cons:**
 
 - Operates on whole file bodies, so `appendFile` becomes read-modify-write and `stat().size` reports ciphertext length.
-- Says nothing about *which* key a given path needs — that question has to be answered somewhere else, and answering it wrongly is what caused this ADR's main revision (see Consequences).
+- Says nothing about _which_ key a given path needs — that question has to be answered somewhere else, and answering it wrongly is what caused this ADR's main revision (see Consequences).
 
 ## Decision
 
@@ -88,7 +88,7 @@ Point 4 replaced an earlier design in which each caller resolved its own project
 
 - `appendFile` is read-modify-write, since an AEAD envelope cannot be extended in place. Acceptable because the model layer has exactly one appending caller (a template change log that gains one short line per edit), but it would not scale to a large log.
 - `stat().size` reports ciphertext length. Inert today because ADR-019's survey established the model layer reads only `isDirectory`/`isFile`/`name` and existence, but it is a latent trap for any future caller that reaches for `size`.
-- Tolerant reads open a bounded downgrade window during a conversion, in which a plaintext file is accepted where ciphertext is expected. The window is the conversion's duration, and strict mode applies at every other time. Because whether a conversion is in flight is a fact on disk that can change between requests — and adapter selection is synchronous — the routing adapter resolves tolerance *per read*, and only after a read has already failed as "not an envelope". An envelope that fails authentication is never tolerated, since that is a distinct error (FR15).
+- Tolerant reads open a bounded downgrade window during a conversion, in which a plaintext file is accepted where ciphertext is expected. The window is the conversion's duration, and strict mode applies at every other time. Because whether a conversion is in flight is a fact on disk that can change between requests — and adapter selection is synchronous — the routing adapter resolves tolerance _per read_, and only after a read has already failed as "not an envelope". An envelope that fails authentication is never tolerated, since that is a distinct error (FR15).
 - Conversion requires an exclusive project write barrier, because `meta-locks.ts` does not cover the content save path. Writes to a converting project fail fast rather than blocking. The barrier identifies the project from the path being written: it originally read a `projectRoot` off the storage context, which `withStorageContext` does not set, so it silently permitted every request write for the life of the branch.
 
 ### The revision that matters
@@ -105,7 +105,7 @@ The lesson is recorded here deliberately: **a seam is not done when it is correc
 
 ### Why that lesson was not enough
 
-It recurred. A code review of the finished branch found thirteen issues, and **every one of them was an integration defect — not one was in the cryptography.** The worst made encrypting a *second* project fail outright, and it was the same bug wearing different clothes: the routing adapter fixed *reads* going through the wrong adapter, but every crypto module still defaulted its own adapter to `getStorageAdapter()`, which under a request is that same routing adapter. Registering the second project's key mid-call flipped it into decrypting the plaintext the conversion sweep was partway through sealing.
+It recurred. A code review of the finished branch found thirteen issues, and **every one of them was an integration defect — not one was in the cryptography.** The worst made encrypting a _second_ project fail outright, and it was the same bug wearing different clothes: the routing adapter fixed _reads_ going through the wrong adapter, but every crypto module still defaulted its own adapter to `getStorageAdapter()`, which under a request is that same routing adapter. Registering the second project's key mid-call flipped it into decrypting the plaintext the conversion sweep was partway through sealing.
 
 The advice above did not prevent this, and it could not have. "Add an integration task" and "walk it through manually" are dispositions, and a disposition cannot be enforced by a test suite. Worse, the suite actively signalled the opposite: 2,966 tests passed while a second project could not be encrypted at all.
 

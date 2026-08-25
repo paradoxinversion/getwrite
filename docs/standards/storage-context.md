@@ -16,7 +16,7 @@ defaults: `defaultProjectsDir()`'s env-var/cwd resolution for the projects direc
 and the module-level adapter set via `setStorageAdapter()` for the filesystem adapter.
 
 **ADR-021 Phase 0 addition.** `storage-context.ts` also supports a module-scoped
-*default* `StorageContext`, installed once via `setDefaultStorageContext()` and
+_default_ `StorageContext`, installed once via `setDefaultStorageContext()` and
 consulted by `getStorageContext()` whenever no `AsyncLocalStorage` scope is
 active. This is for the native (Capacitor Android) build only — a long-lived,
 single-tenant process with no per-request boundary to bind a scope to —
@@ -102,14 +102,17 @@ of this; it is internal to the wrapper.
 
 ## 2a. Rule: Project-Scoped Routes Must Derive `projectRoot` From a Validated `projectId`
 
-`withStorageContext` binds a *tenant's* root (`tenantRoot`); it says nothing about
-which *project* within that root a request targets. As of the tenant-route-
+`withStorageContext` binds a _tenant's_ root (`tenantRoot`); it says nothing about
+which _project_ within that root a request targets. As of the tenant-route-
 enforcement work, every project-scoped route under `frontend/app/api/**/route.ts`
 resolves its project directory the same way:
 
 ```ts
-import { validateProjectId, respondInvalidProjectId, InvalidProjectIdError }
-  from "../../../src/lib/models/project-path";
+import {
+  validateProjectId,
+  respondInvalidProjectId,
+  InvalidProjectIdError,
+} from "../../../src/lib/models/project-path";
 
 const validatedProjectId = validateProjectId(projectId); // throws InvalidProjectIdError
 const projectRoot = path.join(resolveProjectsDir(), validatedProjectId);
@@ -136,7 +139,7 @@ were deliberately left out of scope — are:
 
 **Client-side counterpart.** Do not send `project.id` (the `StoredProject.id`
 field mirrored from `project.json`'s internal `id`) to these routes — it is a
-*different* UUID from the project's on-disk directory name, and sending it is a
+_different_ UUID from the project's on-disk directory name, and sending it is a
 silent failure (wrong-or-missing directory), not an auth error. The one
 sanctioned way to obtain the directory id client-side is the Redux selector
 `selectActiveProjectDirectoryId` (`frontend/src/store/projectsSlice.ts`), which
@@ -162,7 +165,7 @@ runForTenant(projectRoot, () => /* work */);
 ```
 
 - `runForTenant` derives `tenantRoot` as `path.dirname(projectRoot)` so it matches
-  the value `resolveProjectsDir()` returns in a request (the *parent* dir that
+  the value `resolveProjectsDir()` returns in a request (the _parent_ dir that
   contains project folders), keeping route and non-route contexts consistent.
 - Call it at the point where a concrete project root is available.
 - Scope it to the smallest unit of work: a single CLI command invocation, a single
@@ -173,7 +176,7 @@ runForTenant(projectRoot, () => /* work */);
 
 **Deferred work must capture the adapter early.** `runForTenant`'s adapter
 defaults to whatever is active at the call site — correct for synchronous entry
-points (a CLI `.action()`). But work that runs *later* (a queue drain, a debounce
+points (a CLI `.action()`). But work that runs _later_ (a queue drain, a debounce
 timer) executes with no ambient context, so the default would resolve to the
 module fallback rather than the enqueuing scope's adapter. Capture the adapter at
 enqueue/watch time and pass it as the third argument:
@@ -235,14 +238,14 @@ not model, extend the contract (interface + real-fs default in `io.ts` +
 directly against `node:fs`. The adapter models discrete operations, not
 watchers; the watcher is a local/desktop reindex optimization that is gated off
 under test and is not meaningful for a hosted deployment (where change
-notification is a different mechanism). Its *recompute* path already runs
+notification is a different mechanism). Its _recompute_ path already runs
 through the adapter via `runForTenant`. This is one intentional direct-`fs`
 site in the model layer.
 
 **Sanctioned direct-`fs` sites — the storage backends themselves.** `io.ts`
 (the default adapter), `memoryAdapter.ts` (in-memory), and `object-store.ts`'s
 `createFsObjectStore` (the filesystem-backed object store) use `node:fs`
-directly because they *are* storage backends, not model data-path code — the
+directly because they _are_ storage backends, not model data-path code — the
 same category as the exception above. They are the concrete ends the wrappers
 resolve to, so the "route through the adapter" rule does not apply to them.
 

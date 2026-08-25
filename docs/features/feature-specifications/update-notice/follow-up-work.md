@@ -10,7 +10,7 @@ The Update Notice feature (Tasks 1–8) is implemented and all tests pass.
    `shell.openExternal` and denying in-app navigation, so the banner's "View
    release notes" / "Download" links open in the user's default browser.
 
-2. **Verify Task 1 env injection in a *packaged* build.** ✅ Done 2026-06-15.
+2. **Verify Task 1 env injection in a _packaged_ build.** ✅ Done 2026-06-15.
    `pnpm electron:package` produced `dist-electron/GetWrite-0.2.49-arm64.dmg`.
    Launching the packaged app (log confirms `isPackaged: true`, standalone
    spawn path under `GetWrite.app/Contents/Resources`) and querying

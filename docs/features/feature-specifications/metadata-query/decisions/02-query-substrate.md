@@ -64,7 +64,9 @@ A query file:
 {
   "id": "uuid",
   "name": "Act 2 scenes missing POV",
-  "definition": { /* AST */ },
+  "definition": {
+    /* AST */
+  },
   "view": { "kind": "table", "columns": ["title", "wordcount", "status"] }
 }
 ```
@@ -94,11 +96,11 @@ Field names match existing `metadataSchema` keys (`pov`, `status`,
 {
   "op": "and",
   "children": [
-    { "op": "eq",   "field": "type", "value": "text" },
-    { "op": "eq",   "field": "folderId", "value": "<scenes-folder-uuid>" },
-    { "op": "in",   "field": "pov", "value": ["<mara-uuid>", "<jonah-uuid>"] },
-    { "op": "lt",   "field": "wordCount", "value": 500 },
-    { "op": "not",  "child": { "op": "ref", "id": "scenes-already-revised" } },
+    { "op": "eq", "field": "type", "value": "text" },
+    { "op": "eq", "field": "folderId", "value": "<scenes-folder-uuid>" },
+    { "op": "in", "field": "pov", "value": ["<mara-uuid>", "<jonah-uuid>"] },
+    { "op": "lt", "field": "wordCount", "value": 500 },
+    { "op": "not", "child": { "op": "ref", "id": "scenes-already-revised" } },
     { "op": "linksTo", "id": "<antagonist-uuid>" }
   ]
 }
@@ -114,7 +116,7 @@ Notes:
   `appliesTo`-style multi-type scoping is not in the language.
 
 The AST is the entire filter language. Aggregation, projection, and
-group-by live in the *view* layer on top of the AST, not inside the filter
+group-by live in the _view_ layer on top of the AST, not inside the filter
 itself.
 
 ## Open questions

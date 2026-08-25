@@ -668,16 +668,16 @@ Storybook server.
   (≈ 35 SP). The chip UI and evaluator have to land before saved
   queries and smart folders are usable.
 - **Risks:**
-    - **Task 5 (evaluator)** is central and integrates intrinsics,
-      sidecar reads, and full-text delegation. Buggy here corrupts
-      every downstream feature.
-    - **Task 13 (value picker)** reuses many existing controls plus a
-      new hover-preview component; integration surface is broad.
-    - **Task 16 (query builder)** is the major UI assembly point;
-      rerender / state-management mistakes here are costly.
-    - **Tasks 22, 23, 24 (migration previews)** mutate sidecars in
-      bulk; atomicity and lock discipline must mirror
-      `renameFieldKey`'s existing pattern.
-    - **Task 26 (smart folders)** touches `ResourceTree`, `DataView`,
-      and Redux concurrently — coordinate carefully or split if
-      estimates blow up.
+  - **Task 5 (evaluator)** is central and integrates intrinsics,
+    sidecar reads, and full-text delegation. Buggy here corrupts
+    every downstream feature.
+  - **Task 13 (value picker)** reuses many existing controls plus a
+    new hover-preview component; integration surface is broad.
+  - **Task 16 (query builder)** is the major UI assembly point;
+    rerender / state-management mistakes here are costly.
+  - **Tasks 22, 23, 24 (migration previews)** mutate sidecars in
+    bulk; atomicity and lock discipline must mirror
+    `renameFieldKey`'s existing pattern.
+  - **Task 26 (smart folders)** touches `ResourceTree`, `DataView`,
+    and Redux concurrently — coordinate carefully or split if
+    estimates blow up.

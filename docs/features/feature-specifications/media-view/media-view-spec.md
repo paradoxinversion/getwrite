@@ -28,24 +28,16 @@ GetWrite can create and store image and audio resources, but selecting one in th
 ## Functional requirements
 
 **Surfacing**
+
 1. When the selected resource is an image or audio resource, the work area's `edit` view MUST render the Media View instead of the text editor or the "not a text resource" placeholder.
 2. While an image or audio resource is selected, the view switcher's "Edit" tab label MUST read "Media"; for text resources it MUST read "Edit".
 3. View tabs not applicable to media (e.g. Diff) SHOULD be disabled while a media resource is selected.
 
-**Image**
-4. Image resources MUST be displayed scaled to fit the work area while preserving aspect ratio.
-5. The image viewer MUST provide zoom (in, out, reset-to-fit) and panning of the zoomed image.
-6. The image MUST be loaded from `GET /api/resource/[id]/file`.
+**Image** 4. Image resources MUST be displayed scaled to fit the work area while preserving aspect ratio. 5. The image viewer MUST provide zoom (in, out, reset-to-fit) and panning of the zoomed image. 6. The image MUST be loaded from `GET /api/resource/[id]/file`.
 
-**Audio**
-7. Audio resources MUST render in a custom GetWrite-styled player providing play/pause, a draggable seek/scrub bar, and current-time / total-duration display.
-8. The player MUST load audio from `GET /api/resource/[id]/file`.
-9. The scrub bar MUST allow seeking to any position, and current time MUST update during playback.
-10. The player SHOULD show the resource's known duration (from sidecar metadata) before the audio finishes loading, when available.
+**Audio** 7. Audio resources MUST render in a custom GetWrite-styled player providing play/pause, a draggable seek/scrub bar, and current-time / total-duration display. 8. The player MUST load audio from `GET /api/resource/[id]/file`. 9. The scrub bar MUST allow seeking to any position, and current time MUST update during playback. 10. The player SHOULD show the resource's known duration (from sidecar metadata) before the audio finishes loading, when available.
 
-**General**
-11. The Media View MUST show a clear error state for a missing or unreadable binary rather than a broken element.
-12. The Media View MUST be keyboard-accessible (play/pause, seek, zoom) with appropriate ARIA labels.
+**General** 11. The Media View MUST show a clear error state for a missing or unreadable binary rather than a broken element. 12. The Media View MUST be keyboard-accessible (play/pause, seek, zoom) with appropriate ARIA labels.
 
 ## Open questions
 

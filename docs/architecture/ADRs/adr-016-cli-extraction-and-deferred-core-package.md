@@ -41,7 +41,7 @@ stays in `frontend/` for now.
   internals) makes "what is the public surface" an incremental, low-stakes
   question and pre-stages a future extraction. No churn to the ~99 frontend
   importers.
-- **Cons:** No *compiler-enforced* boundary — the alias resolves into frontend
+- **Cons:** No _compiler-enforced_ boundary — the alias resolves into frontend
   source, so discipline (import only through `@gw/core`) is what keeps the
   boundary clean. The model layer still physically resides in `frontend/`.
 
@@ -74,9 +74,9 @@ Adopt **Option 1**.
   since e.g. `backlinks` and `pruneExecutor` both export `listResourceIds`).
 - The model layer stays in `frontend/` for now.
 
-The key insight: the *decoupling* that yields flexibility (a framework-free core
+The key insight: the _decoupling_ that yields flexibility (a framework-free core
 with a defined API) is already a property of the dependency graph. Moving files
-to a package would add *enforcement* and a *stable contract*, not new
+to a package would add _enforcement_ and a _stable contract_, not new
 decoupling — and those pay off only when a consumer needs the contract to be
 stable. Today the CLI would be a captive consumer; a plugin tomorrow will not.
 

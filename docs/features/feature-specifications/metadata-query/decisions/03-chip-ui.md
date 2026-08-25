@@ -16,9 +16,9 @@ for context.
 
 Cap visual nesting at exactly two levels.
 
-- **Top level**: ordered list of *filter groups*, joined by one combinator
+- **Top level**: ordered list of _filter groups_, joined by one combinator
   (AND or OR).
-- **Inside each group**: ordered list of *chips*, joined by one combinator
+- **Inside each group**: ordered list of _chips_, joined by one combinator
   (AND or OR).
 
 User picks AND/OR per level. Two levels express:

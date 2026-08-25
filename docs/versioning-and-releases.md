@@ -39,11 +39,11 @@ While the version is `0.x.x`, two flags in `.release-please-config.json` adjust 
 
 The combined effect while `major === 0`:
 
-| Commit type                                      | Normal bump | Pre-major bump |
-| ------------------------------------------------ | ----------- | -------------- |
-| `fix:`                                           | patch       | patch          |
-| `feat:`                                          | minor       | **patch**      |
-| `feat!:` / `fix!:` / `BREAKING CHANGE:` footer  | major       | **minor**      |
+| Commit type                                    | Normal bump | Pre-major bump |
+| ---------------------------------------------- | ----------- | -------------- |
+| `fix:`                                         | patch       | patch          |
+| `feat:`                                        | minor       | **patch**      |
+| `feat!:` / `fix!:` / `BREAKING CHANGE:` footer | major       | **minor**      |
 
 Once the version reaches `1.0.0` these flags have no effect and standard semver rules apply.
 
@@ -51,15 +51,15 @@ Once the version reaches `1.0.0` these flags have no effect and standard semver 
 
 Release Please uses [Conventional Commits](https://www.conventionalcommits.org/). The prefix determines whether a bump is triggered and what kind.
 
-| Prefix                                          | Changelog section | Version bump (≥1.0) |
-| ----------------------------------------------- | ----------------- | ------------------- |
-| `feat:`                                         | Features          | minor               |
-| `fix:`                                          | Bug Fixes         | patch               |
+| Prefix                                         | Changelog section | Version bump (≥1.0) |
+| ---------------------------------------------- | ----------------- | ------------------- |
+| `feat:`                                        | Features          | minor               |
+| `fix:`                                         | Bug Fixes         | patch               |
 | `feat!:` / `fix!:` / `BREAKING CHANGE:` footer | Breaking Changes  | major               |
-| `docs:`                                         | —                 | none                |
-| `test:`                                         | —                 | none                |
-| `chore:`                                        | —                 | none                |
-| `refactor:`                                     | —                 | none                |
+| `docs:`                                        | —                 | none                |
+| `test:`                                        | —                 | none                |
+| `chore:`                                       | —                 | none                |
+| `refactor:`                                    | —                 | none                |
 
 Only `feat:` and `fix:` commits (and breaking changes) appear in the changelog and trigger releases. Everything else is ignored by release-please.
 

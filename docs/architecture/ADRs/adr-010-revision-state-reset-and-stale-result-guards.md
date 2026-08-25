@@ -14,11 +14,11 @@ When resource selection changes, revision state resets immediately, and stale as
 ## Options Considered
 
 1. Allow revision state and async responses to flow without strict reset/guard behavior
-    - Fewer safeguards to implement.
-    - Risks stale updates applying in the wrong resource context.
+   - Fewer safeguards to implement.
+   - Risks stale updates applying in the wrong resource context.
 2. Reset on selection change and gate async results with staleness guards (chosen)
-    - Keeps revision state aligned to current selection.
-    - Prevents cross-resource update contamination.
+   - Keeps revision state aligned to current selection.
+   - Prevents cross-resource update contamination.
 
 ## Trade-offs
 

@@ -14,11 +14,11 @@ Multi-step project operations are centralized in a controller module rather than
 ## Options Considered
 
 1. Component-level orchestration for each flow
-    - Keeps logic local to each screen.
-    - Increases duplication, raises mental overhead, and makes consistency harder to maintain.
+   - Keeps logic local to each screen.
+   - Increases duplication, raises mental overhead, and makes consistency harder to maintain.
 2. Centralized controller orchestration (chosen)
-    - Provides one place for cross-slice and multi-step operation flow.
-    - Reduces drift risk and improves maintainability.
+   - Provides one place for cross-slice and multi-step operation flow.
+   - Reduces drift risk and improves maintainability.
 
 ## Trade-offs
 

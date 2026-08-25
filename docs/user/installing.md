@@ -6,12 +6,12 @@ limitation — see [Why desktop, not web](#why-desktop-not-web) below.
 Download the latest build for your platform from the
 [Releases page](https://github.com/saboteur-works/getwrite/releases/latest).
 
-| Platform | File to download |
-| --- | --- |
+| Platform                            | File to download               |
+| ----------------------------------- | ------------------------------ |
 | macOS — Apple Silicon (M1/M2/M3/M4) | `GetWrite-<version>-arm64.dmg` |
-| macOS — Intel | `GetWrite-<version>-x64.dmg` |
-| Windows | `GetWrite-<version>.exe` |
-| Linux | `GetWrite-<version>.AppImage` |
+| macOS — Intel                       | `GetWrite-<version>-x64.dmg`   |
+| Windows                             | `GetWrite-<version>.exe`       |
+| Linux                               | `GetWrite-<version>.AppImage`  |
 
 > **Which Mac do I have?** Click the Apple menu → **About This Mac**. "Apple M…"
 > means Apple Silicon (`arm64`); "Intel" means `x64`. If you grab the wrong one,

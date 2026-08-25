@@ -4,7 +4,7 @@ Twenty candidate metadata-query features identified during ideation, scored by
 value to creative writers and uniqueness within the writing-software landscape.
 Sorted by combined score, highest first.
 
-This is a *scope catalog*, not a commitment. The spec and task list draw from
+This is a _scope catalog_, not a commitment. The spec and task list draw from
 this when deciding MVP and later phases.
 
 ## Scoring axes
@@ -19,7 +19,7 @@ this when deciding MVP and later phases.
 
 ### 1. Story-time vs document-order queries — V:9 U:10 (19)
 
-Query and sort by *in-story chronology* separately from document position.
+Query and sort by _in-story chronology_ separately from document position.
 "Scenes between Tuesday and Friday of story-week 3." Treats chronology as a
 first-class queryable axis. Almost no writing tool supports this.
 
@@ -27,7 +27,7 @@ first-class queryable axis. Almost no writing tool supports this.
 `builtin-story-timeline` group declares `storyDate` (date),
 `storyDuration` (number, minutes), and `storyEndDate` (date) on every
 project — see `09-current-state.md`. `TimelineView` already consumes
-them. The missing piece is the *query layer*: predicates that filter
+them. The missing piece is the _query layer_: predicates that filter
 and sort on these fields independently of document order.
 
 ### 2. Character/entity co-occurrence queries — V:9 U:9 (18)
@@ -64,7 +64,7 @@ entities (characters, locations, props), not just user-applied tags.
 "All resources that link to the Antagonist's character sheet." Inverse
 of what most writing tools surface. **Existing implementation**:
 `backlinks.ts` already builds a `BacklinkIndex` from `[[wiki-link]]`
-syntax in prose. It does *not* currently include `resource-ref` field
+syntax in prose. It does _not_ currently include `resource-ref` field
 values — extending it to do so is the recommended path (see
 `05-schema-layer.md`).
 

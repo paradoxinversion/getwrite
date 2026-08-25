@@ -26,11 +26,12 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **Depends on:** 1
 **Estimate:** 1
 **Notes:** Ratified in [`decisions.md`](./decisions.md):
+
 - **shadcn distribution path:** CLI, with `components.json` aliased to `components/common/UI/`. Install `class-variance-authority`, `clsx`, `tailwind-merge` as direct deps.
 - **Primitives directory:** `frontend/components/common/UI/<Primitive>/` — extends the existing `Chip` precedent.
 - **Migration threshold:** ≥ 10 occurrences across ≥ 3 files (with a tiebreaker: adopt an existing shared primitive even below threshold).
 - **CSS-class buttons:** absorb into Tailwind-styled `Button` / `Card` variants and delete the global CSS rules — no `className`-passthrough escape hatch.
-**Done:** [x]
+  **Done:** [x]
 
 ---
 
@@ -42,13 +43,14 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **Depends on:** 2
 **Estimate:** 3
 **Notes:** Tailwind v4 + cva + brand-token wiring all confirmed working. Files added:
+
 - `frontend/components.json` (CLI config; alias points at `components/common/UI`).
 - `frontend/components/common/UI/utils.ts` (the `cn()` helper).
 - `frontend/components/common/UI/__smoke__/SmokeButton.tsx` (foundation smoke primitive — deleted at start of Task 4).
 - `frontend/tests/unit/ui-foundation.test.tsx` (9 tests covering cn() + smoke primitive).
 - Direct deps: `class-variance-authority`, `clsx`, `tailwind-merge`.
 - Bonus fixes (unblocked done-when): `src/lib/models/search-snippet.ts` (`let end` → `const end`); `app/api/project/[project-id]/search/route.ts` (narrowed `userMetadata` to `Record<string, MetadataValue>` before indexing into `.status`).
-**Done:** [x]
+  **Done:** [x]
 
 ---
 
@@ -57,14 +59,15 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **What:** Build the canonical `Button` primitive on a shadcn base with brand-token variants (default, outline, ghost, icon), Storybook story, and a11y test. Replace the 117 raw-button call sites identified in the audit.
 **Files:** `frontend/components/common/UI/Button/Button.tsx`, `Button.stories.tsx`, `Button.a11y.test.tsx`, plus every call site listed in [audit § 1](./audit.md#1-button-raw-button).
 **Done when:**
+
 - Audit-flagged button call sites (modal footers across `components/preferences/`, `components/Start/`, `components/ResourceTree/`, `components/common/`; action toolbars in `SchemaManager.tsx` and `ProjectTypeEditorForm.tsx`; top-bar buttons in `AppShell.tsx`) import the canonical `Button`.
 - CSS-class buttons (`appshell-topbar-button`, `project-modal-button-*`, `project-type-editor-action-button`) are replaced by `Button` variants and their CSS rules deleted from the global stylesheets.
 - Deleted call sites' prior local button code is removed (FR 5 — no parallel coexistence).
 - Storybook story covers all variants; a11y test passes; `pnpm typecheck`, `pnpm lint`, `pnpm test:ci`, `pnpm test:e2e` all pass.
-**Depends on:** 3
-**Estimate:** 5
-**Notes:** Largest call-site fan-out of the categories (~300 LOC saved). Red token must not appear in any action variant (FR 6). **Defer** Timeline-specific buttons (`timeline-zoom-btn`, `timeline-chip`) — they're visually unique and out of phase one per the audit.
-**Done:** [x]
+  **Depends on:** 3
+  **Estimate:** 5
+  **Notes:** Largest call-site fan-out of the categories (~300 LOC saved). Red token must not appear in any action variant (FR 6). **Defer** Timeline-specific buttons (`timeline-zoom-btn`, `timeline-chip`) — they're visually unique and out of phase one per the audit.
+  **Done:** [x]
 
 ---
 
@@ -73,15 +76,16 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **What:** Build the canonical `Dialog` primitive on shadcn's Radix-Dialog base with brand-token styling, then migrate the 12 modals and 3 inline overlays identified in the audit.
 **Files:** `frontend/components/common/UI/Dialog/Dialog.tsx`, `Dialog.stories.tsx`, `Dialog.a11y.test.tsx`, plus the modal files listed in [audit § 2](./audit.md#2-dialog--modal--overlay).
 **Done when:**
+
 - All 12 modal components route through the canonical `Dialog`.
 - The 3 inline `fixed inset-0` overlays (`RenameProjectModal`, `RenameResourceModal`, `ResourceCommandPalette`) are migrated.
 - `ModalOverlayShell.tsx` and `ProjectModalFrame.tsx` are deleted; `ConfirmDialog.tsx` is reduced to a thin wrapper around `Dialog` (drops its hand-rolled focus trap).
 - Storybook covers default / destructive / scrollable-content variants; a11y test passes.
 - Existing modal tests (`tests/exportPreviewModal.test.tsx`, `tests/compilePreviewModal.test.tsx`, `tests/createProjectModal.error.test.tsx`, etc.) pass unchanged; `pnpm typecheck`, `pnpm lint`, `pnpm test:ci`, `pnpm test:e2e` all pass.
-**Depends on:** 3
-**Estimate:** 8
-**Notes:** Highest-risk migration. Existing modals do **not** use portals; Radix Dialog does — verify z-index and Storybook portal mounting before the first migration. Don't loosen the existing tests when porting; if a test breaks, the migration is wrong.
-**Done:** [x]
+  **Depends on:** 3
+  **Estimate:** 8
+  **Notes:** Highest-risk migration. Existing modals do **not** use portals; Radix Dialog does — verify z-index and Storybook portal mounting before the first migration. Don't loosen the existing tests when porting; if a test breaks, the migration is wrong.
+  **Done:** [x]
 
 ---
 
@@ -90,15 +94,16 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **What:** Build the canonical `Card` primitive on shadcn's Card base with brand-token variants (`chrome` / `chrome2` background, padding presets), Storybook story, and a11y test. Replace the 55 bordered+rounded surface call sites identified in the audit.
 **Files:** `frontend/components/common/UI/Card/Card.tsx`, `Card.stories.tsx`, `Card.a11y.test.tsx`, plus call sites listed in [audit § 3](./audit.md#3-card--surface-bordered-rounded).
 **Done when:**
+
 - `OrganizerCard.tsx` (currently inlines container styles) renders via the canonical `Card`.
 - `HelpSectionCard.tsx` migrates from `help-section-card help-card` CSS classes to `Card`; the CSS rules are deleted.
 - Inline card-shaped divs in `StartPage.tsx`, `MetadataSidebar.tsx`, preferences modals, and `SchemaManager.tsx` use `Card`.
 - Storybook covers padding and chrome-level variants; a11y test passes.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test:ci`, `pnpm test:e2e` all pass.
-**Depends on:** 3
-**Estimate:** 5
-**Notes:** New task added based on audit finding — Card was the third-highest-impact category (~150 LOC saved) and wasn't in the original plan. **Defer** any card that carries non-trivial layout logic beyond `border + rounded + padding + background` (e.g. timeline rows).
-**Done:** [x]
+  **Depends on:** 3
+  **Estimate:** 5
+  **Notes:** New task added based on audit finding — Card was the third-highest-impact category (~150 LOC saved) and wasn't in the original plan. **Defer** any card that carries non-trivial layout logic beyond `border + rounded + padding + background` (e.g. timeline rows).
+  **Done:** [x]
 
 ---
 
@@ -107,15 +112,16 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **What:** Build canonical form-control primitives on shadcn bases with brand-token styling, Storybook stories, and a11y tests. Replace audit-flagged form-control call sites.
 **Files:** `frontend/components/common/UI/{Input,Textarea,Select,Checkbox}/*.tsx` (each with stories + a11y test), plus call sites listed in [audit § 4](./audit.md#4-input--textarea--select).
 **Done when:**
+
 - The four sidebar controls that share the `w-full mt-2 p-2 border border-gw-border rounded text-sm` class string (`MetadataSidebar`, `SelectInput`, `NumberInput`, `ResourceRefInput`) use canonical primitives.
 - Modal text inputs in `BodySettingsModal`, `DefaultRevisionNameModal`, `HeadingSettingsModal`, `CreateProjectModal`, `RenameProjectModal`, `CreateResourceModal`, `RenameResourceModal` use canonical primitives.
 - Checkboxes in compile/export tree pickers (`CompilePreviewModal`, `CompileResourceTree`) and `MultiSelectList` use the canonical `Checkbox`; the `compile-tree-checkbox` CSS rule is deleted.
 - The one drift case using legacy `border-brand-mid` is replaced with `gw-*` tokens.
 - Storybook covers default / disabled / error states; a11y tests pass; full test suite passes.
-**Depends on:** 3
-**Estimate:** 5
-**Notes:** Estimate bumped from 3 → 5 vs. the original plan because the audit confirmed four primitive families, not one. **Defer** specialized inputs: `SearchBar` autocomplete, `ResourceCommandPalette` search input, `POVAutocomplete`, `MultiResourceRefInput` — they layer custom behavior on top and are not simple text-field swaps. Also migrated `SynopsisInput` and `NotesInput` to `Textarea` (same class-string duplication pattern). `compile-modal-select`, `.project-modal-input`, `.project-modal-select`, `.compile-tree-checkbox` CSS rules deleted. `border-brand-mid` drift in `POVAutocomplete` replaced with `border-gw-border`.
-**Done:** [x]
+  **Depends on:** 3
+  **Estimate:** 5
+  **Notes:** Estimate bumped from 3 → 5 vs. the original plan because the audit confirmed four primitive families, not one. **Defer** specialized inputs: `SearchBar` autocomplete, `ResourceCommandPalette` search input, `POVAutocomplete`, `MultiResourceRefInput` — they layer custom behavior on top and are not simple text-field swaps. Also migrated `SynopsisInput` and `NotesInput` to `Textarea` (same class-string duplication pattern). `compile-modal-select`, `.project-modal-input`, `.project-modal-select`, `.compile-tree-checkbox` CSS rules deleted. `border-brand-mid` drift in `POVAutocomplete` replaced with `border-gw-border`.
+  **Done:** [x]
 
 ---
 
@@ -148,14 +154,15 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 **What:** Replace hardcoded hex values introduced by new primitives or surfaced during migration with brand tokens. Specifically replace the 13 raw Tailwind palette hex values in `Toaster.tsx` with brand tokens (introducing `--color-gw-toast-{success,error,info}-{bg,fg,accent}` if needed). Verify red token is not used for any action/alert variant.
 **Files:** All files touched in Tasks 4–9, `frontend/components/notifications/Toaster.tsx`, `frontend/styles/getwrite-theme.css` (new toast tokens if added).
 **Done when:**
+
 - No hardcoded hex appears in primitive files or migrated call sites (legitimate CSS-var fallbacks `var(--color-gw-X, #FALLBACK)` and color-picker `#000000` placeholders are exempt — see [audit § "Hardcoded-color baseline"](./audit.md#hardcoded-color-baseline-fr-6--fr-8)).
 - `Toaster.tsx` uses brand tokens; the 13 raw Tailwind palette values are gone.
 - The three `#D44040` direct uses in `TimelineTooltip.tsx` are replaced with `var(--color-gw-red)` / `text-gw-red`.
 - Manual review confirms red appears only on canonical/position-state indicators (FR 6).
-**Depends on:** 4, 5, 6, 7, 8, 9
-**Estimate:** 2
-**Notes:** Optional follow-up: codify the check as `scripts/check-no-hardcoded-hex.mjs` (similar to existing `check-test-policy.mjs`) — but defer that to a separate task if it adds scope.
-**Done:** [x]
+  **Depends on:** 4, 5, 6, 7, 8, 9
+  **Estimate:** 2
+  **Notes:** Optional follow-up: codify the check as `scripts/check-no-hardcoded-hex.mjs` (similar to existing `check-test-policy.mjs`) — but defer that to a separate task if it adds scope.
+  **Done:** [x]
 
 ---
 
@@ -173,26 +180,26 @@ Estimate scale: story points (1 / 2 / 3 / 5 / 8)
 
 All gates green on `feat/simplify-design-system`:
 
-| Check | Result |
-|---|---|
-| `pnpm typecheck` | ✅ clean |
-| `pnpm lint` | ✅ 0 errors (386 pre-existing warnings, all in `tests/`) |
-| `pnpm test:ci` | ✅ 1051 passed / 1 skipped (134 files) |
-| `pnpm build` | ✅ Next.js production build OK |
-| `pnpm build-storybook` | ✅ Storybook static built |
-| `pnpm test:e2e` | ✅ 107 passed (Chromium) |
+| Check                  | Result                                                   |
+| ---------------------- | -------------------------------------------------------- |
+| `pnpm typecheck`       | ✅ clean                                                 |
+| `pnpm lint`            | ✅ 0 errors (386 pre-existing warnings, all in `tests/`) |
+| `pnpm test:ci`         | ✅ 1051 passed / 1 skipped (134 files)                   |
+| `pnpm build`           | ✅ Next.js production build OK                           |
+| `pnpm build-storybook` | ✅ Storybook static built                                |
+| `pnpm test:e2e`        | ✅ 107 passed (Chromium)                                 |
 
 **Primitive-count reduction (excluding new `common/UI/` primitives):**
 
-| Category | main | HEAD | Δ | % reduction |
-|---|---:|---:|---:|---:|
-| Raw `<button>` (call sites) | 117 across 46 files | 56 across 32 files | −61 / −14 files | **52%** |
-| Raw `<input>` | 50 | 33 | −17 | **34%** |
-| Raw `<textarea>` | 4 | 2 | −2 | **50%** |
-| Raw `<select>` | 15 | 9 | −6 | **40%** |
-| Input family combined | 69 | 44 | −25 | **36%** |
-| Dialog/Modal overlay impls | 4 shells + 3 inline = 7 | 1 canonical Dialog | −6 | **86%** |
-| Bordered+rounded card surfaces | 51 | 21 | −30 | **59%** |
+| Category                       |                    main |               HEAD |               Δ | % reduction |
+| ------------------------------ | ----------------------: | -----------------: | --------------: | ----------: |
+| Raw `<button>` (call sites)    |     117 across 46 files | 56 across 32 files | −61 / −14 files |     **52%** |
+| Raw `<input>`                  |                      50 |                 33 |             −17 |     **34%** |
+| Raw `<textarea>`               |                       4 |                  2 |              −2 |     **50%** |
+| Raw `<select>`                 |                      15 |                  9 |              −6 |     **40%** |
+| Input family combined          |                      69 |                 44 |             −25 |     **36%** |
+| Dialog/Modal overlay impls     | 4 shells + 3 inline = 7 | 1 canonical Dialog |              −6 |     **86%** |
+| Bordered+rounded card surfaces |                      51 |                 21 |             −30 |     **59%** |
 
 Every targeted category clears the ≥ 30% spec-goal-2 bar. Two parallel modal-shell files (`ModalOverlayShell.tsx`, `ProjectModalFrame.tsx`) and four CSS class systems (`appshell-modal-*`, `project-modal-*`, `confirm-dialog-*`, `compile-tree-checkbox` etc.) were deleted entirely; remaining `<button>` / `<input>` usage in `Timeline/`, `SearchBar/`, `Editor/MenuBar/` is deferred per audit § 1 / § 4 (visually unique or behaviorally non-trivial).
 
@@ -208,7 +215,7 @@ Excluding new `common/UI/` primitives and `__smoke__`: `41 files changed, +535 /
 
 ### MenuItem primitive — **deferred to phase two**
 
-**Rationale:** `components/common/MenuItemButton.tsx` is already consolidated and used in 20 places by 3 menu containers (`ResourceContextMenu`, `ShellSettingsMenu`, `ManageProjectMenu`). The real duplication is in the menu *containers* — each repeats outside-click + arrow-key + escape logic — which is a behavioral concern (a `useDismissable` / `useMenu` hook), not a visual primitive. A shadcn dropdown migration would conflate the two. Track this as a separate phase-two task focused on the *hook*, not the primitive.
+**Rationale:** `components/common/MenuItemButton.tsx` is already consolidated and used in 20 places by 3 menu containers (`ResourceContextMenu`, `ShellSettingsMenu`, `ManageProjectMenu`). The real duplication is in the menu _containers_ — each repeats outside-click + arrow-key + escape logic — which is a behavioral concern (a `useDismissable` / `useMenu` hook), not a visual primitive. A shadcn dropdown migration would conflate the two. Track this as a separate phase-two task focused on the _hook_, not the primitive.
 
 ### Other phase-two candidates
 

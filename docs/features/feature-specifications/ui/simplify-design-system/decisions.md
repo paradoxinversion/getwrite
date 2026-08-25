@@ -21,7 +21,7 @@ Both paths produce the same source code; the difference is workflow.
 
 **Decision.** Use the **CLI**, with `components.json` aliased to `frontend/components/common/UI/` (see Decision 2). Install `class-variance-authority`, `clsx`, and `tailwind-merge` (shadcn's runtime helpers) as direct dependencies. Files written by the CLI are committed and edited freely — shadcn does not own them after generation.
 
-**Why.** The CLI is the lower-friction long-term mode: adding a new primitive in a future phase is one command. The alias mechanism (`components.json` → `aliases.components`) means we get the CLI's ergonomics *and* the directory layout we want. Hand-porting buys us nothing the CLI doesn't already offer, and forfeits the future ergonomic win.
+**Why.** The CLI is the lower-friction long-term mode: adding a new primitive in a future phase is one command. The alias mechanism (`components.json` → `aliases.components`) means we get the CLI's ergonomics _and_ the directory layout we want. Hand-porting buys us nothing the CLI doesn't already offer, and forfeits the future ergonomic win.
 
 **Consequences.**
 
@@ -110,15 +110,15 @@ Both paths produce the same source code; the difference is workflow.
 
 Restated from the audit so Tasks 4–10 can reference one place:
 
-| Task | Primitive / Action | Source category in audit | Estimated LOC saved |
-|---|---|---|---:|
-| 4 | `Button` (default / outline / ghost / icon variants) | § 1 Button | ~300 |
-| 5 | `Dialog` (replaces `ModalOverlayShell`, `ProjectModalFrame`, `ConfirmDialog`'s overlay, inline `fixed inset-0`) | § 2 Dialog / Modal | ~400 |
-| 6 | `Card` (chrome / chrome2 background, padding presets) | § 3 Card / Surface | ~150 |
-| 7 | `Input` / `Textarea` / `Select` / `Checkbox` | § 4 Inputs | ~150 |
-| 8 | Merge `SidebarSection` + `CollapsibleSection` | § 5 | ~60 |
-| 9 | Adopt existing `Chip` in `TagsSection`, `SearchBar`, `SearchFilterPanel` | § 6 | ~80 |
-| 10 | `Toaster.tsx` token sweep + `TimelineTooltip` `#D44040` cleanup + general hex sweep | § 7 + § Baseline | ~15 |
+| Task | Primitive / Action                                                                                              | Source category in audit | Estimated LOC saved |
+| ---- | --------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------: |
+| 4    | `Button` (default / outline / ghost / icon variants)                                                            | § 1 Button               |                ~300 |
+| 5    | `Dialog` (replaces `ModalOverlayShell`, `ProjectModalFrame`, `ConfirmDialog`'s overlay, inline `fixed inset-0`) | § 2 Dialog / Modal       |                ~400 |
+| 6    | `Card` (chrome / chrome2 background, padding presets)                                                           | § 3 Card / Surface       |                ~150 |
+| 7    | `Input` / `Textarea` / `Select` / `Checkbox`                                                                    | § 4 Inputs               |                ~150 |
+| 8    | Merge `SidebarSection` + `CollapsibleSection`                                                                   | § 5                      |                 ~60 |
+| 9    | Adopt existing `Chip` in `TagsSection`, `SearchBar`, `SearchFilterPanel`                                        | § 6                      |                 ~80 |
+| 10   | `Toaster.tsx` token sweep + `TimelineTooltip` `#D44040` cleanup + general hex sweep                             | § 7 + § Baseline         |                 ~15 |
 
 **Total projected savings:** ~1155 LOC across phase one. Spec goal of ≥ 30% reduction in targeted categories is comfortably clear.
 

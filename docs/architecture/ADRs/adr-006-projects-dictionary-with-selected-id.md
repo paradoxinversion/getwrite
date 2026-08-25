@@ -17,11 +17,11 @@ The projects store keeps:
 ## Options Considered
 
 1. Keep only one project in store at a time
-    - Reduces in-memory project metadata.
-    - Increases complexity for rendering and manipulating multiple projects on the start page.
+   - Reduces in-memory project metadata.
+   - Increases complexity for rendering and manipulating multiple projects on the start page.
 2. Keep projects dictionary plus selectedProjectId (chosen)
-    - Supports fast switching and straightforward active-project logic.
-    - Keeps multi-project UI operations simple.
+   - Supports fast switching and straightforward active-project logic.
+   - Keeps multi-project UI operations simple.
 
 ## Trade-offs
 

@@ -462,27 +462,27 @@ Use these keys for text, background, border, ring, fill, stroke, and divide util
 
 **Base tokens (dark mode defaults)**
 
-| CSS Variable            | Value     | Use                                               |
-| ----------------------- | --------- | ------------------------------------------------- |
-| `--color-black`         | `#0A0A0A` | Primary background, dark UI surfaces              |
-| `--color-white`         | `#F5F4F0` | Primary text, light UI background (warm off-white) |
-| `--color-red`           | `#D44040` | Signal Red — position/canonical marker only       |
-| `--color-mid`           | `#6A6864` | Secondary text, muted labels                      |
-| `--color-surface`       | `#111110` | Raised dark surfaces (panels, sidebars)           |
-| `--color-surface2`      | `#161614` | Deeper surface, nested elements, inputs           |
-| `--color-dim`           | `#2E2E2C` | Borders, rules                                    |
-| `--color-rule`          | `#1A1A18` | Divider lines                                     |
+| CSS Variable       | Value     | Use                                                |
+| ------------------ | --------- | -------------------------------------------------- |
+| `--color-black`    | `#0A0A0A` | Primary background, dark UI surfaces               |
+| `--color-white`    | `#F5F4F0` | Primary text, light UI background (warm off-white) |
+| `--color-red`      | `#D44040` | Signal Red — position/canonical marker only        |
+| `--color-mid`      | `#6A6864` | Secondary text, muted labels                       |
+| `--color-surface`  | `#111110` | Raised dark surfaces (panels, sidebars)            |
+| `--color-surface2` | `#161614` | Deeper surface, nested elements, inputs            |
+| `--color-dim`      | `#2E2E2C` | Borders, rules                                     |
+| `--color-rule`     | `#1A1A18` | Divider lines                                      |
 
 **GetWrite-specific surface tokens**
 
-| CSS Variable                | Value     | Use                                                  |
-| --------------------------- | --------- | ---------------------------------------------------- |
-| `--color-editor-dark`       | `#1C1C1A` | Editor writing surface in dark mode (warmer)         |
-| `--color-editor-light`      | `#F0EDE6` | Editor writing surface in light mode (warm paper)    |
-| `--color-ink`               | `#1A1916` | Text on light editor surface                         |
-| `--color-chrome-light`      | `#F5F4F0` | UI chrome in light mode (sidebar, title bar)         |
-| `--color-chrome-light-2`    | `#ECEAE3` | Raised surfaces in light mode chrome                 |
-| `--color-chrome-light-dim`  | `#D0CEC8` | Borders in light mode chrome                         |
+| CSS Variable               | Value     | Use                                               |
+| -------------------------- | --------- | ------------------------------------------------- |
+| `--color-editor-dark`      | `#1C1C1A` | Editor writing surface in dark mode (warmer)      |
+| `--color-editor-light`     | `#F0EDE6` | Editor writing surface in light mode (warm paper) |
+| `--color-ink`              | `#1A1916` | Text on light editor surface                      |
+| `--color-chrome-light`     | `#F5F4F0` | UI chrome in light mode (sidebar, title bar)      |
+| `--color-chrome-light-2`   | `#ECEAE3` | Raised surfaces in light mode chrome              |
+| `--color-chrome-light-dim` | `#D0CEC8` | Borders in light mode chrome                      |
 
 **Light mode overrides** (applied when light mode is active)
 
@@ -547,11 +547,11 @@ Use these keys for margin, padding, gap, inset, size, and translate utilities wh
 
 All type is set in the IBM Plex family. See [`/STYLING.md` § 3. Typography](/STYLING.md) for full type scale and tracking rules.
 
-| Token          | Typeface               | Role                                                              |
-| -------------- | ---------------------- | ----------------------------------------------------------------- |
-| `font-sans`    | IBM Plex Sans          | UI body, navigation, labels, metadata — primary interface type   |
-| `font-mono`    | IBM Plex Mono          | Technical labels, timestamps, revision names, keyboard shortcuts  |
-| `font-serif`   | IBM Plex Serif         | Editor body text only — never in navigation, sidebars, or chrome |
+| Token          | Typeface                | Role                                                             |
+| -------------- | ----------------------- | ---------------------------------------------------------------- |
+| `font-sans`    | IBM Plex Sans           | UI body, navigation, labels, metadata — primary interface type   |
+| `font-mono`    | IBM Plex Mono           | Technical labels, timestamps, revision names, keyboard shortcuts |
+| `font-serif`   | IBM Plex Serif          | Editor body text only — never in navigation, sidebars, or chrome |
 | `font-display` | IBM Plex Sans Condensed | Display headings, wordmark                                       |
 
 IBM Plex Serif is scoped exclusively to the editor writing surface.

@@ -23,6 +23,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1 (`metadata-schema.ts`).
 
 **Changes (Antonini):**
+
 - **[extraction]** Added `withLockedSchema(projectRoot, mutate)` — collapses the repeated acquire-lock / read / getOrInitSchema / mutate / write / return / release scaffold. Applied to **11 functions**: `addField`, `removeField`, `deprecateField`, `reorderFields`, `renameField`, `updateFieldOptions`, `addGroup`, `removeGroup`, `reorderGroups`, `updateRefProperties`, `changeFieldType`. Each call site is now its mutation body instead of 12–18 lines of try/finally scaffold.
 - **[extraction]** Added `findField(group, fieldKey)` — mirrors the existing `findGroup` helper; extracts the `group.fields.find + throw \`Field not found: "${fieldKey}"\`` pattern, preserving the exact error string.
 - **[extraction]** Added `applyNullablePatch(obj, key, value)` — collapses the triple-branch `undefined → skip / null → delete / value → set` pattern in `updateRefProperties` to three one-liner calls.
@@ -30,6 +31,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 - **[consistency]** `migrateFieldOptionsInSidecars` and `migrateFieldTypeInSidecars` internal logic left byte-identical — migration paths untouched per the mandate.
 
 **Changes (orchestrator — naming-convention lint fixes):**
+
 - Renamed boolean locals in migration functions to satisfy `is/has/should/can/did/will` prefix rule. All renames are pure identifier substitutions with no logic change.
 - Renamed destructuring discards `_removed` → `_isMultiple` / `_isLocked` to satisfy the same rule.
 
@@ -60,6 +62,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1 (`tags.ts`).
 
 **Changes:**
+
 - **[naming]** `p` → `projectPath` in `readProject` and `writeProject`. The single-letter name gave no signal.
 - **[naming]** `k`/`v` → `resourceId`/`value` in `writeProject` normalization loop.
 - **[naming]** `before` → `countBefore` in `deleteTag`. Removes type ambiguity (number, not boolean or snapshot).
@@ -83,6 +86,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1.
 
 **Changes:**
+
 - **[structure]** Destructured `{ projectPath }` from `context` at the top of all 16 exported post functions. Each function previously wrote `context.projectPath` explicitly; now `projectPath` is used as a shorthand property.
 - **[nesting/comments]** Simplified `getApiErrorMessage`: replaced two explicit casts with a single cast to `Record<string, unknown>` and a check on `body.error`.
 - **[consistency]** For simple post functions (≤ ~4 payload fields), collapsed the `postToMetadataSchemaRoute({…})` call to a single line. Complex functions retain multi-line format.
@@ -102,6 +106,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1.
 
 **Changes:**
+
 - **[extraction]** Added `okSchema(schema)` helper — every action branch ended with `const schema = await ...; return NextResponse.json({ schema })`. Extracting this collapses 14 two-line patterns into single-expression returns.
 - **[extraction]** Added `invalidFieldKey(key)` helper — the slug-validation 400 error response was duplicated identically in `add-field` and `rename-key`.
 - **[structure]** Collapsed each action branch from `const schema = await op(...); return NextResponse.json({ schema })` to `return okSchema(await op(...))`, removing ~28 intermediate `const schema` bindings.
@@ -121,6 +126,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1.
 
 **Changes:**
+
 - **[extraction]** Extracted `TagsResponse` type alias for the union `ListTagsResponse | CreateTagResponse | AssignmentsResponse | ErrorResponse`. The five-line inline generic on `POST`'s return type compressed to one named line.
 
 **Deferrals:** None.
@@ -148,6 +154,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** Renamed local `deleted` to `didDelete` to satisfy the `@typescript-eslint/naming-convention` rule. The JSON response property `deleted` is preserved via explicit form `{ deleted: didDelete }`.
 
 **Deferrals:** None.
@@ -167,6 +174,7 @@ Note: `field-values.ts` was skipped — it was already refactored and committed 
 Note: Antonini reported these changes but they were not persisted to disk. The orchestrator applied them directly.
 
 **Changes:**
+
 - **[naming]** Removed dead import `removeMetadataField` (was imported but never called anywhere in the file — pre-existing unused import).
 - **[naming]** `prefillVisible` / `setPrefillVisible` → `isPrefillVisible` / `setIsPrefillVisible` — fixes ESLint naming-convention error.
 - **[naming]** `prefillSubmitting` / `setPrefillSubmitting` → `isPrefillSubmitting` / `setIsPrefillSubmitting` — same convention fix.
@@ -189,6 +197,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `loading` → `isLoading`, `applying` → `isApplying`: resolves three pre-existing naming-convention lint errors.
 - **[naming]** `cancelled` → `isCancelled`: resolves the third lint error.
 - **[structure]** Replaced default `React` import with named `Fragment` import; swapped `<React.Fragment key={...}>` → `<Fragment key={...}>`.
@@ -207,6 +216,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `loading` → `isLoading`, `applying` → `isApplying`, `cancelled` → `isCancelled`: resolves three pre-existing naming-convention lint errors.
 - **[structure]** Inlined the one-use `initialRows` intermediate variable inside the `.then()` callback.
 - **[structure]** Collapsed two `affectedCount > 0` / `affectedCount === 0` conditional JSX paragraphs into a single `<p>` with a ternary. Both branches rendered identical markup with only text content differing.
@@ -224,6 +234,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[extraction]** Extracted the duplicated radio `<label>` block into a file-local `RadioOption` helper component. Two nearly identical 14-line blocks collapse to two 6-line `<RadioOption>` calls.
 - **[structure]** Removed `handleConfirm()` wrapper — it was a single-branch function used exactly once. Replaced `onClick={handleConfirm}` with direct inline ternary `onClick={choice === "deprecate" ? onDeprecate : onClear}`.
 
@@ -242,6 +253,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** Renamed 5 boolean locals to carry `is` prefix, fixing pre-existing naming-convention lint errors.
 - **[naming]** `showAddForm`/`setShowAddForm` → `isAddFormVisible`/`setIsAddFormVisible`.
 - **[naming]** Destructured `multiple` from `field` renamed to `isMultiple`; passed as `multiple={isMultiple}` to preserve the typed prop name.
@@ -263,6 +275,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `labelEdited` → `isLabelEdited`, `showSuggestions` → `isShowingSuggestions`, `submitting` → `isSubmitting`: fixes three pre-existing naming-convention lint errors.
 
 **Deferrals:** A11y warning at line ~229 — `aria-expanded` is not valid on `role=textbox`. Fixing requires a structural change (move the attribute to a wrapper element) — out of scope for a clarity pass.
@@ -278,6 +291,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[structure]** Removed dead `LabeledField` import (imported but never used — pre-existing lint warning).
 - **[structure]** Folded `selectedResource` intermediate variable into the `resourceId` selector. Both steps expressed as a single `useAppSelector` call; `shallowEqual` comparator preserved.
 
@@ -296,6 +310,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `checked` → `isChecked`: fixes boolean-prefix lint rule.
 - **[structure]** Removed unused `import LabeledField` (dead import).
 - **[structure]** Removed unused `import React` (JSX transform handles JSX; no `React.*` namespace usage).
@@ -311,6 +326,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `atCap` → `isAtCap`: fixes boolean-prefix lint rule.
 
 ---
@@ -324,6 +340,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[naming]** `open` → `isOpen`: fixes boolean-prefix lint rule.
 
 ---
@@ -337,6 +354,7 @@ Note: Antonini reported these changes but they were not persisted to disk. The o
 **Files touched:** 1.
 
 **Changes:**
+
 - **[structure]** Inlined the single-use `const defaultValue = 0` intermediate variable; the value is self-evident inline at `value ?? 0`.
 
 ---
@@ -360,6 +378,7 @@ No cross-file unification was performed. The orchestrator assessed:
 **Baseline (pre-refactor):** typecheck clean; tests 9/9 files pass (213 pass, 1 skipped); lint 81 errors (all pre-existing); knip shows 4 pre-existing findings in slice files.
 
 **Post-refactor:**
+
 - Typecheck: clean (no errors introduced).
 - Tests: 9/9 files pass, 213 pass, 1 skipped — identical to baseline.
 - Lint: all naming-convention errors in in-scope files resolved. Remaining items in slice files are warnings only: `aria-expanded` a11y warning in `AddFieldForm.tsx` (structural fix, deferred) and `no-explicit-any` in `metadata-schema-transport-service.ts` (intentional, documented by comment).

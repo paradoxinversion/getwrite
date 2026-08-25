@@ -26,23 +26,17 @@ All attributes are optional. Empty or whitespace-only values are stripped before
 
 ```json
 {
-    "editorConfig": {
-        "headings": {
-            "h1": {
-                "fontSize": "32px",
-                "fontFamily": "IBM Plex Serif",
-                "fontWeight": "700"
-            },
-            "h2": {
-                "fontSize": "24px",
-                "letterSpacing": "0.05em"
-            },
-            "h3": {
-                "fontSize": "18px",
-                "color": "#555555"
-            }
-        }
+  "editorConfig": {
+    "headings": {
+      "h1": {
+        "fontSize": "32px",
+        "fontFamily": "IBM Plex Serif",
+        "fontWeight": "700"
+      },
+      "h2": { "fontSize": "24px", "letterSpacing": "0.05em" },
+      "h3": { "fontSize": "18px", "color": "#555555" }
     }
+  }
 }
 ```
 
