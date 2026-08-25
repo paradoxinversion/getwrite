@@ -56,11 +56,12 @@ A folder may carry a `metadataSource` object:
 - `isMetadataSource` (boolean, required within the object).
 - `metadataInputType` (optional): `"text" | "multiselect" | "autocomplete"`.
 
-**Be aware that nothing reads this at runtime.** The flag is validated,
-persisted onto the created folder, and surfaced in the project-type editor's
-own form — but no component consults it when deciding which resources a
-reference field may point at. Treat it as a record of the template author's
-intent, not as a switch that does something.
+**Be aware that this flag is write-only.** It is a real authoring control —
+the project-type editor renders a toggle for it, Zod validates it, and
+`project-creator.ts` writes it onto the folder it creates. What never happens
+is anything reading it back: no component consults it when deciding which
+resources a reference field may point at, or for anything else. Treat it as a
+record of the template author's intent, not as a switch that does something.
 
 What actually governs reference candidates is a **per-field** setting on the
 metadata schema, not a property of the folder. A `multi-resource-ref` field

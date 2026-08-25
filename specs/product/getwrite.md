@@ -181,8 +181,10 @@ lost work.
   from every folder in the project plus an "Any folder" option, optionally
   including descendants. Single-reference fields are unscoped and draw on all
   resources. No folder name carries application semantics. A project type MAY
-  additionally record an `isMetadataSource` flag against a folder as authoring
-  intent; it is persisted but has no runtime reader and confers no privilege.
+  additionally record an `isMetadataSource` flag against a folder: the
+  project-type editor offers a control for it, it is schema-validated, and it
+  is written onto the folder at scaffold time — but nothing reads it back, so
+  it records authoring intent and confers no privilege.
   Deleting a resource that is referenced elsewhere MUST NOT remove the
   reference entry; it MUST nullify the reference (retaining `{id: null, name}`
   in place) rather than delete the entry, including within multi-reference
