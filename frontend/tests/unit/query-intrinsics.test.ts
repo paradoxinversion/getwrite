@@ -1,11 +1,34 @@
-import { describe, it, expect } from "vitest";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   INTRINSIC_FIELDS,
   INTRINSIC_FIELD_KEYS,
   getIntrinsicField,
 } from "../../src/lib/models/query-intrinsics";
 import type { QueryContext } from "../../src/lib/models/query-intrinsics";
-import type { TextResource, ResourceBase } from "../../src/lib/models/types";
+import type {
+  TextResource,
+  ResourceBase,
+  TipTapDocument,
+} from "../../src/lib/models/types";
+import { createMemoryAdapter } from "../../src/lib/models/memoryAdapter";
+import { setStorageAdapter } from "../../src/lib/models/io";
+import { persistResourceContent } from "../../src/lib/tiptap-utils";
+import { waitForDrain } from "../../src/lib/models/indexer-queue";
+import { writeSidecar } from "../../src/lib/models/sidecar";
+import {
+  computeBacklinks,
+  persistBacklinks,
+  loadBacklinks,
+} from "../../src/lib/models/backlinks";
+import { generateUUID } from "../../src/lib/models/uuid";
+
+const emptyDoc = (): TipTapDocument => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
+});
 
 // ── minimal fixtures ──────────────────────────────────────────────────────
 
@@ -398,5 +421,53 @@ describe("type field options", () => {
   it("declares the resource-type values as select options", () => {
     expect(field.type).toBe("select");
     expect(field.options).toEqual(["text", "image", "audio", "folder"]);
+  });
+});
+
+describe("linkedFrom/linksTo with real backlink data (nested userMetadata refs)", () => {
+  beforeEach(() => {
+    const mem = createMemoryAdapter();
+    setStorageAdapter(mem);
+  });
+
+  afterEach(async () => {
+    await waitForDrain(2000);
+  });
+
+  it("surfaces a resource-ref nested under userMetadata through computeBacklinks end to end", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gw-qi-link-"));
+    const source = generateUUID();
+    const target = generateUUID();
+
+    await persistResourceContent(projectRoot, source, emptyDoc() as any);
+    await persistResourceContent(projectRoot, target, emptyDoc() as any);
+
+    await writeSidecar(projectRoot, source, {
+      userMetadata: { pov: { id: target, name: "Target Character" } },
+    });
+
+    const index = await computeBacklinks(projectRoot);
+    await persistBacklinks(projectRoot, index);
+    const backlinks = await loadBacklinks(projectRoot);
+
+    const realCtx: QueryContext = { ...ctx, backlinks };
+    const sourceResource: ResourceBase = { ...baseResource, id: source };
+    const targetResource: ResourceBase = { ...baseResource, id: target };
+
+    const linksToField = INTRINSIC_FIELDS.find((f) => f.key === "linksTo")!;
+    const linksToResult = linksToField.read(sourceResource, realCtx) as Array<{
+      id: string;
+      name: string;
+    }>;
+    expect(linksToResult.map((r) => r.id)).toContain(target);
+
+    const linkedFromField = INTRINSIC_FIELDS.find(
+      (f) => f.key === "linkedFrom",
+    )!;
+    const linkedFromResult = linkedFromField.read(
+      targetResource,
+      realCtx,
+    ) as Array<{ id: string; name: string }>;
+    expect(linkedFromResult.map((r) => r.id)).toContain(source);
   });
 });

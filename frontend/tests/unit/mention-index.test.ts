@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createMemoryAdapter } from "../../src/lib/models/memoryAdapter";
 import { setStorageAdapter, readFile } from "../../src/lib/models/io";
 import {
@@ -11,6 +11,21 @@ import {
   type MentionIndex,
   type MentionRecord,
 } from "../../src/lib/models/mention-index";
+import { writeSidecar } from "../../src/lib/models/sidecar";
+import { persistResourceContent } from "../../src/lib/tiptap-utils";
+import { waitForDrain } from "../../src/lib/models/indexer-queue";
+import {
+  computeBacklinks,
+  persistBacklinks,
+} from "../../src/lib/models/backlinks";
+import { getEntityMentionedIn } from "../../src/lib/models/mentions-core";
+import { generateUUID } from "../../src/lib/models/uuid";
+import type { TipTapDocument } from "../../src/lib/models/types";
+
+const emptyDoc = (): TipTapDocument => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
+});
 
 describe("mention-index (Task 4)", () => {
   beforeEach(() => {
@@ -105,5 +120,41 @@ describe("mention-index (Task 4)", () => {
     const loaded = await loadMentionIndex(projectRoot);
 
     expect(loaded).toEqual({});
+  });
+});
+
+describe("isLinked via getEntityMentionedIn — nested userMetadata refs (backlinks fix)", () => {
+  beforeEach(() => {
+    const mem = createMemoryAdapter();
+    setStorageAdapter(mem);
+  });
+
+  afterEach(async () => {
+    await waitForDrain(2000);
+  });
+
+  it("marks a resource isLinked when a resource-ref nested under userMetadata points at the entity", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gw-mi-link-"));
+    const entityId = generateUUID();
+    const sourceId = generateUUID();
+
+    await writeSidecar(projectRoot, entityId, { name: "Aria" });
+    await persistResourceContent(projectRoot, sourceId, emptyDoc() as any);
+    await writeSidecar(projectRoot, sourceId, {
+      name: "Chapter One",
+      userMetadata: { pov: { id: entityId, name: "Aria" } },
+    });
+
+    const index = await computeBacklinks(projectRoot);
+    await persistBacklinks(projectRoot, index);
+
+    const mentionedIn = await getEntityMentionedIn(projectRoot, entityId);
+
+    expect(mentionedIn).toHaveLength(1);
+    expect(mentionedIn[0]).toMatchObject({
+      resourceId: sourceId,
+      isLinked: true,
+      isMentioned: false,
+    });
   });
 });
