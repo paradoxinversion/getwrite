@@ -226,6 +226,18 @@ node cli/dist/bin/getwrite-cli.cjs reindex ./my-novel
 # [reindex] Done — indexed 12 resource(s) in ./my-novel
 ```
 
+**One-time note for existing projects:** A backlinks fix now makes
+`resource-ref`/`multi-resource-ref` fields resolve correctly, including ones
+nested under user-defined metadata fields — previously these were silently
+skipped when computing backlinks. For a project you keep working in, no
+action is needed: saving any resource recomputes and persists
+`meta/backlinks.json` for the whole project, so the on-disk index self-heals
+the next time you save. For a project you don't plan to edit again, run
+`getwrite-cli reindex` once to bring its backlinks up to date immediately.
+Note the limitation this leaves: a project that is never edited again and is
+never manually reindexed keeps a stale backlink index indefinitely, and
+there is no in-app signal that this is the case.
+
 ---
 
 ### `doctor`
