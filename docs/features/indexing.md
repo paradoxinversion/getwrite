@@ -50,6 +50,7 @@ The backlinks system maintains a cross-reference index: for each resource, it re
 - Wiki-style links: `[[Resource Name]]` or `[[resource-slug]]` or `[[uuid]]` inside resource content
 - Raw UUIDs embedded anywhere in the resource text
 - Aliases defined in the resource's sidecar (`aliases` field)
+- `resource-ref` / `multi-resource-ref` sidecar field values, detected structurally by `extractSidecarRefIds` (any `{ id, name }` shape or array of them) — scanned at the sidecar's top level and one level down under `sidecar.userMetadata`, since that's where user-defined metadata fields live
 
 **`BacklinkIndex` type**
 
