@@ -16,7 +16,7 @@ Source spec: `specs/features/entity-linking.md`
 
 **Notes:** FR-1. FR-7 is satisfied by this task doing nothing extra: no index-version marker, no automatic rebuild, no startup migration is added anywhere in this change. If a reviewer finds any such addition, that is a defect against FR-7, not a missing task — remove it rather than filing a follow-up.
 
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 2: Regression-test top-level and nested `userMetadata` ref extraction
 
@@ -36,7 +36,7 @@ Source spec: `specs/features/entity-linking.md`
 
 **Notes:** FR-2 through FR-6, plus the new FR-1 nested case. This is the substantive work of the change per the spec's own framing — treat the fail-before/pass-after check as a hard requirement, not a formality.
 
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 3: Verify downstream consumers surface the corrected data end to end
 
@@ -52,7 +52,7 @@ Source spec: `specs/features/entity-linking.md`
 
 **Notes:** No production code change is expected here — this is verification that the spec's value claim ("linkedFrom/linksTo … receive real data") actually holds through the full call chain, not just at `extractSidecarRefIds`. Flagged as the one place this task list adds work the spec doesn't explicitly request as a "task" (the spec states it as an outcome, not a deliverable) — kept in scope because nobody has checked it and a false claim in the spec's Goals section would otherwise ship unverified.
 
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 4: Document the one-time `reindex` step for existing projects
 
@@ -68,7 +68,7 @@ Source spec: `specs/features/entity-linking.md`
 
 **Notes:** FR-8. This is the only in-scope documentation change per the spec; `entity-layer.md` and `getwrite.features.md` are explicitly out of scope per the spec's resolved Open Questions.
 
-**Done:** [ ]
+**Done:** [x]
 
 ## Summary
 
