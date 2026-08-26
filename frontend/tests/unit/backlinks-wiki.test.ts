@@ -205,6 +205,50 @@ describe("backlinks — sidecar resource-ref extraction", () => {
     expect(idx[source].filter((id) => id === target)).toHaveLength(1);
   });
 
+  it("extracts a backlink from a resource-ref nested under userMetadata", async () => {
+    const projectRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), "gw-bk-sidecar-"),
+    );
+    const source = generateUUID();
+    const target = generateUUID();
+
+    await persistResourceContent(projectRoot, source, emptyDoc() as any);
+    await persistResourceContent(projectRoot, target, emptyDoc() as any);
+
+    await writeSidecar(projectRoot, source, {
+      userMetadata: { pov: { id: target, name: "Target Character" } },
+    });
+
+    const idx = await computeBacklinks(projectRoot);
+    expect(idx[source]).toContain(target);
+  });
+
+  it("extracts backlinks from a multi-resource-ref array nested under userMetadata", async () => {
+    const projectRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), "gw-bk-sidecar-"),
+    );
+    const source = generateUUID();
+    const t1 = generateUUID();
+    const t2 = generateUUID();
+
+    await persistResourceContent(projectRoot, source, emptyDoc() as any);
+    await persistResourceContent(projectRoot, t1, emptyDoc() as any);
+    await persistResourceContent(projectRoot, t2, emptyDoc() as any);
+
+    await writeSidecar(projectRoot, source, {
+      userMetadata: {
+        characters: [
+          { id: t1, name: "Alice" },
+          { id: t2, name: "Bob" },
+        ],
+      },
+    });
+
+    const idx = await computeBacklinks(projectRoot);
+    expect(idx[source]).toContain(t1);
+    expect(idx[source]).toContain(t2);
+  });
+
   it("does not treat plain string/number sidecar values as refs", async () => {
     const projectRoot = await fs.mkdtemp(
       path.join(os.tmpdir(), "gw-bk-sidecar-"),
