@@ -29,18 +29,14 @@ function isResourceRef(value: unknown): value is ResourceRef {
 }
 
 /**
- * Returns all non-null, non-self resource UUIDs referenced by `resource-ref`
- * and `multi-resource-ref` sidecar field values.
- *
- * Detection is structural: any sidecar value matching `{ id, name }` or an
- * array of such values is treated as a resource reference. The schema is not
- * consulted so this works even for undeclared fields.
+ * Scans one set of sidecar field values for `resource-ref` /
+ * `multi-resource-ref` shapes, adding any referenced ids into `ids`.
  */
-function extractSidecarRefIds(
-  sidecar: Record<string, MetadataValue>,
-): string[] {
-  const ids = new Set<string>();
-  for (const value of Object.values(sidecar)) {
+function collectRefIds(
+  values: Iterable<MetadataValue>,
+  ids: Set<string>,
+): void {
+  for (const value of values) {
     if (isResourceRef(value)) {
       if (value.id !== null) ids.add(value.id);
     } else if (Array.isArray(value)) {
@@ -49,6 +45,40 @@ function extractSidecarRefIds(
       }
     }
   }
+}
+
+/**
+ * Returns all non-null, non-self resource UUIDs referenced by `resource-ref`
+ * and `multi-resource-ref` sidecar field values.
+ *
+ * Detection is structural: any sidecar value matching `{ id, name }` or an
+ * array of such values is treated as a resource reference. The schema is not
+ * consulted so this works even for undeclared fields.
+ *
+ * User-defined metadata fields are stored one level down, under
+ * `sidecar.userMetadata` (see `flattenUserMetadata` in `field-values.ts` for
+ * the equivalent one-level merge used elsewhere), so that nested object is
+ * scanned as well as the sidecar's top level. No other nested path is
+ * descended into.
+ */
+function extractSidecarRefIds(
+  sidecar: Record<string, MetadataValue>,
+): string[] {
+  const ids = new Set<string>();
+  collectRefIds(Object.values(sidecar), ids);
+
+  const userMetadata = sidecar.userMetadata;
+  if (
+    userMetadata &&
+    typeof userMetadata === "object" &&
+    !Array.isArray(userMetadata)
+  ) {
+    collectRefIds(
+      Object.values(userMetadata as Record<string, MetadataValue>),
+      ids,
+    );
+  }
+
   return Array.from(ids);
 }
 
