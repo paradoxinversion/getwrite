@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, X } from "lucide-react";
 import useAppSelector, { useAppDispatch } from "../../src/store/hooks";
 import { selectResource, updateResource } from "../../src/store/resourcesSlice";
 import { selectActiveProjectDirectoryId } from "../../src/store/projectsSlice";
+import { fetchEntityAliasTable } from "../../src/store/entityAliasTableSlice";
 import { updateSidecar } from "../../src/lib/api/resources";
 import { getAliasWarning } from "../../src/lib/models/entity-alias-warnings";
 import type { AnyResource } from "../../src/lib/models/types";
@@ -64,11 +65,19 @@ export default function EntitySection(): JSX.Element | null {
   const persist = (updated: AnyResource): void => {
     dispatch(updateResource(updated));
     if (!projectId) return;
-    void updateSidecar(updated.id, projectId, updated).catch(() => {
-      // Best-effort persistence, consistent with other sidebar controls
-      // (e.g. `app/(app)/page.tsx`'s `updateResource`, which logs and does
-      // not roll back the optimistic update on failure).
-    });
+    // FR-12 trigger 3: refetch the alias table once this entity sidecar
+    // write resolves, so open editors pick up the new/changed name or
+    // aliases without a manual refresh. Only fires on success — a failed
+    // write left the sidecar (and thus the alias table) unchanged.
+    void updateSidecar(updated.id, projectId, updated)
+      .then(() => {
+        dispatch(fetchEntityAliasTable(projectId));
+      })
+      .catch(() => {
+        // Best-effort persistence, consistent with other sidebar controls
+        // (e.g. `app/(app)/page.tsx`'s `updateResource`, which logs and does
+        // not roll back the optimistic update on failure).
+      });
   };
 
   const [entityKindText, setEntityKindText] = useSyncedControlledValue(

@@ -24,11 +24,13 @@ import { useCallback, useEffect, useState } from "react";
 import useAppSelector, { useAppDispatch } from "../../src/store/hooks";
 import {
   setProject,
+  loadProject,
   setSelectedProjectId,
   addResource,
   removeResource,
   setProjects as setProjectsInStore,
   buildStoredProject,
+  getProjectDirectoryId,
   selectActiveProjectDirectoryId,
 } from "../../src/store/projectsSlice";
 import AppShell from "../../components/Layout/AppShell";
@@ -54,6 +56,7 @@ import {
 } from "../../src/lib/api/resources";
 import {
   setResources,
+  loadResources,
   setSelectedResourceId as setResourceId,
   updateResource as updateResourceInStore,
   addResource as addResourceInStore,
@@ -271,7 +274,12 @@ export default function Home(): JSX.Element {
    */
   const handleOpen = async (id: string) => {
     const p = await openProject(id);
-    dispatch(setProject(buildStoredProject(p.project, p.folders, p.resources)));
+    const storedProject = buildStoredProject(p.project, p.folders, p.resources);
+    // Dispatch the load-flavored thunks (rather than the plain `setProject`
+    // / `setResources` actions) so opening a project also triggers the
+    // entity-alias-table refetch (FR-12 triggers 1 and 2; see
+    // `entityAliasTableSlice.ts`).
+    dispatch(loadProject(storedProject));
     dispatch(
       setEditorConfig({
         headings: p.project.config?.editorConfig?.headings ?? {},
@@ -279,7 +287,12 @@ export default function Home(): JSX.Element {
       }),
     );
     dispatch(setSelectedProjectId(p.project.id));
-    dispatch(setResources(p.resources));
+    dispatch(
+      loadResources({
+        resources: p.resources,
+        projectId: getProjectDirectoryId(storedProject.rootPath),
+      }),
+    );
     dispatch(setFolders(p.folders));
     setSelectedProject({
       id: p.project.id,

@@ -98,6 +98,11 @@ function createRootState(overrides?: {
       isExporting: false,
       errorMessage: "",
     },
+    entityAliasTable: {
+      projectId: null,
+      table: { entities: {}, claimedBy: {} },
+      status: "idle",
+    },
   } as RootState;
 }
 

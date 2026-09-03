@@ -7,6 +7,7 @@ import {
 import { AnyResource, Folder } from "../lib/models";
 import { renameMetadataFieldKey } from "./projectsSlice";
 import { reorderResources, ReorderPayload } from "../lib/api/resources";
+import { fetchEntityAliasTable } from "./entityAliasTableSlice";
 
 interface ResourcesState {
   selectedResourceId: string | null;
@@ -40,6 +41,38 @@ export const persistReorder = createAsyncThunk(
     return { projectRoot, folderOrder, resourceOrder };
   },
 );
+
+/**
+ * Loads (replaces) the resources list for the active project and triggers
+ * an entity-alias-table refetch (FR-12 trigger 2: resource load).
+ *
+ * This is the "resource load" thunk referenced by `specs/features/
+ * entity-highlighting.md` Task 6 — call sites that populate the resources
+ * list after opening/creating a project (e.g. `app/(app)/page.tsx`'s
+ * `handleOpen`) should dispatch this instead of the plain `setResources`
+ * action so the alias-table cache stays current.
+ *
+ * The alias-table fetch is fired without blocking this thunk's own
+ * resolution: `getEntityAliasTable` already degrades to the empty table on
+ * any failure (never rejects), so there is nothing here to await or catch.
+ *
+ * @param args.resources - The full resources list to store.
+ * @param args.projectId - The project's on-disk directory basename, used to
+ *   scope the alias-table fetch.
+ */
+// `dispatch: any` mirrors `projectsSlice.ts`'s `loadProject` thunk — see its
+// comment for why (avoids a circular import with `store.ts`'s
+// `AppDispatch`).
+export const loadResources = createAsyncThunk<
+  AnyResource[],
+  { resources: AnyResource[]; projectId: string },
+  { dispatch: any }
+>("resources/loadResources", async ({ resources, projectId }, thunkApi) => {
+  if (projectId) {
+    thunkApi.dispatch(fetchEntityAliasTable(projectId));
+  }
+  return resources;
+});
 
 const resourcesSlice = createSlice({
   name: "resources",
@@ -126,6 +159,11 @@ const resourcesSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(loadResources.fulfilled, (state, action) => {
+      state.resources = action.payload;
+      return state;
+    });
+
     builder.addCase(renameMetadataFieldKey.fulfilled, (state, action) => {
       const { fieldKey: oldKey, newKey } = action.meta.arg;
       for (const resource of state.resources) {

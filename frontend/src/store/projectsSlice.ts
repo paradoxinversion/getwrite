@@ -31,6 +31,7 @@ import {
   postFeatureConfig,
   type FeatureConfigResult,
 } from "./feature-config-transport-service";
+import { fetchEntityAliasTable } from "./entityAliasTableSlice";
 import {
   resolveMetadataSchemaRequestContext,
   postAddField,
@@ -167,6 +168,38 @@ export function normalizeStoredProject(p: StoredProject): StoredProject {
 
   return { ...p, resources, folders };
 }
+
+/**
+ * Loads (opens) a project, upserting it into the store and triggering an
+ * entity-alias-table refetch (FR-12 trigger 1: project load).
+ *
+ * This is the "project load" thunk referenced by `specs/features/
+ * entity-highlighting.md` Task 6 — call sites that open a project (e.g.
+ * `app/(app)/page.tsx`'s `handleOpen`) should dispatch this instead of the
+ * plain `setProject` action so the alias-table cache stays current.
+ *
+ * The alias-table fetch is fired without blocking this thunk's own
+ * resolution: `getEntityAliasTable` already degrades to the empty table on
+ * any failure (never rejects), so there is nothing here to await or catch.
+ *
+ * @param storedProject - The opened project's full record.
+ */
+// `dispatch: any` here mirrors the `state: any` typing already used
+// throughout this slice's thunks and selectors (see `makeSchemaThunk`,
+// `selectActiveProjectFeatures`, etc.) to avoid a circular import with
+// `store.ts`'s `AppDispatch`, which is itself built from this slice's
+// reducer.
+export const loadProject = createAsyncThunk<
+  StoredProject,
+  StoredProject,
+  { dispatch: any }
+>("projects/loadProject", async (storedProject, thunkApi) => {
+  const directoryId = getProjectDirectoryId(storedProject.rootPath);
+  if (directoryId) {
+    thunkApi.dispatch(fetchEntityAliasTable(directoryId));
+  }
+  return storedProject;
+});
 
 /**
  * Root state shape managed by this slice.
@@ -602,6 +635,18 @@ const projectsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // `loadProject` mirrors `setProject`'s upsert behavior; it exists
+    // separately so call sites that need the alias-table refetch side
+    // effect (FR-12 trigger 1) can dispatch a single action.
+    builder.addCase(loadProject.fulfilled, (state, action) => {
+      state.projects[action.payload.id] = {
+        ...action.payload,
+        metadataSchema:
+          action.payload.metadataSchema ?? DEFAULT_METADATA_SCHEMA,
+      };
+      return state;
+    });
+
     const schemaThunks = [
       addMetadataField,
       removeMetadataField,
