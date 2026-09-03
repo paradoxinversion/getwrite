@@ -268,6 +268,100 @@ describe("computeEntityHighlightRanges — boundary exclusions", () => {
   });
 });
 
+describe("computeEntityHighlightRanges — Task 13 edge cases", () => {
+  it("matches a declared term regardless of the case used in the document text", () => {
+    // Task 8's suite compares offsets against `findMentionOffsets` for a
+    // fully-uppercase document; this asserts the range itself (term,
+    // matchedText, entityIds) rather than just the offset.
+    const doc = docFromText("ARIA drew her blade.");
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+
+    const ranges = computeEntityHighlightRanges(doc, table);
+
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0].matchedText).toBe("ARIA");
+    expect(ranges[0].term).toBe("Aria");
+    expect(ranges[0].entityIds).toEqual(["e1"]);
+  });
+
+  it("does not match a declared term occurring inside a larger word (Aristocrat)", () => {
+    const doc = docFromText("The aristocrat entered the hall.");
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+
+    const ranges = computeEntityHighlightRanges(doc, table);
+
+    expect(ranges).toHaveLength(0);
+  });
+
+  it("does not match a declared term as one half of a hyphenated compound (Aria-Vela)", () => {
+    const doc = docFromText("General Aria-Vela addressed the council.");
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+
+    const ranges = computeEntityHighlightRanges(doc, table);
+
+    expect(ranges).toHaveLength(0);
+  });
+
+  it("matches the possessive and simple-plural forms of a declared term", () => {
+    const possessiveDoc = docFromText("Aria's blade gleamed in the dark.");
+    const bareApostropheDoc = docFromText(
+      "Jones' cabin stood at the edge of the woods.",
+    );
+    const pluralDoc = docFromText("There were two Arias in the story.");
+    const nameTable = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+    const jonesTable = buildAliasTable([{ entityId: "e2", name: "Jones" }]);
+
+    const possessiveRanges = computeEntityHighlightRanges(
+      possessiveDoc,
+      nameTable,
+    );
+    const bareApostropheRanges = computeEntityHighlightRanges(
+      bareApostropheDoc,
+      jonesTable,
+    );
+    const pluralRanges = computeEntityHighlightRanges(pluralDoc, nameTable);
+
+    expect(possessiveRanges).toHaveLength(1);
+    expect(possessiveRanges[0].matchedText).toBe("Aria's");
+    expect(possessiveRanges[0].entityIds).toEqual(["e1"]);
+
+    expect(bareApostropheRanges).toHaveLength(1);
+    expect(bareApostropheRanges[0].matchedText).toBe("Jones'");
+    expect(bareApostropheRanges[0].entityIds).toEqual(["e2"]);
+
+    expect(pluralRanges).toHaveLength(1);
+    expect(pluralRanges[0].matchedText).toBe("Arias");
+    expect(pluralRanges[0].entityIds).toEqual(["e1"]);
+  });
+
+  it("matches on name alone for an entity declared with zero aliases", () => {
+    const doc = docFromText("Aria walked into the harbor.");
+    // No `aliases` supplied — `buildAliasTable` defaults it to an empty
+    // array, exercising the zero-declared-aliases path explicitly.
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+    expect(table.entities.e1.aliases).toEqual([]);
+
+    const ranges = computeEntityHighlightRanges(doc, table);
+
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0].term).toBe("Aria");
+    expect(ranges[0].matchedText).toBe("Aria");
+    expect(ranges[0].entityIds).toEqual(["e1"]);
+
+    // Also verify explicitly with an empty `aliases` array, rather than an
+    // omitted one, to cover both ways "zero declared aliases" can arise.
+    const explicitEmptyTable = buildAliasTable([
+      { entityId: "e2", name: "Aria", aliases: [] },
+    ]);
+    const explicitRanges = computeEntityHighlightRanges(
+      doc,
+      explicitEmptyTable,
+    );
+    expect(explicitRanges).toHaveLength(1);
+    expect(explicitRanges[0].entityIds).toEqual(["e2"]);
+  });
+});
+
 describe("computeEntityHighlightRanges — no declared entities", () => {
   it("returns no ranges and does no matching work when the alias table is empty", () => {
     const doc = docFromText("Nothing here should ever highlight.");
