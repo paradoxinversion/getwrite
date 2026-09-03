@@ -266,6 +266,50 @@ describe("ProjectFeatureToggles", () => {
     ).toEqual({ entities: true });
   });
 
+  it("does not render the entity highlighting toggle when entities is off", () => {
+    setup();
+    expect(screen.queryByText(/entity highlighting/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /entity highlighting/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the entity highlighting toggle when entities is on", () => {
+    setup({ entities: true });
+    expect(
+      screen.getByRole("checkbox", { name: /entity highlighting/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("persists entityHighlighting through updateFeatureConfig when toggled on", async () => {
+    const { store } = setup({ entities: true });
+    const fetchSpy = mockFeatureRoute({
+      entities: true,
+      entityHighlighting: true,
+    });
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /entity highlighting/i }),
+    );
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/project/features");
+    expect(JSON.parse(init.body as string)).toEqual({
+      projectId: "test",
+      features: { entities: true, entityHighlighting: true },
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: /entity highlighting/i }),
+      ).toBeChecked(),
+    );
+    expect(
+      store.getState().projects.projects["test-project-id"].features,
+    ).toEqual({ entities: true, entityHighlighting: true });
+  });
+
   it("renders nothing when no project is selected", () => {
     const store = makeStore();
     const { container } = render(

@@ -172,6 +172,31 @@ export default function ProjectFeatureToggles(): JSX.Element | null {
         })}
       </div>
 
+      {features.entities === true && (
+        <div className="mt-4 border-t-[0.5px] border-gw-border pt-4">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={features.entityHighlighting === true}
+              onChange={(event) =>
+                void handleToggle(
+                  "entityHighlighting",
+                  "Entity highlighting",
+                  event.target.checked,
+                )
+              }
+              className="h-4 w-4 rounded border-gw-border"
+            />
+            <span className="text-sm font-medium text-gw-primary">
+              Entity highlighting
+            </span>
+          </label>
+          <p className="ml-6 mt-0.5 text-xs text-gw-secondary">
+            Highlights entity names and aliases inline in the editor.
+          </p>
+        </div>
+      )}
+
       {timelineWarning && <HoverTipSurface id={FEATURE_TOOLTIP_ID} />}
     </section>
   );
