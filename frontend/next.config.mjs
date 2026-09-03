@@ -201,6 +201,12 @@ const nextConfig = {
           // above.
           "../../store/transport/native-mentions-backend":
             "./src/store/transport/native-mentions-backend.web-stub",
+          // entity-highlighting Task 5: lib/api/entity-alias-table.ts also
+          // lives in src/lib/api/, so its dynamic import's literal specifier
+          // is "../../store/transport/native-entity-alias-table-backend" —
+          // same rule as above.
+          "../../store/transport/native-entity-alias-table-backend":
+            "./src/store/transport/native-entity-alias-table-backend.web-stub",
         },
   },
 };
