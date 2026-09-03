@@ -27,6 +27,24 @@
  *     (and therefore before `onChange`/any downstream save fires) — see
  *     `@tiptap/core`'s `dispatchTransaction`,
  *     `!transactions.some((tr) => tr.docChanged)` gate.
+ *
+ * Task 12 (FR-5, "Highlighting MUST update to reflect edits to the document
+ * … and edits to entity declarations … without requiring a manual refresh")
+ * adds two more, exercising both live-update triggers explicitly and
+ * end-to-end at the decoration-set level:
+ *  4. A plain document-editing transaction (`tr.docChanged`, no meta signal)
+ *     changes the rendered decoration set to reflect newly-typed text.
+ *  5. A meta-signal transaction (`tr.docChanged === false`, mirroring the
+ *     transaction `TipTapEditor.tsx`'s `useEffect` dispatches whenever
+ *     `entityAliasTable` changes) changes the rendered decoration set to
+ *     reflect a changed alias table, with the document itself untouched —
+ *     i.e. no full resource reload occurs in between.
+ *
+ * `TipTapEditor.tsx` renders a lightweight mock (never a real
+ * `Editor`/`EditorView`) in `isTestEnv`, per this repo's established jsdom
+ * convention (see this file's own header above) — so there is no meaningful
+ * `TipTapEditor`-level jsdom integration point beyond what is already
+ * asserted here against the real `Plugin` the component configures.
  */
 import { describe, expect, it, vi } from "vitest";
 import { getSchema } from "@tiptap/core";
@@ -245,6 +263,83 @@ describe("EntityHighlightDecorationExtension — real Plugin, no DOM required", 
     // The recompute signal still refreshes decorations even though the doc
     // did not change (e.g. the alias table itself was refetched).
     expect(decorationRanges(pluginState)).toHaveLength(1);
+  });
+
+  it("a document-editing transaction (tr.docChanged) recomputes decorations to reflect the new text, with no meta signal needed (FR-5 trigger 1)", () => {
+    // Starts with a document containing no entity mentions.
+    const doc = docFromText("The rain fell all afternoon.");
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+    const plugins = buildPlugins({
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+    let state = EditorState.create({ doc, schema, plugins });
+    expect(
+      decorationRanges(
+        ENTITY_HIGHLIGHT_DECORATION_KEY.getState(state) as DecorationSet,
+      ),
+    ).toEqual([]);
+
+    // Type "Aria " at the start of the paragraph's text — a plain document
+    // edit, not a meta-flagged transaction.
+    const insertAt = 1; // just inside the paragraph, before "The"
+    const tr = state.tr.insertText("Aria ", insertAt);
+    expect(tr.docChanged).toBe(true);
+    expect(tr.getMeta(ENTITY_HIGHLIGHT_DECORATION_KEY)).toBeUndefined();
+
+    state = state.apply(tr);
+    const pluginState = ENTITY_HIGHLIGHT_DECORATION_KEY.getState(
+      state,
+    ) as DecorationSet;
+    const ranges = decorationRanges(pluginState);
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0]).toEqual({
+      from: insertAt,
+      to: insertAt + 4,
+      class: expect.stringContaining("entity-highlight"),
+    });
+  });
+
+  it("a meta-signal transaction picks up a changed alias table (e.g. a newly declared alias) with no document mutation (FR-5 trigger 2)", () => {
+    // Mirrors TipTapEditor.tsx's useEffect: on an alias-table change it
+    // re-reads getAliasTable() and dispatches the plugin's own recompute
+    // signal — never touching the document. This proves that flow actually
+    // changes the rendered decoration set end to end, not just that the
+    // plugin recomputes *something*.
+    const doc = docFromText("Reeve walked into the harbor.");
+    let table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+    const plugins = buildPlugins({
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+    let state = EditorState.create({ doc, schema, plugins });
+    expect(
+      decorationRanges(
+        ENTITY_HIGHLIGHT_DECORATION_KEY.getState(state) as DecorationSet,
+      ),
+    ).toEqual([]);
+
+    // Entity declaration changes: "Aria" gains "Reeve" as a new alias — the
+    // same kind of update `entityAliasTableSlice.ts` would push down after a
+    // sidecar edit.
+    table = buildAliasTable([
+      { entityId: "e1", name: "Aria", aliases: ["Reeve"] },
+    ]);
+
+    const tr = state.tr.setMeta(ENTITY_HIGHLIGHT_DECORATION_KEY, true);
+    expect(tr.docChanged).toBe(false);
+    state = state.apply(tr);
+
+    expect(state.doc.eq(doc)).toBe(true);
+    const ranges = decorationRanges(
+      ENTITY_HIGHLIGHT_DECORATION_KEY.getState(state) as DecorationSet,
+    );
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0]).toEqual({
+      from: 1,
+      to: 6,
+      class: expect.stringContaining("entity-highlight"),
+    });
   });
 
   it("toggling isEnabled off and recomputing via the meta signal clears decorations without any document mutation", () => {
