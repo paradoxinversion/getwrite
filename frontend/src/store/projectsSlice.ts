@@ -861,6 +861,10 @@ export const selectNotesEnabled = (state: any): boolean =>
 export const selectEntitiesEnabled = (state: any): boolean =>
   selectIsFeatureEnabled(state, "entities");
 
+/** Whether view-layer inline entity highlighting is enabled for the active project. */
+export const selectEntityHighlightingEnabled = (state: any): boolean =>
+  selectIsFeatureEnabled(state, "entityHighlighting");
+
 /**
  * Selects the Organizer card-body configuration for the active project, or
  * `null` when none is configured.

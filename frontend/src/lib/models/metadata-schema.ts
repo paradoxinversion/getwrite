@@ -186,6 +186,9 @@ const FEATURE_FIELD_KEYS: Record<keyof ProjectFeatureFlags, readonly string[]> =
     // Entities are not sidecar schema fields, so there is no stored-field
     // presence to seed the flag from; it stays off until explicitly toggled.
     entities: [],
+    // View-layer only; no sidecar schema fields to seed the flag from, so it
+    // stays off until explicitly toggled.
+    entityHighlighting: [],
   };
 
 /**

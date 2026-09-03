@@ -204,6 +204,8 @@ export const ProjectFeatureFlagsSchema = z.object({
   notes: z.boolean().optional(),
   /** Activates the entity metadata UI (Entity, Entities Mentioned, Entity Mentions sections). */
   entities: z.boolean().optional(),
+  /** Activates view-layer inline entity name/alias highlighting in the editor. */
+  entityHighlighting: z.boolean().optional(),
 });
 
 /**

@@ -67,6 +67,8 @@ export interface ProjectFeatureFlags {
   notes?: boolean;
   /** Activates the entity metadata UI (Entity, Entities Mentioned, Entity Mentions sections). */
   entities?: boolean;
+  /** Activates view-layer inline entity name/alias highlighting in the editor. */
+  entityHighlighting?: boolean;
 }
 
 /** Source that drives the body text shown on Organizer cards. */

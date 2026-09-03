@@ -3,7 +3,7 @@
  *
  * Covers: setProjects hydration of `features`/`organizerCardBody` from project
  * config, the absent-flag-as-disabled selectors (a newly created project reports
- * all four features off), and the `updateProjectFeatures` /
+ * all six features off), and the `updateProjectFeatures` /
  * `updateProjectOrganizerCardBody` thunks (transport call + store update).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -22,6 +22,7 @@ import projectsReducer, {
   selectSynopsisEnabled,
   selectNotesEnabled,
   selectEntitiesEnabled,
+  selectEntityHighlightingEnabled,
   buildStoredProject,
 } from "../../src/store/projectsSlice";
 import type { Project } from "../../src/lib/models/types";
@@ -88,7 +89,7 @@ describe("projectsSlice — feature config hydration (Task 4)", () => {
 });
 
 describe("projectsSlice — feature selectors (absent = disabled)", () => {
-  it("reports all five features disabled for a project with no features", () => {
+  it("reports all six features disabled for a project with no features", () => {
     const store = makeStore();
     seedProject(store);
     const state = store.getState();
@@ -97,6 +98,7 @@ describe("projectsSlice — feature selectors (absent = disabled)", () => {
     expect(selectSynopsisEnabled(state)).toBe(false);
     expect(selectNotesEnabled(state)).toBe(false);
     expect(selectEntitiesEnabled(state)).toBe(false);
+    expect(selectEntityHighlightingEnabled(state)).toBe(false);
     expect(selectActiveProjectFeatures(state)).toEqual({});
     expect(selectActiveProjectOrganizerCardBody(state)).toBeNull();
   });
@@ -134,6 +136,16 @@ describe("projectsSlice — feature selectors (absent = disabled)", () => {
     seedProject(store, { editorConfig: {}, features: { entities: true } });
     const state = store.getState();
     expect(selectEntitiesEnabled(state)).toBe(true);
+  });
+
+  it("reflects the entityHighlighting feature when enabled", () => {
+    const store = makeStore();
+    seedProject(store, {
+      editorConfig: {},
+      features: { entityHighlighting: true },
+    });
+    const state = store.getState();
+    expect(selectEntityHighlightingEnabled(state)).toBe(true);
   });
 
   it("returns disabled/empty when no project is selected", () => {
