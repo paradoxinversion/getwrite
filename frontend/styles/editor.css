@@ -212,6 +212,38 @@
   cursor: pointer;
 }
 
+/* Entity highlighting (`specs/features/entity-highlighting.md`, Task 10) —
+ * `EntityHighlightDecorationExtension` marks declared entity name/alias
+ * occurrences with one of exactly two states (FR-10). Background-only: no
+ * `line-height`/`font-size` change, so the editor's 1.8 line-height floor
+ * (`.tiptap p`'s `--gw-body-line-height` default above) is never touched.
+ * Neither state uses the reserved `--color-gw-red`/`--color-gw-red-border`
+ * tokens (FR-7). Both `--color-gw-entity-highlight-*` tokens are theme-cascade
+ * tokens (`getwrite-utilities.css`) with distinct light/dark values, so they
+ * stay visually distinct in both modes automatically.
+ *
+ * "Needs attention" additionally gets a dotted underline so the two states
+ * are distinguishable by more than color alone (relevant for color-vision
+ * deficiency, ahead of Task 11's hover/title disclosure landing).
+ */
+.tiptap .entity-highlight {
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.tiptap .entity-highlight--plain {
+  background-color: var(--color-gw-entity-highlight-plain);
+}
+
+.tiptap .entity-highlight--needs-attention {
+  background-color: var(--color-gw-entity-highlight-attention);
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
 /* Named font classes — for dynamic font selection system */
 .domine-400 {
   font-family: "Domine", serif;

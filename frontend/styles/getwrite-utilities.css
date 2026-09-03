@@ -31,6 +31,8 @@
   --color-gw-editor: var(--color-gw-paper);
   --color-gw-diff-added: rgba(80, 160, 100, 0.18);
   --color-gw-diff-removed: rgba(80, 130, 180, 0.18);
+  --color-gw-entity-highlight-plain: rgba(196, 164, 84, 0.2);
+  --color-gw-entity-highlight-attention: rgba(140, 112, 168, 0.28);
 
   /* ── Timeline overrides ──
      * Placed here (not :root) so this class-selector wins over the :root defaults
@@ -87,6 +89,8 @@
   ); /* Dark mode: editor body text = light primary */
   --color-gw-diff-added: rgba(80, 160, 100, 0.24);
   --color-gw-diff-removed: rgba(80, 130, 180, 0.24);
+  --color-gw-entity-highlight-plain: rgba(196, 164, 84, 0.26);
+  --color-gw-entity-highlight-attention: rgba(140, 112, 168, 0.36);
 
   /* POV palette — original softer values for dark surfaces */
   --timeline-pov-0: #6b8cae;
@@ -120,6 +124,8 @@ html.gw-theme-light {
   --color-gw-editor: var(--color-gw-paper);
   --color-gw-diff-added: rgba(80, 160, 100, 0.18);
   --color-gw-diff-removed: rgba(80, 130, 180, 0.18);
+  --color-gw-entity-highlight-plain: rgba(196, 164, 84, 0.2);
+  --color-gw-entity-highlight-attention: rgba(140, 112, 168, 0.28);
 }
 
 html.gw-theme-dark {
@@ -136,6 +142,8 @@ html.gw-theme-dark {
   --color-gw-ink: var(--color-gw-primary);
   --color-gw-diff-added: rgba(80, 160, 100, 0.24);
   --color-gw-diff-removed: rgba(80, 130, 180, 0.24);
+  --color-gw-entity-highlight-plain: rgba(196, 164, 84, 0.26);
+  --color-gw-entity-highlight-attention: rgba(140, 112, 168, 0.36);
 }
 
 /* ── REDUCED MOTION ── (only permitted !important blocks in this file) */
@@ -2266,7 +2274,11 @@ html.gw-theme-dark {
         black calc(100% - 24px),
         transparent
       );
-      mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+      mask-image: linear-gradient(
+        to right,
+        black calc(100% - 24px),
+        transparent
+      );
     }
   }
 
