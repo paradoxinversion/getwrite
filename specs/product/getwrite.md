@@ -282,6 +282,18 @@ lost work.
   hatch. This capability is scoped to desktop and native Android only; the
   hosted deployment excludes it behind a fail-closed, server-side gate (see
   Constraints). [US-16]
+- FR-35: Users MUST be able to declare a resource as an entity and give it
+  one or more alternate names, after which every prose mention of that
+  entity's name or alternate names anywhere else in the project MUST be
+  attributed to it automatically, without a manual link. Detection MUST be
+  deterministic and MUST run fully offline, consistent with the
+  local-first architecture and the native Android build. The product MUST
+  let a writer see, per resource, which entities it mentions, and, per
+  entity, every resource that mentions it, so that appearance lists and
+  per-entity mention indexes are computed rather than hand-maintained; it
+  MUST also let a saved query or smart folder filter resources by entity
+  mention. The product MUST NOT infer an entity the writer never declared,
+  and MUST NOT perform pronoun or coreference resolution. [US-3]
 
 ### In Progress Requirements
 
@@ -305,18 +317,16 @@ lost work.
   canonical revision is indexed and searched — see Constraints); when a
   user opens the diff view from such a result, the diff MUST consistently
   select the most recent matching revision. [US-7]
-- FR-35: Users MUST be able to declare a resource as an entity and give it
-  one or more alternate names, after which every prose mention of that
-  entity's name or alternate names anywhere else in the project MUST be
-  attributed to it automatically, without a manual link. Detection MUST be
-  deterministic and MUST run fully offline, consistent with the
-  local-first architecture and the native Android build. The product MUST
-  let a writer see, per resource, which entities it mentions, and, per
-  entity, every resource that mentions it, so that appearance lists and
-  per-entity mention indexes are computed rather than hand-maintained; it
-  MUST also let a saved query or smart folder filter resources by entity
-  mention. The product MUST NOT infer an entity the writer never declared,
-  and MUST NOT perform pronoun or coreference resolution. [US-3]
+- FR-36: Users MUST be able to toggle a working mode that visually marks every
+  declared entity's name and aliases inline in the editor, so that the
+  entities present in a passage are apparent at a glance without opening a
+  sidebar panel or running a search. The highlight MUST be view-layer only
+  and MUST NOT alter persisted resource content in any way. The toggle state
+  MUST persist per project. Detection MUST run fully offline and
+  deterministically, consistent with the local-first architecture and the
+  native Android build. The feature MUST reuse the entity declarations (name
+  and aliases) already established by FR-35 and MUST NOT introduce any new
+  mechanism for declaring an entity. [US-3]
 
 ### Later Requirements
 

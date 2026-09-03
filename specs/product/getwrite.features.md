@@ -505,7 +505,7 @@ full-text search; Feature 8's saved-query builder) but have never been
 joined — full-text search has no predicate over the query builder's fields,
 and the saved-query builder has no full-text-over-content predicate.
 
-### Feature 33: Entity layer — automatic prose-mention detection — Not started
+### Feature 33: Entity layer — automatic prose-mention detection — Shipped
 **Value:** A novelist who declares a resource as a character, place, or
 object gets every prose mention of it across the whole project — by name or
 alias — attributed automatically, instead of losing the connection the
@@ -523,13 +523,64 @@ from explicit links.
 **User stories:** US-3
 **Depends on:** Feature 7, Feature 9, Feature 10
 **Branch suggestion:** feat/entity-layer
-**Notes:** Not started. This entry closes a ladder gap: a complete rung-4
-feature spec (`specs/features/entity-layer.md`) already exists for this
-capability but had no rung-3 parent entry until now; the parent product
-spec has since been amended with FR-35 to cover it. Detection runs fully
-offline and reuses existing machinery (`indexer-queue`, `backlinks.ts`'s
-resolver maps, `extractSnippet`) rather than introducing a new pipeline; it
-does not change how explicit backlinks are computed or persisted.
+**Notes:** Shipped. Merged to `main` on 2026-08-25 as 19 commits tagged
+`[task_ddb55116]`, from `7eb0e0fa` (spec + task list) to `df2e5554`; the
+`feat/entity-layer` branch was rebased and deleted, so there is no merge
+commit. This entry closes a ladder gap: a complete rung-4 feature spec
+(`specs/features/entity-layer.md`) already existed for this capability but
+had no rung-3 parent entry until now; the parent product spec has since been
+amended with FR-35 to cover it. Detection runs fully offline and reuses
+existing machinery (`indexer-queue`, `backlinks.ts`'s resolver maps,
+`extractSnippet`) rather than introducing a new pipeline; it does not change
+how explicit backlinks are computed or persisted.
+The two UI surfaces ship behind an off-by-default per-project `entities`
+feature flag (commit `df2e5554`), joining the existing Timeline / Point of
+View / Synopsis / Notes flag family. The flag gates the UI only — detection,
+the mention index, and the indexer path run ungated.
+A follow-on repair shipped separately: `extractSidecarRefIds` read only one
+level of the sidecar, so `resource-ref` / `multi-resource-ref` fields under
+`userMetadata` never produced a backlink. Specified in
+`specs/features/entity-linking.md` and landed under `[task_08553ca3]`.
+
+### Feature 34: Entity highlighting in the editor — Not started
+**Value:** A writer toggles a working mode that visually marks every declared
+entity's name and aliases inline as they read a scene, so the entities in a
+passage are apparent at a glance instead of requiring a trip to a sidebar
+panel or a search. The highlight is a view-layer decoration only; it never
+touches persisted content.
+**Vertical slice:** A TipTap/ProseMirror decoration extension following the
+existing `WikiLinkDecoration.ts` pattern (walk text nodes, emit
+`Decoration.inline`, rebuild on `docChanged`), reusing the dependency-free
+`entity-detection.ts` matcher client-side; a project-scoped endpoint exposing
+the entity alias table to the client, with a native backend counterpart for
+ADR-021 parity, a client cache, and invalidation on alias edits; and a
+persisted toggle in per-project editor config.
+**Requirements covered:** FR-36
+**User stories:** US-3
+**Depends on:** Feature 33
+**Branch suggestion:** feat/entity-highlighting
+**Notes:** Not started. Tracked as POS `task_4b2ec55f`, blocked by
+`task_ddb55116`; findings in `note_3059fe58`. FR-36 covers this feature: the
+parent product spec was amended to add a requirement for the toggleable
+inline editor highlight, reusing the entity declarations FR-35 established
+without introducing any new entity-declaration mechanism.
+Two constraints established by reading the tree rather than assumed:
+detection must run live over each text node, NOT off `meta/index/mentions.json`
+— those offsets are into persisted plain text, while ProseMirror positions
+count node boundaries, so they do not align, and the index is stale against
+unsaved edits regardless. Running live also settles the entity-layer spec's
+OQ-1 (canonical vs. unsaved content) for this surface: live is the only
+correct answer for a highlight.
+Unmeasured risk: `WikiLinkDecoration` runs one static regex per transaction,
+whereas this runs N aliases against the document on every keystroke, and a
+novel project may declare hundreds. Mitigations exist (single alternation
+regex; rescan only the changed range) but the cost has not been benchmarked —
+that measurement belongs in its task breakdown.
+Scheduling argument: the highlight is a diagnostic for the entity layer's
+OQ-2 (short or common-word aliases such as "May" or "Will" flooding the
+index), which is currently invisible inside `mentions.json` and would become
+visible on the page. Styling constraint: the brand reserves red for
+position/canonical indicators, so the highlight must use another token.
 
 ---
 
@@ -571,11 +622,12 @@ does not change how explicit backlinks are computed or persisted.
   - FR-33: Feature 31
   - FR-34: Feature 32
   - FR-35: Feature 33
+  - FR-36: Feature 34
 - Unassigned requirements: none
 
 ## Summary
 
-- Total features: 33
+- Total features: 34
 - Suggested build order: Features 1 through 23 are already shipped
   (foundational chain: 1 → 2 → 6 → 7 → {8, 9, 18} → {9 → 11, 10} → 11 → {4 →
   5 → 11, 20}; 3, 13, 14, 15, 16, 17, 19, 21, 22, 23 hang off earlier shipped
@@ -586,12 +638,13 @@ does not change how explicit backlinks are computed or persisted.
   (durable search backend) is contingent on demonstrated need rather than
   sequenced by dependency. 31 (Scrivener/Word importer) only depends on the
   already-shipped Feature 2. 32 (joining search and query predicates)
-  depends on the already-shipped Features 8 and 9. 33 (entity layer) depends
-  only on already-shipped Features 7, 9, and 10, so it is independently
-  startable now too.
+  depends on the already-shipped Features 8 and 9. 33 (entity layer) has
+  since shipped. 34 (entity highlighting) depends on 33 and is therefore
+  independently startable now.
 - Independently shippable: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33 (30 is
-  the sole feature with a hard dependency, on 28)
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34
+  (30 and 34 are the only features with a hard dependency — 30 on 28, and
+  34 on the now-shipped 33, which leaves 34 startable)
 - Risks: Feature 30 is undesigned — its Vertical slice describes a
   resolution policy still to be chosen, so its task breakdown will need a
   design decision before implementation tasks can be written. Feature 28 is
@@ -604,15 +657,20 @@ does not change how explicit backlinks are computed or persisted.
   previously separate concerns (revision-aware indexing and diff-open
   revision selection) per the parent spec's FR-29 correction; its task
   breakdown should confirm the merge doesn't hide two different sizes of
-  work. Feature 33's own feature spec carries three unresolved open
-  questions (alias-length/stop-word guarding, whether detection reads
-  unsaved editor state, and performance targets) that should be settled
-  before its task breakdown is written.
+  work. Feature 33 shipped with two of its feature spec's three open
+  questions still unresolved — alias-length/stop-word guarding (OQ-2) and
+  performance targets (OQ-3); the third, whether detection reads unsaved
+  editor state (OQ-1), applies to Feature 34, which resolves it by
+  detecting live. Feature 34 carries an unbenchmarked per-keystroke cost
+  (N aliases scanned per transaction) that its task breakdown must measure
+  rather than assume.
 
 ## Open Questions
 
 None. (OQ-1, on licensing/distribution posture, is tracked in the parent
-product spec and does not affect this feature partition. A previously
-logged question here — Feature 33 having no rung-2 functional requirement —
-was resolved when the parent product spec was amended with FR-35; see
-Feature 33's Requirements covered field.)
+product spec and does not affect this feature partition. Two previously
+logged questions here have since been resolved by amendments to the parent
+product spec: Feature 33 having no rung-2 functional requirement was
+resolved when FR-35 was added, and Feature 34 having no requirement of its
+own — it previously only extended FR-35's surface — was resolved when FR-36
+was added; see each feature's Requirements covered field.)
