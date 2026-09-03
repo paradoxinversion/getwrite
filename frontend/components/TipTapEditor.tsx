@@ -43,10 +43,19 @@ import CustomHeading from "./Editor/Extensions/CustomHeading";
 import NormalizePastedText from "./Editor/Extensions/NormalizePastedText";
 import MediaDropExtension from "./Editor/Extensions/MediaDropExtension";
 import GetWriteImage from "./Editor/Extensions/GetWriteImage";
+import EntityHighlightDecoration, {
+  ENTITY_HIGHLIGHT_DECORATION_KEY,
+} from "./Editor/Extensions/EntityHighlightDecorationExtension";
 import { baseSchemaExtensions } from "./Editor/editorExtensions";
 import { useSelector } from "react-redux";
 import { selectResolvedEditorConfig } from "../src/store/editorConfigSlice";
-import { selectActiveProjectDirectoryId } from "../src/store/projectsSlice";
+import {
+  selectActiveProjectDirectoryId,
+  selectEntityHighlightingEnabled,
+  selectEntitiesEnabled,
+} from "../src/store/projectsSlice";
+import { selectEntityAliasTable } from "../src/store/entityAliasTableSlice";
+import type { EntityAliasTable } from "../src/lib/models/entity-alias-table";
 import { deriveSelectionNodeLabels } from "../src/lib/node-display-selection";
 
 /**
@@ -157,6 +166,23 @@ export default function TipTapEditor({
   const projectIdRef = useRef<string | null>(null);
   projectIdRef.current = activeProjectDirectoryId;
 
+  // Entity highlighting (specs/features/entity-highlighting.md) only takes
+  // effect when both flags are on (FR-1/FR-8). Threaded through refs, same
+  // pattern as `projectIdRef` above, so `EntityHighlightDecoration` — a
+  // non-React TipTap extension configured once at editor init — can read the
+  // latest gating/alias-table state without the editor being re-created on
+  // every flag toggle or alias-table refetch.
+  const isEntityHighlightingEnabled = useSelector(
+    selectEntityHighlightingEnabled,
+  );
+  const isEntitiesEnabled = useSelector(selectEntitiesEnabled);
+  const entityHighlightingActiveRef = useRef(false);
+  entityHighlightingActiveRef.current =
+    isEntityHighlightingEnabled && isEntitiesEnabled;
+  const entityAliasTable = useSelector(selectEntityAliasTable);
+  const entityAliasTableRef = useRef<EntityAliasTable>(entityAliasTable);
+  entityAliasTableRef.current = entityAliasTable;
+
   // Keep the latest callback in a ref so the editor's (init-time) handlers can
   // call it without being re-created when the prop identity changes.
   const onNodeTypesChangeRef = useRef(onNodeTypesChange);
@@ -244,6 +270,10 @@ export default function TipTapEditor({
         }),
         MediaDropExtension.configure({
           getProjectId: () => projectIdRef.current,
+        }),
+        EntityHighlightDecoration.configure({
+          isEnabled: () => entityHighlightingActiveRef.current,
+          getAliasTable: () => entityAliasTableRef.current,
         }),
         Math.configure({
           blockOptions: {
@@ -361,6 +391,28 @@ export default function TipTapEditor({
     () => debounce(commitSourceMarkdown, SOURCE_AUTOSAVE_DEBOUNCE_MS),
     [commitSourceMarkdown],
   );
+
+  /**
+   * Forces `EntityHighlightDecoration`'s plugin state to recompute when a
+   * gating input changes without the document itself changing — a feature
+   * flag toggle or a freshly fetched alias table. The plugin only rebuilds on
+   * `tr.docChanged` by default (matching `WikiLinkDecoration`'s cadence for
+   * FR-9 performance), so this dispatches a no-op transaction carrying the
+   * plugin's own meta flag to signal "recompute anyway". Decoration-only:
+   * this transaction never changes document content and triggers no
+   * `onUpdate`/persistence call.
+   */
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dispatch(
+      editor.state.tr.setMeta(ENTITY_HIGHLIGHT_DECORATION_KEY, true),
+    );
+  }, [
+    editor,
+    isEntityHighlightingEnabled,
+    isEntitiesEnabled,
+    entityAliasTable,
+  ]);
 
   useEffect(() => {
     return () => {
