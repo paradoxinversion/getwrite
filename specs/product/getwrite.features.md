@@ -568,18 +568,21 @@ Two constraints established by reading the tree rather than assumed:
 detection must run live over each text node, NOT off `meta/index/mentions.json`
 — those offsets are into persisted plain text, while ProseMirror positions
 count node boundaries, so they do not align, and the index is stale against
-unsaved edits regardless. Running live also settles the entity-layer spec's
-OQ-1 (canonical vs. unsaved content) for this surface: live is the only
-correct answer for a highlight.
+unsaved edits regardless. The entity-layer spec settled the opposite answer for its own surface: the
+indexer reads only persisted, saved content, never unsaved editor state.
+Reading live here is a deliberate difference for a different surface, not a
+resolution of that question — a highlight of stale text would be wrong.
 Unmeasured risk: `WikiLinkDecoration` runs one static regex per transaction,
 whereas this runs N aliases against the document on every keystroke, and a
 novel project may declare hundreds. Mitigations exist (single alternation
 regex; rescan only the changed range) but the cost has not been benchmarked —
 that measurement belongs in its task breakdown.
-Scheduling argument: the highlight is a diagnostic for the entity layer's
-OQ-2 (short or common-word aliases such as "May" or "Will" flooding the
-index), which is currently invisible inside `mentions.json` and would become
-visible on the page. Styling constraint: the brand reserves red for
+Scheduling argument: `entity-alias-warnings.ts` already flags short or
+common-word aliases (such as "May" or "Will") non-blockingly at declaration
+time, so the writer is not without warning; what the highlight adds is
+showing the actual extent of such an alias's matches in running prose, which
+a declaration-time warning cannot convey. Styling constraint: the brand
+reserves red for
 position/canonical indicators, so the highlight must use another token.
 
 ---
@@ -657,13 +660,9 @@ position/canonical indicators, so the highlight must use another token.
   previously separate concerns (revision-aware indexing and diff-open
   revision selection) per the parent spec's FR-29 correction; its task
   breakdown should confirm the merge doesn't hide two different sizes of
-  work. Feature 33 shipped with two of its feature spec's three open
-  questions still unresolved — alias-length/stop-word guarding (OQ-2) and
-  performance targets (OQ-3); the third, whether detection reads unsaved
-  editor state (OQ-1), applies to Feature 34, which resolves it by
-  detecting live. Feature 34 carries an unbenchmarked per-keystroke cost
-  (N aliases scanned per transaction) that its task breakdown must measure
-  rather than assume.
+  work. Feature 34 carries an unbenchmarked per-keystroke cost (N aliases
+  scanned per transaction, where a novel project may declare hundreds) that
+  its task breakdown must measure rather than assume.
 
 ## Open Questions
 
