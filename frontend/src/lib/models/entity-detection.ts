@@ -16,14 +16,27 @@
 
 /** Characters that are part of a "word" for boundary purposes, plus the
  * apostrophe and hyphen — both of which continue a token (a possessive or a
- * hyphenated compound) rather than terminating one. */
-const ATTACHED_CHAR_CLASS = "[\\p{L}\\p{N}_'\\-]";
+ * hyphenated compound) rather than terminating one.
+ *
+ * Exported so other callers that need to build their own regex over the same
+ * boundary/possessive/plural envelope (e.g. the entity-highlight decoration
+ * core's combined multi-term alternation, `entityHighlightDecoration.ts`)
+ * stay faithful to this module's matching semantics instead of re-deriving
+ * them. */
+export const ATTACHED_CHAR_CLASS = "[\\p{L}\\p{N}_'\\-]";
+
+/** The optional possessive/plural suffix `buildAliasRegex` allows to follow a
+ * matched term — exported for the same reuse reason as
+ * {@link ATTACHED_CHAR_CLASS}. */
+export const POSSESSIVE_OR_PLURAL_SUFFIX = "(?:'s|['’]|s)?";
 
 /**
  * Escapes regex metacharacters in a user-supplied string so it can be safely
  * interpolated into a `RegExp` pattern.
+ *
+ * Exported for the same reuse reason as {@link ATTACHED_CHAR_CLASS}.
  */
-function escapeRegExp(value: string): string {
+export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
