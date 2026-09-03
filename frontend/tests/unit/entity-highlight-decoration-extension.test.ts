@@ -116,6 +116,20 @@ function decorationRanges(
     .sort((a, b) => a.from - b.from);
 }
 
+function decorationTitles(
+  set: DecorationSet,
+): Array<{ from: number; to: number; title?: string }> {
+  return set
+    .find()
+    .map((d) => ({
+      from: d.from,
+      to: d.to,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      title: (d as any).type?.attrs?.title as string | undefined,
+    }))
+    .sort((a, b) => a.from - b.from);
+}
+
 /**
  * Builds the real `Plugin` array the extension registers, without
  * constructing a TipTap `Editor`/`EditorView` — `configure(...)` returns an
@@ -202,6 +216,80 @@ describe("buildEntityHighlightDecorations — matches render at correct live-doc
     const ranges = decorationRanges(decorations);
     expect(ranges).toHaveLength(1);
     expect(ranges[0].class).toContain("entity-highlight--needs-attention");
+  });
+});
+
+describe("buildEntityHighlightDecorations — hover/title disclosure (FR-11)", () => {
+  it("names 'short or common word' wording when only the short/common-word condition applies", () => {
+    const doc = docFromText("May opened the letter slowly.");
+    // "May" is on entity-alias-warnings.ts's common-word list and is
+    // declared by exactly one entity — no ambiguous claim.
+    const table = buildAliasTable([
+      { entityId: "e1", name: "Maylene", aliases: ["May"] },
+    ]);
+
+    const decorations = buildEntityHighlightDecorations(doc, {
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+
+    const titles = decorationTitles(decorations);
+    expect(titles).toHaveLength(1);
+    expect(titles[0].title).toContain("short or common word");
+    expect(titles[0].title).not.toContain("more than one entity");
+  });
+
+  it("names 'ambiguous'/'more than one entity' wording when only the ambiguous-claim condition applies", () => {
+    const doc = docFromText("Kaelith walked into the harbor.");
+    // "Kaelith" is not on the common-word list, but is claimed by two
+    // distinct entities.
+    const table = buildAliasTable([
+      { entityId: "e1", name: "Kaelith" },
+      { entityId: "e2", name: "Kaelith" },
+    ]);
+
+    const decorations = buildEntityHighlightDecorations(doc, {
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+
+    const titles = decorationTitles(decorations);
+    expect(titles).toHaveLength(1);
+    expect(titles[0].title).toContain("more than one entity");
+    expect(titles[0].title).not.toContain("short or common word");
+  });
+
+  it("names BOTH conditions when a term is both short/common-word-flagged and ambiguous", () => {
+    const doc = docFromText("May opened the letter slowly.");
+    // "May" is both a common word/name and claimed by two distinct entities.
+    const table = buildAliasTable([
+      { entityId: "e1", name: "May" },
+      { entityId: "e2", name: "May" },
+    ]);
+
+    const decorations = buildEntityHighlightDecorations(doc, {
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+
+    const titles = decorationTitles(decorations);
+    expect(titles).toHaveLength(1);
+    expect(titles[0].title).toContain("short or common word");
+    expect(titles[0].title).toContain("more than one entity");
+  });
+
+  it("has no title attribute for a plain match (no needs-attention condition applies)", () => {
+    const doc = docFromText("Aria walked into the harbor.");
+    const table = buildAliasTable([{ entityId: "e1", name: "Aria" }]);
+
+    const decorations = buildEntityHighlightDecorations(doc, {
+      isEnabled: () => true,
+      getAliasTable: () => table,
+    });
+
+    const titles = decorationTitles(decorations);
+    expect(titles).toHaveLength(1);
+    expect(titles[0].title).toBeUndefined();
   });
 });
 

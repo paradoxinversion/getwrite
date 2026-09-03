@@ -2,7 +2,10 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
-import { computeEntityHighlightRanges } from "./entityHighlightDecoration";
+import {
+  computeEntityHighlightRanges,
+  type NeedsAttentionReason,
+} from "./entityHighlightDecoration";
 import type { EntityAliasTable } from "../../../src/lib/models/entity-alias-table";
 
 /**
@@ -73,6 +76,27 @@ const NEEDS_ATTENTION_CLASS =
   "entity-highlight entity-highlight--needs-attention";
 
 /**
+ * Builds the `title` attribute text for a "needs attention" decoration
+ * (FR-11): names every condition that applies to the match — short/common
+ * word, ambiguous claim, or both — rather than a binary either/or that would
+ * silently drop one disclosure when both conditions apply to the same term
+ * (Task 8's `NeedsAttentionReason` allows both flags to be true at once).
+ */
+function buildNeedsAttentionTitle(
+  matchedText: string,
+  reason: NeedsAttentionReason,
+): string {
+  const conditions: string[] = [];
+  if (reason.shortOrCommonWord) {
+    conditions.push("is a short or common word");
+  }
+  if (reason.ambiguousClaim) {
+    conditions.push("could refer to more than one entity");
+  }
+  return `"${matchedText}" ${conditions.join(" and ")}`;
+}
+
+/**
  * Builds the `DecorationSet` for `doc` given the current gating/alias-table
  * inputs. Exported (mirroring `buildWikiLinkDecorations`) so it can be unit
  * tested directly without going through TipTap's `Editor`/`Extension`
@@ -100,11 +124,7 @@ export function buildEntityHighlightDecorations(
           ? NEEDS_ATTENTION_CLASS
           : PLAIN_MATCH_CLASS,
       ...(range.reason
-        ? {
-            title: range.reason.ambiguousClaim
-              ? `"${range.matchedText}" could refer to more than one entity`
-              : `"${range.matchedText}" is a short or common word`,
-          }
+        ? { title: buildNeedsAttentionTitle(range.matchedText, range.reason) }
         : {}),
     }),
   );
