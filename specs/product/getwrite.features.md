@@ -585,6 +585,50 @@ a declaration-time warning cannot convey. Styling constraint: the brand
 reserves red for
 position/canonical indicators, so the highlight must use another token.
 
+### Feature 35: Entity-scoped compile — Not started
+**Value:** A novelist tracking a character or thread across a large project
+compiles every resource associated with that entity into one continuous
+document — the same consistency-check read-through Feature 12's whole-project
+and subtree compile already offer, but scoped to an entity's thread instead
+of a manuscript position, so they can review that entity across the whole
+project without following mention links one at a time.
+**Vertical slice:** A new resource-selection path that starts from
+`mentions-core.ts`'s `getEntityMentionedIn` merged set (detected prose
+mentions plus explicit `linkedFrom` backlinks) instead of a subtree
+selection, then orders that set by resource-tree position, depth-first with
+siblings by `orderIndex` — the same rule `compileSelection.ts`'s
+`getDescendantLeafIds` applies for FR-14, reimplemented here over an
+unordered entity/mention set rather than inherited, since neither
+`invertMentionIndex` (arbitrary `Object.values` order) nor
+`getEntityMentionedIn`'s merge orders its output that way. The ordered
+resource-id list then feeds the existing `compile-core.ts` renderers
+(`compilePdfCore` / `compileDocxCore` / `compileTextCore` /
+`compileMarkdownCore`) unchanged, since they already render sections in
+exactly the order the `resourceIds` argument arrives in; plus an entry point
+in the entity view to invoke it. Export-only: no revision, entity
+declaration, or mention-index write.
+**Requirements covered:** FR-37
+**User stories:** US-2, US-3
+**Depends on:** Feature 33, Feature 12
+**Branch suggestion:** feat/entity-scoped-compile
+**Notes:** Not started. FR-37 covers this feature, added to the parent
+product spec's Next Requirements. Four scope decisions are settled at the
+product-spec gate and are not reopened here: the resource set is the merged
+mentions-plus-backlinks set (not mentions alone), ordering is resource-tree
+position depth-first by `orderIndex` (not chronological or mention-index
+order), the feature is export-only, and it rides the existing `entities`
+feature flag rather than introducing a new one — the compile entry point
+lives inside the entity panel, which `MetadataSidebar.tsx:531-544` already
+gates as a whole via `isEntitiesEnabled`, so the action is unreachable
+without `entities` enabled and a dedicated flag would add nothing. (Feature
+34's `entityHighlighting` nesting under `entities` is a UI-conditional
+convention in `ProjectFeatureToggles.tsx:175-198`, not a schema-level
+dependency the model layer enforces, and is not a rule this decision follows
+— Feature 34 warranted its own flag because it is a persistent, always-on
+rendering mode, where this feature is an on-demand, export-only action.) The
+ordering bridge between the retrieval half (`mentions-core.ts`, existing) and
+the render half (`compile-core.ts`, existing) is the genuinely new work.
+
 ---
 
 ## Coverage check
@@ -626,11 +670,12 @@ position/canonical indicators, so the highlight must use another token.
   - FR-34: Feature 32
   - FR-35: Feature 33
   - FR-36: Feature 34
+  - FR-37: Feature 35
 - Unassigned requirements: none
 
 ## Summary
 
-- Total features: 34
+- Total features: 35
 - Suggested build order: Features 1 through 23 are already shipped
   (foundational chain: 1 → 2 → 6 → 7 → {8, 9, 18} → {9 → 11, 10} → 11 → {4 →
   5 → 11, 20}; 3, 13, 14, 15, 16, 17, 19, 21, 22, 23 hang off earlier shipped
@@ -643,11 +688,13 @@ position/canonical indicators, so the highlight must use another token.
   already-shipped Feature 2. 32 (joining search and query predicates)
   depends on the already-shipped Features 8 and 9. 33 (entity layer) has
   since shipped. 34 (entity highlighting) depends on 33 and is therefore
-  independently startable now.
+  independently startable now. 35 (entity-scoped compile) depends on the
+  now-shipped 33 and the already-shipped 12, and is therefore independently
+  startable now.
 - Independently shippable: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34
-  (30 and 34 are the only features with a hard dependency — 30 on 28, and
-  34 on the now-shipped 33, which leaves 34 startable)
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34, 35
+  (30 is the only feature left with an unmet hard dependency — on 28 — since
+  34's and 35's dependencies, 33 and 12, have both shipped)
 - Risks: Feature 30 is undesigned — its Vertical slice describes a
   resolution policy still to be chosen, so its task breakdown will need a
   design decision before implementation tasks can be written. Feature 28 is
@@ -662,11 +709,16 @@ position/canonical indicators, so the highlight must use another token.
   breakdown should confirm the merge doesn't hide two different sizes of
   work. Feature 34 carries an unbenchmarked per-keystroke cost (N aliases
   scanned per transaction, where a novel project may declare hundreds) that
-  its task breakdown must measure rather than assume.
+  its task breakdown must measure rather than assume. Feature 35's ordering
+  bridge (merged mention/backlink set → tree-position order) is new code with
+  no existing analogue to reuse wholesale, unlike Feature 12's compile, which
+  only needed the render half.
 
 ## Open Questions
 
-None. (OQ-1, on licensing/distribution posture, is tracked in the parent
+None.
+
+(OQ-1, on licensing/distribution posture, is tracked in the parent
 product spec and does not affect this feature partition. Two previously
 logged questions here have since been resolved by amendments to the parent
 product spec: Feature 33 having no rung-2 functional requirement was
