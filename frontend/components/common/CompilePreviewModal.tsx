@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { PackageCheck } from "lucide-react";
 import type { AnyResource } from "../../src/lib/models/types";
 import CompileResourceTree from "./CompileResourceTree";
+import EntityCompileResourceList, {
+  type EntityCompileEntry,
+} from "./EntityCompileResourceList";
 import {
   buildCompileTree,
   initAllChecked,
@@ -14,6 +17,21 @@ import Button from "./UI/Button/Button";
 import { Dialog, DialogContent, DialogTitle } from "./UI/Dialog";
 import Checkbox from "./UI/Checkbox/Checkbox";
 import Select from "./UI/Select/Select";
+
+export type { EntityCompileEntry };
+
+/**
+ * Prop-driven entity mode (FR-1/FR-3/FR-11). When present, this modal swaps
+ * its user-editable checkbox tree and Select All/None controls for the
+ * read-only, pre-ordered `EntityCompileResourceList`, and the Compile
+ * button's confirmed id list becomes `orderedResourceIds` directly rather
+ * than a tree/checkbox derivation. The output-option controls (format,
+ * headers, name) and the `onConfirmCompile` contract are unchanged.
+ */
+export interface EntityCompileMode {
+  entries: EntityCompileEntry[];
+  orderedResourceIds: string[];
+}
 
 export type CompileFormat = "txt" | "md" | "pdf" | "docx";
 
@@ -39,6 +57,12 @@ export interface CompilePreviewModalProps {
    * happens, not after.
    */
   isSourceEncrypted?: boolean;
+  /**
+   * When set, swaps the checkbox tree / Select All / Select None controls
+   * for the read-only, pre-ordered entity-scoped list (FR-1/FR-3/FR-11).
+   * See `EntityCompileMode`.
+   */
+  entityMode?: EntityCompileMode;
 }
 
 export default function CompilePreviewModal(
@@ -54,6 +78,7 @@ export default function CompilePreviewModal(
     onConfirmCompile,
     resource,
     onConfirm,
+    entityMode,
   } = props;
 
   const tree = useMemo(() => buildCompileTree(resources), [resources]);
@@ -108,32 +133,38 @@ export default function CompilePreviewModal(
           </p>
         ) : null}
 
-        <div className="flex gap-2 mb-2">
-          <Button
-            variant="secondary"
-            size="xs"
-            onClick={() => setCheckedIds(initAllChecked(tree))}
-          >
-            Select All
-          </Button>
-          <Button
-            variant="secondary"
-            size="xs"
-            onClick={() => setCheckedIds(new Set())}
-          >
-            Select None
-          </Button>
-        </div>
+        {entityMode ? (
+          <EntityCompileResourceList entries={entityMode.entries} />
+        ) : (
+          <>
+            <div className="flex gap-2 mb-2">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={() => setCheckedIds(initAllChecked(tree))}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={() => setCheckedIds(new Set())}
+              >
+                Select None
+              </Button>
+            </div>
 
-        <CompileResourceTree
-          resources={resources}
-          checkedIds={checkedIds}
-          onChange={setCheckedIds}
-        />
+            <CompileResourceTree
+              resources={resources}
+              checkedIds={checkedIds}
+              onChange={setCheckedIds}
+            />
 
-        <div className="compile-modal-meta-text mt-2 text-right">
-          {checkedIds.size} resource(s) selected
-        </div>
+            <div className="compile-modal-meta-text mt-2 text-right">
+              {checkedIds.size} resource(s) selected
+            </div>
+          </>
+        )}
 
         <div className="mt-3 flex items-center gap-2">
           <Checkbox
@@ -186,10 +217,11 @@ export default function CompilePreviewModal(
           <Button
             variant="default"
             onClick={() => {
-              const orderedIds = getDescendantLeafIds(
-                ROOT_ITEM_ID,
-                tree,
-              ).filter((id) => checkedIds.has(id));
+              const orderedIds = entityMode
+                ? entityMode.orderedResourceIds
+                : getDescendantLeafIds(ROOT_ITEM_ID, tree).filter((id) =>
+                    checkedIds.has(id),
+                  );
               onConfirmCompile?.(orderedIds, {
                 includeHeaders: shouldIncludeHeaders,
                 format,
@@ -198,10 +230,18 @@ export default function CompilePreviewModal(
               onConfirm?.();
               onClose?.();
             }}
-            disabled={checkedIds.size === 0}
+            disabled={
+              entityMode
+                ? entityMode.orderedResourceIds.length === 0
+                : checkedIds.size === 0
+            }
           >
             <PackageCheck size={14} aria-hidden="true" />
-            Compile ({checkedIds.size})
+            Compile (
+            {entityMode
+              ? entityMode.orderedResourceIds.length
+              : checkedIds.size}
+            )
           </Button>
         </div>
       </DialogContent>

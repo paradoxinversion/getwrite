@@ -1,7 +1,9 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import CompilePreviewModal from "../components/common/CompilePreviewModal";
+import CompilePreviewModal, {
+  type EntityCompileMode,
+} from "../components/common/CompilePreviewModal";
 import type { AnyResource } from "../src/lib/models/types";
 
 const sampleResources: AnyResource[] = [
@@ -270,5 +272,135 @@ describe("CompilePreviewModal — tree selection", () => {
 
     expect(onConfirmCompile).toHaveBeenCalledTimes(1);
     expect(onConfirmCompile.mock.calls[0][1].format).toBe("md");
+  });
+});
+
+describe("CompilePreviewModal — entity mode", () => {
+  const entityMode: EntityCompileMode = {
+    entries: [
+      { resourceId: "r2", name: "Scene 2", resourceType: "text" },
+      { resourceId: "r1", name: "Scene 1", resourceType: "text" },
+    ],
+    orderedResourceIds: ["r2", "r1"],
+  };
+
+  it("does not render the checkbox tree or Select All/None buttons", () => {
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={entityMode}
+        onConfirmCompile={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("compile-resource-tree"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /select all/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /select none/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders EntityCompileResourceList showing entityMode.entries", () => {
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={entityMode}
+        onConfirmCompile={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByTestId("entity-compile-resource-list"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Scene 2")).toBeInTheDocument();
+    expect(screen.getByText("Scene 1")).toBeInTheDocument();
+    expect(screen.getByText("2 resources to compile")).toBeInTheDocument();
+  });
+
+  it("clicking Compile calls onConfirmCompile with orderedResourceIds regardless of tree/checkbox state", () => {
+    const onConfirmCompile = vi.fn();
+
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={entityMode}
+        onConfirmCompile={onConfirmCompile}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const compileBtn = screen.getByRole("button", { name: /compile \(2\)/i });
+    fireEvent.click(compileBtn);
+
+    expect(onConfirmCompile).toHaveBeenCalledTimes(1);
+    expect(onConfirmCompile.mock.calls[0][0]).toEqual(["r2", "r1"]);
+  });
+
+  it("disables the Compile button when orderedResourceIds is empty", () => {
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={{ entries: [], orderedResourceIds: [] }}
+        onConfirmCompile={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const compileBtn = screen.getByRole("button", {
+      name: /compile \(0\)/i,
+    }) as HTMLButtonElement;
+    expect(compileBtn.disabled).toBe(true);
+  });
+
+  it("renders the format select, headers checkbox, and name input identically in entity mode", () => {
+    const onConfirmCompile = vi.fn();
+
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={entityMode}
+        onConfirmCompile={onConfirmCompile}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const formatSelect = screen.getByLabelText(
+      /compile as/i,
+    ) as HTMLSelectElement;
+    const headersCheckbox = screen.getByRole("checkbox", {
+      name: /include section headers/i,
+    }) as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText(
+      /enter a name for your compiled output/i,
+    ) as HTMLInputElement;
+
+    expect(formatSelect).toBeInTheDocument();
+    expect(headersCheckbox.checked).toBe(true);
+    expect(nameInput).toBeInTheDocument();
+
+    fireEvent.change(formatSelect, { target: { value: "pdf" } });
+    fireEvent.click(headersCheckbox);
+    fireEvent.change(nameInput, { target: { value: "My Compile" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /compile \(2\)/i }));
+
+    expect(onConfirmCompile).toHaveBeenCalledTimes(1);
+    expect(onConfirmCompile.mock.calls[0][0]).toEqual(["r2", "r1"]);
+    expect(onConfirmCompile.mock.calls[0][1]).toEqual({
+      includeHeaders: false,
+      format: "pdf",
+      compilationName: "My Compile",
+    });
   });
 });
