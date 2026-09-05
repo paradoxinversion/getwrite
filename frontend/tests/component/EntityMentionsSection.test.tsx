@@ -7,6 +7,7 @@ import { makeStore } from "../../src/store/store";
 import {
   setProject,
   setSelectedProjectId,
+  getProjectDirectoryId,
 } from "../../src/store/projectsSlice";
 import {
   setResources,
@@ -15,6 +16,13 @@ import {
 import { createTextResource } from "../../src/lib/models/resource";
 import type { AnyResource } from "../../src/lib/models/types";
 import type { EntityMentionedIn } from "../../src/lib/models/mentions-core";
+import { runCompileAndDownload } from "../../src/lib/compile/run-compile-and-download";
+
+vi.mock("../../src/lib/compile/run-compile-and-download", () => ({
+  runCompileAndDownload: vi.fn().mockResolvedValue(undefined),
+}));
+
+const runCompileAndDownloadMock = vi.mocked(runCompileAndDownload);
 
 const PROJECT_PATH = "/tmp/test-project";
 
@@ -48,6 +56,7 @@ function mockMentionedIn(mentionedIn: EntityMentionedIn[]) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  runCompileAndDownloadMock.mockClear();
 });
 
 describe("EntityMentionsSection", () => {
@@ -200,11 +209,11 @@ describe("EntityMentionsSection", () => {
     });
   });
 
-  it("renders nothing when there are no associated resources", async () => {
+  it("disables the compile trigger with a visible explanation when there are no associated resources", async () => {
     mockMentionedIn([]);
     const store = setupStore("entity-aria");
 
-    const { container } = render(
+    render(
       <Provider store={store}>
         <EntityMentionsSection />
       </Provider>,
@@ -214,7 +223,188 @@ describe("EntityMentionsSection", () => {
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
 
-    expect(container).toBeEmptyDOMElement();
+    expect(
+      screen.queryByLabelText("entity-mentions-list"),
+    ).not.toBeInTheDocument();
+
+    const trigger = screen.getByRole("button", {
+      name: "Compile this entity's resources",
+    });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.getByText("No associated resources to compile."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    expect(
+      screen.queryByTestId("compile-preview-modal"),
+    ).not.toBeInTheDocument();
+  });
+
+  describe("entity-scoped compile trigger", () => {
+    function makeResource(
+      id: string,
+      name: string,
+      orderIndex: number,
+      type: AnyResource["type"] = "text",
+    ): AnyResource {
+      const res = createTextResource({ name });
+      (res as unknown as { id: string }).id = id;
+      Object.assign(res, { orderIndex, type });
+      return res as AnyResource;
+    }
+
+    function setupStoreWithResources(
+      entityId: string,
+      resources: AnyResource[],
+    ) {
+      const store = makeStore();
+      store.dispatch(
+        setProject({
+          id: "proj-test-1",
+          name: "Test Project",
+          rootPath: PROJECT_PATH,
+        }),
+      );
+      store.dispatch(setSelectedProjectId("proj-test-1"));
+      const entity = createTextResource({ name: "Aria" });
+      (entity as unknown as { id: string }).id = entityId;
+      Object.assign(entity, { entityKind: "character" });
+      store.dispatch(setResources([entity, ...resources]));
+      store.dispatch(setSelectedResourceId(entityId));
+      return store;
+    }
+
+    it("is enabled, keyboard-operable, and has an accessible name when rows exist", async () => {
+      mockMentionedIn([
+        {
+          resourceId: "res-b",
+          name: "Scene B",
+          snippets: [],
+          isLinked: true,
+          isMentioned: false,
+          ambiguousWith: [],
+        },
+      ]);
+      const resources = [makeResource("res-b", "Scene B", 0)];
+      const store = setupStoreWithResources("entity-aria", resources);
+
+      render(
+        <Provider store={store}>
+          <EntityMentionsSection />
+        </Provider>,
+      );
+
+      const trigger = await screen.findByRole("button", {
+        name: "Compile this entity's resources",
+      });
+      expect(trigger).not.toBeDisabled();
+
+      trigger.focus();
+      expect(trigger).toHaveFocus();
+      fireEvent.keyDown(trigger, { key: "Enter", code: "Enter" });
+      fireEvent.click(trigger);
+
+      expect(
+        await screen.findByTestId("compile-preview-modal"),
+      ).toBeInTheDocument();
+    });
+
+    it("opens the modal pre-populated with the FR-2 merged set in FR-3 tree order", async () => {
+      mockMentionedIn([
+        {
+          resourceId: "res-b",
+          name: "Scene B",
+          snippets: ["mentioned"],
+          isLinked: false,
+          isMentioned: true,
+          ambiguousWith: [[]],
+        },
+        {
+          resourceId: "res-a",
+          name: "Scene A",
+          snippets: [],
+          isLinked: true,
+          isMentioned: false,
+          ambiguousWith: [],
+        },
+      ]);
+      // Tree order (by orderIndex) is A then B, opposite of fetch order.
+      const resources = [
+        makeResource("res-a", "Scene A", 0),
+        makeResource("res-b", "Scene B", 1),
+      ];
+      const store = setupStoreWithResources("entity-aria", resources);
+
+      render(
+        <Provider store={store}>
+          <EntityMentionsSection />
+        </Provider>,
+      );
+
+      const trigger = await screen.findByRole("button", {
+        name: "Compile this entity's resources",
+      });
+      fireEvent.click(trigger);
+
+      const listItems = await screen.findAllByTestId(
+        "entity-compile-resource-list-item",
+      );
+      expect(listItems).toHaveLength(2);
+      expect(listItems[0]).toHaveTextContent("Scene A");
+      expect(listItems[1]).toHaveTextContent("Scene B");
+    });
+
+    it("calls runCompileAndDownload with exactly the ordered merged-set ids on confirm", async () => {
+      mockMentionedIn([
+        {
+          resourceId: "res-b",
+          name: "Scene B",
+          snippets: [],
+          isLinked: true,
+          isMentioned: false,
+          ambiguousWith: [],
+        },
+        {
+          resourceId: "res-a",
+          name: "Scene A",
+          snippets: ["mentioned"],
+          isLinked: false,
+          isMentioned: true,
+          ambiguousWith: [[]],
+        },
+      ]);
+      const resources = [
+        makeResource("res-a", "Scene A", 0),
+        makeResource("res-b", "Scene B", 1),
+      ];
+      const store = setupStoreWithResources("entity-aria", resources);
+
+      render(
+        <Provider store={store}>
+          <EntityMentionsSection />
+        </Provider>,
+      );
+
+      const trigger = await screen.findByRole("button", {
+        name: "Compile this entity's resources",
+      });
+      fireEvent.click(trigger);
+
+      const compileButton = await screen.findByRole("button", {
+        name: /Compile \(2\)/,
+      });
+      fireEvent.click(compileButton);
+
+      await waitFor(() => {
+        expect(runCompileAndDownloadMock).toHaveBeenCalledTimes(1);
+      });
+      const [compileBody] = runCompileAndDownloadMock.mock.calls[0];
+      expect(compileBody.resourceIds).toEqual(["res-a", "res-b"]);
+      expect(compileBody.projectId).toBe(getProjectDirectoryId(PROJECT_PATH));
+      expect(compileBody.projectName).toBe("Test Project");
+    });
   });
 
   it("shows a distinct loading state before mentions resolve", async () => {
