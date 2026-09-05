@@ -112,6 +112,27 @@ export function isFolderIndeterminate(
   return isSomeChecked && !isAllChecked;
 }
 
+/**
+ * Orders an arbitrary set of resource IDs by their depth-first,
+ * orderIndex-sibling-ordered position in the full project resource tree.
+ *
+ * Independently walks the tree via buildCompileTree/getDescendantLeafIds
+ * rather than trusting any caller-supplied ordering — ids not present in
+ * the tree are silently dropped, and duplicates in the input are collapsed.
+ */
+export function orderResourceIdsByTreePosition(
+  resources: AnyResource[],
+  resourceIds: string[],
+): string[] {
+  if (resourceIds.length === 0) return [];
+
+  const tree = buildCompileTree(resources);
+  const fullOrder = getDescendantLeafIds(ROOT_ITEM_ID, tree);
+  const wanted = new Set(resourceIds);
+
+  return fullOrder.filter((id) => wanted.has(id));
+}
+
 /** Returns a Set containing every leaf ID in the tree (initial "all selected" state). */
 export function initAllChecked(tree: CompileTree): Set<string> {
   const result = new Set<string>();
