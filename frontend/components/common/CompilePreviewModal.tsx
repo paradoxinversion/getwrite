@@ -120,10 +120,16 @@ export default function CompilePreviewModal(
         aria-describedby={undefined}
       >
         <DialogTitle asChild>
-          <h3 className="compile-modal-title">Compile Project</h3>
+          <h3 className="compile-modal-title">
+            {entityMode ? "Compile Entity Resources" : "Compile Project"}
+          </h3>
         </DialogTitle>
         <p className="compile-modal-description">
-          Select which resources to include in the compiled output.
+          {entityMode
+            ? // The entity-mode list is read-only (FR-11), so the whole-project
+              // copy inviting a selection describes a control that isn't there.
+              "Every resource associated with this entity, in resource-tree order."
+            : "Select which resources to include in the compiled output."}
         </p>
 
         {props.isSourceEncrypted ? (

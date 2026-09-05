@@ -306,6 +306,26 @@ describe("CompilePreviewModal — entity mode", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("titles and describes itself for the read-only entity list, not for a selection", () => {
+    render(
+      <CompilePreviewModal
+        isOpen={true}
+        resources={sampleResources}
+        entityMode={entityMode}
+        onConfirmCompile={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Compile Entity Resources")).toBeInTheDocument();
+    expect(screen.queryByText("Compile Project")).not.toBeInTheDocument();
+    // The entity list is read-only, so copy inviting a selection would
+    // describe a control the modal does not render in this mode.
+    expect(
+      screen.queryByText(/Select which resources to include/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders EntityCompileResourceList showing entityMode.entries", () => {
     render(
       <CompilePreviewModal

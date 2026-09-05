@@ -10,11 +10,12 @@ import {
   getProjectDirectoryId,
 } from "../../src/store/projectsSlice";
 import {
+  setFolders,
   setResources,
   setSelectedResourceId,
 } from "../../src/store/resourcesSlice";
 import { createTextResource } from "../../src/lib/models/resource";
-import type { AnyResource } from "../../src/lib/models/types";
+import type { AnyResource, Folder } from "../../src/lib/models/types";
 import type { EntityMentionedIn } from "../../src/lib/models/mentions-core";
 import { runCompileAndDownload } from "../../src/lib/compile/run-compile-and-download";
 
@@ -404,6 +405,85 @@ describe("EntityMentionsSection", () => {
       expect(compileBody.resourceIds).toEqual(["res-a", "res-b"]);
       expect(compileBody.projectId).toBe(getProjectDirectoryId(PROJECT_PATH));
       expect(compileBody.projectName).toBe("Test Project");
+    });
+
+    // Regression (FR-3): `buildResourceTree` resolves a resource's `folderId`
+    // against folder entries in the *same* array and silently re-parents to
+    // root anything whose parent is absent. Passing only the resources slice
+    // therefore flattens the tree, and the depth-first walk degrades into a
+    // global `orderIndex` sort — which put same-folder siblings far apart in
+    // the real app while every existing test still passed, because those
+    // fixtures had no folders at all.
+    //
+    // Both folders here hold an orderIndex-0 and an orderIndex-1 scene, so
+    // the two orderings are distinguishable:
+    //   depth-first (correct): f1s1, f1s2, f2s1, f2s2
+    //   global orderIndex sort (bug): f1s1, f2s1, f1s2, f2s2
+    it("orders resources depth-first by folder, not by a flat orderIndex sort (FR-3)", async () => {
+      mockMentionedIn(
+        ["f2s2", "f1s2", "f2s1", "f1s1"].map((id) => ({
+          resourceId: id,
+          name: id,
+          snippets: [],
+          isLinked: false,
+          isMentioned: true,
+          ambiguousWith: [[]],
+        })),
+      );
+
+      const folder = (id: string, orderIndex: number): Folder =>
+        ({
+          id,
+          slug: id,
+          name: id,
+          type: "folder",
+          createdAt: "",
+          updatedAt: "",
+          userMetadata: {},
+          orderIndex,
+        }) as unknown as Folder;
+
+      const inFolder = (
+        id: string,
+        folderId: string,
+        orderIndex: number,
+      ): AnyResource => {
+        const res = makeResource(id, id, orderIndex);
+        Object.assign(res, { folderId });
+        return res;
+      };
+
+      const store = setupStoreWithResources("entity-aria", [
+        inFolder("f1s1", "folder-1", 0),
+        inFolder("f1s2", "folder-1", 1),
+        inFolder("f2s1", "folder-2", 0),
+        inFolder("f2s2", "folder-2", 1),
+      ]);
+      store.dispatch(
+        setFolders([folder("folder-1", 0), folder("folder-2", 1)]),
+      );
+
+      render(
+        <Provider store={store}>
+          <EntityMentionsSection />
+        </Provider>,
+      );
+
+      const trigger = await screen.findByRole("button", {
+        name: "Compile this entity's resources",
+      });
+      fireEvent.click(trigger);
+
+      const compileButton = await screen.findByRole("button", {
+        name: /Compile \(4\)/,
+      });
+      fireEvent.click(compileButton);
+
+      await waitFor(() => {
+        expect(runCompileAndDownloadMock).toHaveBeenCalledTimes(1);
+      });
+      const [compileBody] = runCompileAndDownloadMock.mock.calls[0];
+      expect(compileBody.resourceIds).toEqual(["f1s1", "f1s2", "f2s1", "f2s2"]);
     });
   });
 

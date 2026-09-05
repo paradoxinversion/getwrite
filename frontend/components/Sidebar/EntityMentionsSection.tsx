@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useAppSelector, { useAppDispatch } from "../../src/store/hooks";
 import {
+  selectFoldersAndResources,
   selectResource,
   selectResources,
   setSelectedResourceId,
@@ -56,8 +57,10 @@ import Button from "../common/UI/Button/Button";
  * button that opens the entity-mode `CompilePreviewModal` pre-populated with
  * every row from the merged `rows` set (both `isLinked` and `isMentioned`
  * resources, exactly as returned — no additional filtering, per FR-2),
- * ordered by `orderResourceIdsByTreePosition` against the project's full
- * resource list (FR-3). Confirming the modal calls `runCompileAndDownload`
+ * ordered by `orderResourceIdsByTreePosition` against the project's folders
+ * *and* resources (FR-3 — the folders are required for the tree walk; see
+ * the `projectTreeItems` selector below). Confirming the modal calls
+ * `runCompileAndDownload`
  * with a `CompileBody` built the same way `AppShell.tsx` already builds one
  * for the whole-project compile flow. This is a read-only feature end to
  * end (FR-8): it only reads `rows` (already fetched via
@@ -70,6 +73,15 @@ export default function EntityMentionsSection(): JSX.Element | null {
   const resource = useAppSelector((state) => selectResource(state.resources));
   const projectResources = useAppSelector((state) =>
     selectResources(state.resources),
+  );
+  // FR-3 needs the *folders* as well as the resources: `buildResourceTree`
+  // resolves each resource's `folderId` against folder entries in the same
+  // array, and silently re-parents to root anything whose parent is absent.
+  // Passing resources alone therefore flattens the tree and degrades the
+  // depth-first walk into a global `orderIndex` sort. `AppShell.tsx` builds
+  // its compile tree from `[...resources, ...folders]` for the same reason.
+  const projectTreeItems = useAppSelector((state) =>
+    selectFoldersAndResources(state.resources),
   );
   const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const project = useAppSelector((state) =>
@@ -116,8 +128,8 @@ export default function EntityMentionsSection(): JSX.Element | null {
   // in the tree (e.g. a stale backlink to a deleted resource) are dropped by
   // `orderResourceIdsByTreePosition` itself.
   const orderedResourceIds = useMemo(
-    () => orderResourceIdsByTreePosition(projectResources, mergedResourceIds),
-    [projectResources, mergedResourceIds],
+    () => orderResourceIdsByTreePosition(projectTreeItems, mergedResourceIds),
+    [projectTreeItems, mergedResourceIds],
   );
 
   const compileEntries: EntityCompileEntry[] = useMemo(
