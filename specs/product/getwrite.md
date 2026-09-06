@@ -327,6 +327,27 @@ lost work.
   native Android build. The feature MUST reuse the entity declarations (name
   and aliases) already established by FR-35 and MUST NOT introduce any new
   mechanism for declaring an entity. [US-3]
+- FR-37: Users MUST be able to select a declared entity and compile every
+  resource associated with it into a single, ordered document, so that they
+  can read that entity's whole thread as one continuous pass — a
+  consistency-check read-through — rather than following mention links one
+  at a time. The resource set MUST be the same merged set
+  `mentions-core.ts`'s `getEntityMentionedIn` already builds for the
+  entity's own "mentioned in" view — both detected prose mentions (the
+  `mentions` query intrinsic, FR-35) and explicit `linkedFrom` backlinks —
+  so the compiled pass is never narrower than the association list the user
+  sees when they invoke it. Ordering MUST be resource-tree position,
+  depth-first with siblings ordered by `orderIndex`, filtered to only the
+  resources in that merged set — the same rule FR-14 uses for subtree
+  compile, applied here as new work rather than inherited: `compile-core.ts`
+  performs no ordering of its own, and FR-14's depth-first ordering is
+  produced upstream by `compileSelection.ts`'s `getDescendantLeafIds`. If a
+  project is not organized in story order, the compiled output will not be
+  in story order either; this is an accepted consequence, consistent with
+  FR-14's subtree compile having the same property. Entity-scoped compile
+  MUST remain export-only and MUST NOT mutate revisions, entity
+  declarations, or the mention index, consistent with the existing compile
+  constraint. [US-2][US-3]
 
 ### Later Requirements
 

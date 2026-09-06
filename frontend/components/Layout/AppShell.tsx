@@ -69,13 +69,7 @@ import {
   saveRevisionSettings,
 } from "../../src/lib/api/preferences";
 import { renameResource } from "../../src/lib/api/resources";
-import {
-  compilePdf,
-  compileDocx,
-  compileText,
-  compileMarkdown,
-} from "../../src/lib/api/compile";
-import { downloadFile } from "../../src/lib/compile/download-file";
+import { runCompileAndDownload } from "../../src/lib/compile/run-compile-and-download";
 import { formatRelativeTimestamp as _formatRelativeTimestamp } from "../../src/lib/timestamp-utils";
 import {
   PanelLeftClose,
@@ -927,22 +921,6 @@ export default function AppShell({
     await saveRevisionSettings(getProjectDirectoryId(project.rootPath), name);
   };
 
-  /**
-   * Hands a compiled file to the user via the runtime-aware download seam.
-   *
-   * The object-URL implementation this used to inline is silently inert in an
-   * Android WebView, so it now delegates to `downloadFile` — see that
-   * module's doc. A native save lands the file somewhere the user has no
-   * reason to look unless told, so the location is surfaced in a toast; a
-   * browser download announces itself and needs no toast.
-   */
-  async function triggerDownload(blob: Blob, filename: string): Promise<void> {
-    const outcome = await downloadFile(blob, filename);
-    if (outcome.kind === "saved-to-file") {
-      toastService.info(`Saved to ${outcome.location}`);
-    }
-  }
-
   // Left-sidebar body, shared by the docked pane (tablet/desktop) and the
   // phone overlay drawer so the tree is only ever mounted once per render.
   const leftSidebarBody = project ? (
@@ -1196,73 +1174,11 @@ export default function AppShell({
                         includeHeaders: options.includeHeaders,
                         projectName: project.name ?? "project",
                       };
-                      const rawName = options.compilationName.trim();
                       try {
-                        if (options.format === "pdf") {
-                          const result = await compilePdf(compileBody);
-                          if (result.warning === "font-fallback") {
-                            toastService.info(
-                              "PDF compiled with fallback fonts — IBM Plex fonts were unreachable",
-                            );
-                          }
-                          await triggerDownload(
-                            new Blob([result.arrayBuffer], {
-                              type: "application/pdf",
-                            }),
-                            rawName
-                              ? rawName.endsWith(".pdf")
-                                ? rawName
-                                : `${rawName}.pdf`
-                              : result.filename,
-                          );
-                          return;
-                        }
-                        if (options.format === "docx") {
-                          const result = await compileDocx(compileBody);
-                          await triggerDownload(
-                            new Blob([result.arrayBuffer], {
-                              type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            }),
-                            rawName
-                              ? rawName.endsWith(".docx")
-                                ? rawName
-                                : `${rawName}.docx`
-                              : result.filename,
-                          );
-                          return;
-                        }
-                        if (options.format === "md") {
-                          const result = await compileMarkdown(compileBody);
-                          await triggerDownload(
-                            new Blob([result.markdown], {
-                              type: "text/markdown;charset=utf-8",
-                            }),
-                            rawName
-                              ? rawName.endsWith(".md")
-                                ? rawName
-                                : `${rawName}.md`
-                              : result.filename,
-                          );
-                          if (result.warnings.length > 0) {
-                            toastService.info(
-                              `Some formatting couldn't be represented in Markdown: ${result.warnings
-                                .map((w) => w.label)
-                                .join(", ")}`,
-                            );
-                          }
-                          return;
-                        }
-                        const result = await compileText(compileBody);
-                        await triggerDownload(
-                          new Blob([result.text], {
-                            type: "text/plain;charset=utf-8",
-                          }),
-                          rawName
-                            ? rawName.endsWith(".txt")
-                              ? rawName
-                              : `${rawName}.txt`
-                            : result.filename,
-                        );
+                        await runCompileAndDownload(compileBody, {
+                          format: options.format,
+                          compilationName: options.compilationName,
+                        });
                       } catch (err) {
                         toastService.error(
                           "Compile failed",

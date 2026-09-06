@@ -42,7 +42,7 @@ Tags are project-scoped labels you can assign to any resource. Assign or remove 
 
 Folders can act as **metadata providers** — collections like Characters, Locations, or Items — that other documents can link to. Instead of retyping "Elena" on every scene she appears in, you point those scenes at the Elena document in your Characters folder.
 
-Over time this builds a connected web of the people, places, and things in your work. It's a powerful way to keep a sprawling cast or a detailed setting straight, and to see at a glance everywhere a given entity shows up.
+Over time this builds a connected web of the people, places, and things in your work. It's a powerful way to keep a sprawling cast or a detailed setting straight, and to see at a glance everywhere a given entity shows up — and, from that entity's own view, to compile everywhere it appears into a single document (see [Compiling Projects](compiling.md)).
 
 ## Project-level preferences
 

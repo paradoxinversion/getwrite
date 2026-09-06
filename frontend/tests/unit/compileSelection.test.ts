@@ -7,6 +7,7 @@ import {
   isFolderChecked,
   isFolderIndeterminate,
   initAllChecked,
+  orderResourceIdsByTreePosition,
   ROOT_ITEM_ID,
 } from "../../components/common/compileSelection";
 
@@ -252,5 +253,48 @@ describe("initAllChecked", () => {
     ] as AnyResource[];
     const t = buildCompileTree(folderOnly);
     expect(initAllChecked(t).size).toBe(0);
+  });
+});
+
+describe("orderResourceIdsByTreePosition", () => {
+  it("orders a shuffled subset into tree order", () => {
+    const result = orderResourceIdsByTreePosition(resources, [
+      "r4",
+      "r1",
+      "r3",
+    ]);
+    expect(result).toEqual(["r1", "r3", "r4"]);
+  });
+
+  it("silently drops ids not present in the tree", () => {
+    const result = orderResourceIdsByTreePosition(resources, [
+      "r4",
+      "unknown",
+      "r1",
+    ]);
+    expect(result).toEqual(["r1", "r4"]);
+  });
+
+  it("collapses duplicate ids in the input", () => {
+    const result = orderResourceIdsByTreePosition(resources, [
+      "r1",
+      "r1",
+      "r4",
+    ]);
+    expect(result).toEqual(["r1", "r4"]);
+  });
+
+  it("returns an empty array for empty resourceIds input", () => {
+    expect(orderResourceIdsByTreePosition(resources, [])).toEqual([]);
+  });
+
+  it("returns all leaves in tree order when the full set is passed unordered", () => {
+    const result = orderResourceIdsByTreePosition(resources, [
+      "r3",
+      "r4",
+      "r2",
+      "r1",
+    ]);
+    expect(result).toEqual(["r1", "r2", "r3", "r4"]);
   });
 });

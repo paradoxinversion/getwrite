@@ -996,6 +996,29 @@ html.gw-theme-dark {
     min-width: 0;
   }
 
+  /* ── ENTITY COMPILE RESOURCE LIST ── */
+  .entity-compile-list-item {
+    padding: 0 8px 0 0;
+  }
+
+  .entity-compile-list-label {
+    cursor: default;
+  }
+
+  .entity-compile-list-name-excluded {
+    color: var(--color-gw-mid);
+  }
+
+  .entity-compile-list-excluded-label {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-gw-mid);
+    white-space: nowrap;
+  }
+
   /* ── RESOURCE CONTEXT MENU ── */
   .resource-context-menu {
     position: fixed;
