@@ -1,5 +1,55 @@
 # Changelog
 
+## [2.2.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v2.1.0...getwrite-v2.2.0) (2026-09-06)
+
+
+### Features
+
+* **entity-highlighting:** add alias-table cache slice with FR-12 refetch triggers [task_4b2ec55f] ([912ab7c](https://github.com/saboteur-works/getwrite/commit/912ab7c178bd6f075c1db575406cac8619c70930))
+* **entity-highlighting:** add client transport for the alias table [task_4b2ec55f] ([98355eb](https://github.com/saboteur-works/getwrite/commit/98355ebb914ca3c20ec60cb8528ba62650e45fd2))
+* **entity-highlighting:** add entity-alias-table HTTP route [task_4b2ec55f] ([69e766a](https://github.com/saboteur-works/getwrite/commit/69e766adaa94ac062bb04f4412f9b2ea2abce788))
+* **entity-highlighting:** add entity-match decoration core [task_4b2ec55f] ([7625515](https://github.com/saboteur-works/getwrite/commit/7625515924267c89aa1517c2b8fcd7b5b040f00d))
+* **entity-highlighting:** add entityHighlighting project feature flag [task_4b2ec55f] ([a749ce9](https://github.com/saboteur-works/getwrite/commit/a749ce99270fec472cd6ddbae6140df15875438e))
+* **entity-highlighting:** add gated entity highlighting toggle to preferences [task_4b2ec55f] ([ccd1483](https://github.com/saboteur-works/getwrite/commit/ccd1483f7313babbaca89f757d2608e40a16fa3b))
+* **entity-highlighting:** style the two FR-10 highlight states + story [task_4b2ec55f] ([731fd6d](https://github.com/saboteur-works/getwrite/commit/731fd6d6b3f7a40844ad394fde60ebc92bd8cbfe))
+* **entity-highlighting:** wire decoration extension into the editor [task_4b2ec55f] ([c198f64](https://github.com/saboteur-works/getwrite/commit/c198f648c957e0bb695f9d830dc80bdd830f1b59))
+* **entity-highlighting:** wire native transport parity for the alias table [task_4b2ec55f] ([d1cb566](https://github.com/saboteur-works/getwrite/commit/d1cb5668336da5c452a930b05b5c2112833fa425))
+* **entity-layer:** add alias detection engine with boundary/possessive/plural matching [task_ddb55116] ([e9b7bb7](https://github.com/saboteur-works/getwrite/commit/e9b7bb794a8c04a79cd7d3c331e766b72aa49fe1))
+* **entity-layer:** add alias noise-warning heuristics [task_ddb55116] ([8390758](https://github.com/saboteur-works/getwrite/commit/83907587227ded71e4018145dfe05c5641c5847c))
+* **entity-layer:** add entities-mentioned read-only section to resource view [task_ddb55116] ([e6f77d7](https://github.com/saboteur-works/getwrite/commit/e6f77d7b99a974a30b846c681e3e14599eee512a))
+* **entity-layer:** add entity mentioned-in section with linked/mentioned labels and ambiguity flags [task_ddb55116] ([acd91a3](https://github.com/saboteur-works/getwrite/commit/acd91a36711e1961fe513617e3e2635bdcf79c63))
+* **entity-layer:** add entity metadata UI (entityKind and alias editor) [task_ddb55116] ([09ffa9b](https://github.com/saboteur-works/getwrite/commit/09ffa9b6e29069e292c65a4039cde0adafa8aa14))
+* **entity-layer:** add entity sidecar fields entityKind and aliases [task_ddb55116] ([c18cab1](https://github.com/saboteur-works/getwrite/commit/c18cab10e8a95f3e39ad2dd76955683e992de945))
+* **entity-layer:** add mention index schema and persistence [task_ddb55116] ([8afc8cc](https://github.com/saboteur-works/getwrite/commit/8afc8cc593a10218c77e8fde728161164fc5a632))
+* **entity-layer:** add mentions data-access core and API routes [task_ddb55116] ([e1001e5](https://github.com/saboteur-works/getwrite/commit/e1001e5468cdb7c6afbf4bbdf1048e692c73d771))
+* **entity-layer:** add mentions query intrinsic field [task_ddb55116] ([82c09c0](https://github.com/saboteur-works/getwrite/commit/82c09c0e2c57c789ae33da9f407fe53808a01d9d))
+* **entity-layer:** add native transport for mentions core (ADR-021 parity) [task_ddb55116] ([52491cc](https://github.com/saboteur-works/getwrite/commit/52491ccae4bd6b82f0df5cfc7da43abfd336abeb))
+* **entity-layer:** add per-project entity alias table with ambiguity detection [task_ddb55116] ([2b0d5ca](https://github.com/saboteur-works/getwrite/commit/2b0d5cab75e183da1bebb49bbc39dd3480ed4a25))
+* **entity-layer:** add targeted per-entity mention rescan on name/alias change [task_ddb55116] ([4961a96](https://github.com/saboteur-works/getwrite/commit/4961a967ec21213d9ef081c5dfddbf2f80c64875))
+* **entity-layer:** gate the entity panel behind an off-by-default project feature flag [task_ddb55116] ([df2e555](https://github.com/saboteur-works/getwrite/commit/df2e5554de58a2ae054432504c99ddcce3e1ae7f))
+* **entity-layer:** rebuild mention index in getwrite-cli reindex [task_ddb55116] ([6e3908a](https://github.com/saboteur-works/getwrite/commit/6e3908a7a8e42e3d5a5f937ab853e4f71d4ee861))
+* **entity-layer:** wire entity mention detection into indexer-queue save path [task_ddb55116] ([16edc71](https://github.com/saboteur-works/getwrite/commit/16edc718959d08fd80d7bd9f68032d4178d024b0))
+
+
+### Bug Fixes
+
+* **backlinks:** descend extractSidecarRefIds into sidecar.userMetadata [task_08553ca3] ([a6a8d1f](https://github.com/saboteur-works/getwrite/commit/a6a8d1fe1efa744118c5baa64e437c55154a3897))
+* **compile:** deliver compiled files on Android via the filesystem [task_344ee3b6] ([acd0adc](https://github.com/saboteur-works/getwrite/commit/acd0adcbdf12939e40d418bf8e0f2e117799f99b))
+* **compile:** route the Start Page download through the same seam [task_344ee3b6] ([a0ef27b](https://github.com/saboteur-works/getwrite/commit/a0ef27bba357ddff4bced23c5d19755a0db015c6))
+* deliver compiled files on Android via the filesystem ([92f7df4](https://github.com/saboteur-works/getwrite/commit/92f7df409f4b843f27e62c20aac5532a1a2e6b5d))
+* **entity-highlighting:** disclose both needs-attention conditions in title text [task_4b2ec55f] ([3598ada](https://github.com/saboteur-works/getwrite/commit/3598adafa0145cb132f2cedb21affb879411db6e))
+* **entity-layer:** stop the alias warning firing on an empty draft field [task_ddb55116] ([90333d6](https://github.com/saboteur-works/getwrite/commit/90333d6cda0224740eb9031596288bdd652cd967))
+* **help:** correct ~20 further false and misleading help claims [task_dd19db8e] ([c74b647](https://github.com/saboteur-works/getwrite/commit/c74b6479668035ae8f840e9896758db79d2ebe5b))
+* **help:** correct Organizer filtering, Package, and Timeline help copy [task_dd19db8e] ([00fd2b2](https://github.com/saboteur-works/getwrite/commit/00fd2b2e5910e44cfd7c2312aa66a761c4917c4d))
+* **help:** reconcile "special folders" with the generic metadata-source model [task_dd19db8e] ([56949ac](https://github.com/saboteur-works/getwrite/commit/56949acfd3d1e44c1c5c77fc7474b0e0e22f3498))
+* **qa:** address code-review findings on the QA harness ([7aae908](https://github.com/saboteur-works/getwrite/commit/7aae90821ef871cf6a1ac83a46ff3bfb95f24329))
+* **qa:** agentic QA harness follow-ups ([5f22315](https://github.com/saboteur-works/getwrite/commit/5f223151d9991c90c75b7f774505be7e25fd9d5f))
+* **qa:** give each run its own server log, and document the sandbox trap ([87c3ebd](https://github.com/saboteur-works/getwrite/commit/87c3ebd3c6e9f18cca813caac8ce2b6050c0d366))
+* **qa:** isolate QA runs from shared build state and fix defects it surfaced ([2e86e41](https://github.com/saboteur-works/getwrite/commit/2e86e41f5e8495351a7b11ddd83f203a558f52f9))
+* **qa:** preserve tsconfig edits the restore overwrites, and test the log-delete branch ([b07de9e](https://github.com/saboteur-works/getwrite/commit/b07de9e19a25a3c1d4ba62488d12aaba64d3e7b5))
+* **qa:** reap the dev server's whole process group on stop ([306f8b5](https://github.com/saboteur-works/getwrite/commit/306f8b552a990e9d66308cee360fdd73b30ad795))
+* **specs:** correct two conceptual errors about metadata, one of them mine ([6eed53f](https://github.com/saboteur-works/getwrite/commit/6eed53f0a5704e2000c067a3377c4546e80f39d6))
+
 ## [2.1.0](https://github.com/saboteur-works/getwrite/compare/getwrite-v2.0.0...getwrite-v2.1.0) (2026-08-18)
 
 
