@@ -239,12 +239,21 @@ describe("createRealCapacitorFilesystem", () => {
 });
 
 describe("dynamic-import-only discipline for @capacitor/filesystem", () => {
-  const REAL_MODULE_RELATIVE_PATH = path.join(
-    "src",
-    "lib",
-    "models",
-    "capacitor-filesystem-real.ts",
-  );
+  /**
+   * The native-only modules permitted to statically import
+   * `@capacitor/filesystem`.
+   *
+   * Membership is not a general exemption: each of these is reachable only
+   * through a *literal* dynamic `import()` specifier that
+   * `next.config.mjs`'s `turbopack.resolveAlias` rewrites to a `.web-stub`
+   * for non-native builds, so the plugin never enters the web/desktop graph.
+   * Adding a file here without that aliasing would ship the plugin to the
+   * web bundle — which is exactly what this guard exists to prevent.
+   */
+  const NATIVE_ONLY_MODULES = [
+    path.join("src", "lib", "models", "capacitor-filesystem-real.ts"),
+    path.join("src", "lib", "compile", "native-download-backend.ts"),
+  ];
 
   /** Recursively collects every `.ts`/`.tsx` file under `dir`. */
   function collectSourceFiles(dir: string): string[] {
@@ -262,7 +271,7 @@ describe("dynamic-import-only discipline for @capacitor/filesystem", () => {
     return out;
   }
 
-  it("finds no static top-level import of @capacitor/filesystem outside capacitor-filesystem-real.ts", () => {
+  it("finds no static top-level import of @capacitor/filesystem outside the native-only modules", () => {
     const frontendRoot = path.resolve(__dirname, "..", "..");
     const dirsToScan = ["src", "app"].map((d) => path.join(frontendRoot, d));
 
@@ -274,7 +283,7 @@ describe("dynamic-import-only discipline for @capacitor/filesystem", () => {
       if (!fs.existsSync(dir)) continue;
       for (const file of collectSourceFiles(dir)) {
         const relative = path.relative(frontendRoot, file);
-        if (relative === REAL_MODULE_RELATIVE_PATH) continue;
+        if (NATIVE_ONLY_MODULES.includes(relative)) continue;
         const contents = fs.readFileSync(file, "utf8");
         if (staticImportRe.test(contents)) {
           offenders.push(relative);

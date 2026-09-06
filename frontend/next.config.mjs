@@ -107,6 +107,10 @@ const nextConfig = {
       : {
           "./native-search-backend":
             "./src/store/transport/native-search-backend.web-stub",
+          // download-file.ts lives in src/lib/compile/, so its dynamic
+          // import's literal specifier is "./native-download-backend".
+          "./native-download-backend":
+            "./src/lib/compile/native-download-backend.web-stub",
           // revision-transport-service.ts lives in src/store/ (not
           // src/store/transport/, unlike search-transport.ts), so its dynamic
           // import's literal specifier is "./transport/native-revision-backend"

@@ -75,6 +75,7 @@ import {
   compileText,
   compileMarkdown,
 } from "../../src/lib/api/compile";
+import { downloadFile } from "../../src/lib/compile/download-file";
 import { formatRelativeTimestamp as _formatRelativeTimestamp } from "../../src/lib/timestamp-utils";
 import {
   PanelLeftClose,
@@ -926,15 +927,20 @@ export default function AppShell({
     await saveRevisionSettings(getProjectDirectoryId(project.rootPath), name);
   };
 
-  function triggerDownload(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  /**
+   * Hands a compiled file to the user via the runtime-aware download seam.
+   *
+   * The object-URL implementation this used to inline is silently inert in an
+   * Android WebView, so it now delegates to `downloadFile` — see that
+   * module's doc. A native save lands the file somewhere the user has no
+   * reason to look unless told, so the location is surfaced in a toast; a
+   * browser download announces itself and needs no toast.
+   */
+  async function triggerDownload(blob: Blob, filename: string): Promise<void> {
+    const outcome = await downloadFile(blob, filename);
+    if (outcome.kind === "saved-to-file") {
+      toastService.info(`Saved to ${outcome.location}`);
+    }
   }
 
   // Left-sidebar body, shared by the docked pane (tablet/desktop) and the
@@ -1199,7 +1205,7 @@ export default function AppShell({
                               "PDF compiled with fallback fonts — IBM Plex fonts were unreachable",
                             );
                           }
-                          triggerDownload(
+                          await triggerDownload(
                             new Blob([result.arrayBuffer], {
                               type: "application/pdf",
                             }),
@@ -1213,7 +1219,7 @@ export default function AppShell({
                         }
                         if (options.format === "docx") {
                           const result = await compileDocx(compileBody);
-                          triggerDownload(
+                          await triggerDownload(
                             new Blob([result.arrayBuffer], {
                               type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                             }),
@@ -1227,7 +1233,7 @@ export default function AppShell({
                         }
                         if (options.format === "md") {
                           const result = await compileMarkdown(compileBody);
-                          triggerDownload(
+                          await triggerDownload(
                             new Blob([result.markdown], {
                               type: "text/markdown;charset=utf-8",
                             }),
@@ -1247,7 +1253,7 @@ export default function AppShell({
                           return;
                         }
                         const result = await compileText(compileBody);
-                        triggerDownload(
+                        await triggerDownload(
                           new Blob([result.text], {
                             type: "text/plain;charset=utf-8",
                           }),

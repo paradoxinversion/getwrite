@@ -23,6 +23,7 @@ import CreateProjectModal, {
 import ManageProjectMenu from "./ManageProjectMenu";
 import CompilePreviewModal from "../common/CompilePreviewModal";
 import { toastService } from "../../src/lib/toast-service";
+import { downloadFile } from "../../src/lib/compile/download-file";
 import {
   compilePdf,
   compileDocx,
@@ -131,16 +132,22 @@ function isRenderableResource(
   return resource.type !== "folder";
 }
 
-/** Triggers a file download from a Blob by briefly appending an anchor to the DOM. */
+/**
+ * Hands a compiled file to the user via the runtime-aware download seam.
+ *
+ * This is the Start Page's compile-without-opening-a-project path — a third
+ * download site alongside `AppShell.tsx` and the entity sidebar, each of which
+ * carried its own copy of the object-URL download. That approach is silently
+ * inert in an Android WebView, so all three delegate to `downloadFile`; see
+ * that module's doc. A native save is announced with its location, since the
+ * file lands somewhere the user has no reason to look unless told.
+ */
 function triggerDownload(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  void downloadFile(blob, filename).then((outcome) => {
+    if (outcome.kind === "saved-to-file") {
+      toastService.info(`Saved to ${outcome.location}`);
+    }
+  });
 }
 
 /**
