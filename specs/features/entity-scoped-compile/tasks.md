@@ -72,7 +72,7 @@ Source spec: `specs/features/entity-scoped-compile.md`. Granularity: story point
 **Depends on:** 3, 5, 6, 7
 **Estimate:** 1
 **Notes:** This is the manual-exercise task the automated suite cannot fully substitute for — live visual appearance of the excluded-entry marker, real file download contents, and true device-level offline behavior all need a human pass before sign-off, mirroring `specs/features/entity-highlighting/tasks.md`'s Task 16.
-**Done:** [ ]
+**Done:** [x]
 
 ## Summary
 - Total tasks: 8
